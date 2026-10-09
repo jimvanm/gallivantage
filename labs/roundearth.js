@@ -13,7 +13,7 @@ import { localFrame } from '../src/geo/earth.js';
 const $ = (id) => document.getElementById(id);
 const canvas = $('view');
 const fail = (msg) => { $('error').textContent = msg; $('error').style.display = 'block'; throw new Error(msg); };
-const gl = canvas.getContext('webgl2', { antialias: true, stencil: true });
+const gl = canvas.getContext('webgl2', { antialias: true });
 if (!gl) fail('This browser has no WebGL2, which the lab needs.');
 $('ver').textContent = 'Gallivantage ' + BUILD;
 
@@ -170,11 +170,11 @@ function frame(now) {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.clearColor(0, 0, 0, 1);
-  gl.clearStencil(0);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   const proj = perspective(FOV, aspect), view = viewTurn(axes);
-  const drawn = globe.draw({ proj, view, camE, sun, hazeColour, haze, aboveSea: cam.h > 0 });
+  // The sea and sky first, then the land over them (see sea.js).
   sea.draw({ axes: { ...axes, up: f.up }, camE, sun, haze, hazeColour, space, tanY: Math.tan(FOV * Math.PI / 360), aspect });
+  const drawn = globe.draw({ proj, view, camE, sun, hazeColour, haze, aboveSea: cam.h > 0 });
 
   $('status').textContent =
     `${Math.abs(cam.lat).toFixed(4)}° ${cam.lat >= 0 ? 'N' : 'S'}  ${Math.abs(cam.lon).toFixed(4)}° ${cam.lon >= 0 ? 'E' : 'W'}` +

@@ -5,7 +5,7 @@
 // big numbers are subtracted in full precision before anything reaches the
 // graphics card.
 
-export const FOV = 60;                  // degrees, top to bottom
+export const FOV = 68;                  // degrees, top to bottom, as in Terrain Walker
 export const NEAR = 0.1;                // metres
 export const FAR = 1e9;                 // metres: past the Moon
 

@@ -3,9 +3,9 @@
 // The sea is a shell at sea level round the whole Earth. It is not built from
 // triangles (those would sag between their corners, kilometres at a time on a
 // ball this big). Instead, for every pixel, the graphics card works out where
-// that line of sight meets the ellipsoid, exactly, and draws water there,
-// wherever no land above sea level was drawn (the sea floor in the height
-// data is not drawn at all). Lines of sight that miss the
+// that line of sight meets the ellipsoid, exactly, and draws water there.
+// It is drawn before the land; land above sea level is nearer and covers it,
+// and the sea floor in the height data is not drawn at all. Lines of sight that miss the
 // Earth get the sky: blue near the ground, black in space, with a thin blue
 // glow round the edge of the Earth seen from orbit.
 //
@@ -63,7 +63,7 @@ void main() {
     c *= 0.55 + 0.45 * max(dot(n, uSun), 0.0);
     float haze = 1.0 - exp(-t * uHaze);
     colour = vec4(mix(c, uHazeColour, haze * 0.85), 1.0);
-    gl_FragDepth = logDepth(t * dot(d, uFwd));
+    gl_FragDepth = logDepth(t * dot(d, uFwd) * 1.0001);
     return;
   }
   // The sky. Seen from space, a glow where the line of sight passes close
@@ -100,18 +100,17 @@ export class Sea {
     gl.uniform1f(u.uHaze, pass.haze); gl.uniform1f(u.uSpace, pass.space);
     gl.uniform3fv(u.uHazeColour, pass.hazeColour);
     gl.uniform1f(u.uLogC, logDepthC(FAR));
-    // Only where no ground was drawn (globe.js marks its pixels), and there
-    // whatever the depth: the ground left unmarked is under the sea, where a
-    // line of sight can never meet land above sea level.
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilFunc(gl.EQUAL, 0, 0xff);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    // Drawn FIRST, over every pixel, whatever is there (nothing yet). Its
+    // depth is set a little behind the true surface (a ten-thousandth of the
+    // distance: 10 cm at 1 km, 500 m at 5,000 km), so land drawn next always
+    // wins where it stands above the sea, even from far away where a few
+    // metres are too small for the depth buffer; while land on the far side
+    // of the Earth, thousands of kilometres behind, always loses.
     gl.depthFunc(gl.ALWAYS);
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
     gl.depthFunc(gl.LEQUAL);
-    gl.disable(gl.STENCIL_TEST);
   }
 }
 

@@ -45,10 +45,10 @@ uniform float uHaze, uTintMix, uDropUnder;
 ${LOG_DEPTH_GLSL}
 out vec4 colour;
 void main() {
-  // Ground under sea level is not drawn: the sea covers it (sea.js). (Land
-  // truly below sea level, such as Dutch polders, shows as sea until water
-  // comes from the map.) Not when you are below sea level yourself: there
-  // is no sea drawn then, and the ground must show.
+  // Ground under sea level is not drawn: the sea, drawn first, covers it
+  // (sea.js). (Land truly below sea level, such as Dutch polders, shows as
+  // sea until water comes from the map.) Not when you are below sea level
+  // yourself: there is no sea then, and the ground must show.
   if (vH < 0.0 && uDropUnder > 0.5) discard;
   vec3 n = normalize(vN), up = normalize(vRel + uCamE);
   float steep = 1.0 - dot(n, up);
@@ -181,12 +181,6 @@ export class Globe {
     gl.uniform1f(u.uLogC, logDepthC(FAR));
     gl.uniform1f(u.uTintMix, this.tint ? 0.55 : 0);
     gl.uniform1f(u.uDropUnder, pass.aboveSea ? 1 : 0);
-    // Every pixel of ground drawn is marked (stencil 1), so the sea knows to
-    // leave it alone without comparing depths: from far away a few metres of
-    // height are too small for the depth buffer, and land and sea flickered.
-    gl.enable(gl.STENCIL_TEST);
-    gl.stencilFunc(gl.ALWAYS, 1, 0xff);
-    gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
     for (const t of this.draws) {
       // The big subtraction, in full precision, here and only here.
       gl.uniform3f(u.uOffset, t.centre[0] - pass.camE[0], t.centre[1] - pass.camE[1], t.centre[2] - pass.camE[2]);
@@ -195,7 +189,6 @@ export class Globe {
       gl.drawElements(gl.TRIANGLES, t.count, gl.UNSIGNED_SHORT, 0);
     }
     gl.bindVertexArray(null);
-    gl.disable(gl.STENCIL_TEST);
     return this.draws.length;
   }
 

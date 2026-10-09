@@ -4,7 +4,7 @@ The order of work is in `SPEC.md`. This file holds what is known to be
 missing or wrong, so nothing is forgotten. Items stay until done or dropped
 on purpose.
 
-## Round Earth lab (0.1.2)
+## Round Earth lab (0.1.3)
 
 - [ ] **Check on the real data.** Built and checked only with made-up ground
       in a browser without a graphics card. Things to look at: seams or
@@ -18,7 +18,8 @@ on purpose.
 - [ ] **Land below sea level shows as sea** (Dutch polders, Death Valley,
       the Dead Sea shore). The height data alone cannot tell sea from low
       land; the map's water can (step 6).
-- [ ] **Lakes are not water yet.** Same cause, same cure.
+- [ ] **Lakes and rivers are not water yet.** Same cause, same cure: bring
+      over Terrain Walker's painting of the map's water onto the ground.
 - [ ] **Nothing past 85 degrees.** The height tiles stop there, so the
       middle of Antarctica shows as sea and the Arctic Ocean is right only by
       luck. Needs a different source for the poles.
