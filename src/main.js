@@ -386,8 +386,12 @@ function frame(now) {
   const msg = transplant.message || dropper.message;
   if (dropEl.textContent !== msg) { dropEl.textContent = msg; dropEl.classList.toggle('hide', !msg); }
 
+  // The sky darkens to black between 20 km and 150 km up, as it does: the air
+  // thins out and space shows through (round Earth, 0.14.3).
+  const spaceT = Math.min(1, Math.max(0, (cam.alt - 20000) / 130000));
+  const sky = FOG.map((c, k) => c * (1 - spaceT) + [0.01, 0.012, 0.03][k] * spaceT);
   const shading = {
-    fogColor: FOG,
+    fogColor: sky,
     fogDensity: settings.fog ? 2.4 / v.viewDist : 0,
     debug: settings.debug,
     layers: LAYERS.slice(0, 4).map((L) => (L.on ? 1 : 0)),
@@ -404,7 +408,7 @@ function frame(now) {
   };
 
   gl.viewport(0, 0, canvas.width, canvas.height);
-  gl.clearColor(FOG[0], FOG[1], FOG[2], 1);
+  gl.clearColor(sky[0], sky[1], sky[2], 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   G.viewRot(view, cam.yaw, cam.pitch);
 

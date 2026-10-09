@@ -26,6 +26,10 @@ export function blockOrigin(c) {
 // and a fine tile covering the same ground: no gap, and no overlap either.
 export function computeBlocks(mercX, mercY, levels, isLoaded) {
   const origins = levels.map((L) => {
+    // A level whose whole world fits in one block (zoom 2: 4 x 4 tiles) is
+    // drawn whole, so from far out the entire ball is there; a block round
+    // the camera would leave off the far rows of tiles.
+    if (Math.pow(2, L.z) <= BLOCK) return { ox: 0, oy: 0 };
     const t = mercToTile(mercX, mercY, L.z);
     return { ox: blockOrigin(t.x), oy: blockOrigin(t.y) };
   });

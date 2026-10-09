@@ -44,16 +44,15 @@ always with everything loaded.
 
 ## Decisions taken
 
-- **Sphere (ECEF): placement done (0.14.1).** Everything drawn (ground tiles,
-  map tiles of roads and buildings, flat water, landmarks, moved pieces) is
-  built flat in its own local axes and placed on the WGS84 ellipsoid by a
-  turn and a position worked out in full precision (`src/globe.js`). The
-  faked curve is gone. You and the controls are unchanged: the camera's own
-  axes are still east, up, south. Pole holes accepted. **Still to do, for
-  the view from space:** coarser levels than zoom 4 so the whole ball is
-  drawn; the far end of the depth range from the true horizon distance; and
-  the sky darkening to black with height. (Links now carry heights up to
-  the 100,000 km ceiling.)
+- **Sphere (ECEF): done (0.14.1 to 0.14.3).** Everything drawn (ground
+  tiles, map tiles of roads and buildings, flat water, landmarks, moved
+  pieces) is built flat in its own local axes and placed on the WGS84
+  ellipsoid by a turn and a position worked out in full precision
+  (`src/globe.js`). You and the controls are unchanged: the camera's own
+  axes are still east, up, south. From space: zoom 3 and 2 levels (zoom 2
+  drawn whole), so the whole ball shows; the sky darkens to black between
+  20 and 150 km up; a 100,000 km ceiling. Pole holes accepted (the data
+  stops at 85 degrees).
 - **Later, on purpose (9 October):**
   - Kept downloads under a size limit (1 GB), favourites kept beyond it.
     Never caused a problem; the status bar's figure is the whole site's.

@@ -147,6 +147,9 @@ export class Controls {
     const k = this.keys;
     const agl = ground === null ? c.alt : c.alt - ground;
     this.cruise = FLY_K * Math.max(agl, FLY_FLOOR) * this.flyMult;
+    // Sideways, far out, it eases off (below); this is what the status bar shows.
+    const capNow = R_MAJOR * FLY_TURN_MAX * this.flyMult;
+    this.cruiseAcross = this.cruise / Math.pow(1 + (this.cruise / capNow) ** 4, 0.25);
     const boost = (k.has('ControlLeft') || k.has('ControlRight') || this.btn.boost) ? FLY_BOOST : 1;
     const base = c.fly ? this.cruise * boost : WALK_SPEED * this.walkMult * (k.has('ShiftLeft') ? 2 : 1);
 

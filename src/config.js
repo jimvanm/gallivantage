@@ -2,7 +2,7 @@
 
 // The version in the status bar. Goes up by one with every change sent, so
 // what you are running can be told apart at a glance.
-export const BUILD = '0.14.2';
+export const BUILD = '0.14.3';
 
 // Resolved at runtime to a {z}/{x}/{y} template. Never hardcode the tile URL:
 // the style points at a TileJSON, and that indirection is how the service is
@@ -44,6 +44,11 @@ export const LEVELS = [
   { z: 6, grid: 32 },
   { z: 5, grid: 32 },
   { z: 4, grid: 32 },
+  // From space (round Earth, 0.14.3): half the world, then all of it, so the
+  // whole ball is drawn from thousands of kilometres up. Only loaded when the
+  // horizon reaches that far.
+  { z: 3, grid: 32 },
+  { z: 2, grid: 32 },
 ];
 
 export const SKIRT = 150;            // metres each tile edge drops, hides LOD cracks

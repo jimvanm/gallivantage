@@ -45,9 +45,9 @@ export class Hud {
     const agl = view.ground === null ? null : view.alt - view.ground;
     const mult = (m, max) => (Math.abs(m - 1) > 0.02 ? ' x' + m.toFixed(1) : '') + (m >= max - 0.01 ? ' MAX' : '');
     const flyText = view.fly
-      ? 'FLY ' + (controls.cruise * 3.6 < 10000
-          ? (controls.cruise * 3.6).toFixed(0) + ' km/h'
-          : (controls.cruise / 1000).toFixed(1) + ' km/s') + mult(controls.flyMult, FLY_MULT_MAX)
+      ? 'FLY ' + ((controls.cruiseAcross ?? controls.cruise) * 3.6 < 10000
+          ? ((controls.cruiseAcross ?? controls.cruise) * 3.6).toFixed(0) + ' km/h'
+          : ((controls.cruiseAcross ?? controls.cruise) / 1000).toFixed(1) + ' km/s') + mult(controls.flyMult, FLY_MULT_MAX)
       : 'WALK ' + (controls.walkCruise * 3.6).toFixed(0) + ' km/h' + mult(controls.walkMult, WALK_MULT_MAX);
     const fps = this.fps;
 
