@@ -4,38 +4,40 @@
 //   TERRAIN  the ground: height-coloured tiles with painted water, roads, land cover
 //   MESH     everything standing on it: road ribbons, buildings, skyline, landmarks
 //
-// Both place vertices the same way (CAMERA below): positions arrive relative to
-// the camera in true metres, and the earth's curve drops distant points below
-// the horizon.
+// Both place vertices the same way (PLACE below): each patch (a ground tile, a
+// map tile of roads and buildings, a landmark) is built flat in its own local
+// axes and put where it really is on the round Earth by a turn (uRot) and a
+// position (uOrigin) relative to the camera, worked out on the main thread
+// in full precision (globe.js). Camera axes: x east, y up, z south.
 
 import { FACADE_VS, FACADE_FS } from './facade.js';
 
 export const CAMERA = `
 uniform mat4  uProj;
 uniform mat4  uView;
-uniform float uCamAlt;       // camera height above sea level
-uniform float uCurv;         // 1 / (2 * earth radius); 0 makes the earth flat
 // p: east, up, south in true metres, relative to the camera.
-vec4 toClip(vec3 p) {
-  // Drop distant points below the horizon. Without this you can see hundreds
-  // of kilometres of ground that should be over the curve.
-  float drop = dot(p.xz, p.xz) * uCurv;
-  return uProj * uView * vec4(p.x, p.y - drop, p.z, 1.0);
-}`;
+vec4 toClip(vec3 p) { return uProj * uView * vec4(p, 1.0); }`;
+
+// Where a patch is: its own axes turned into the camera's, and its origin.
+const PLACE = `
+uniform mat3  uRot;
+uniform vec3  uOrigin;`;
 
 export const TERRAIN_VS = `#version 300 es
 precision highp float;
 
-// x = local mercator east from tile centre, unscaled metres
-// y = elevation above the ellipsoid, metres
-// z = local mercator south from tile centre, unscaled metres
-// w = 1 for skirt vertices, 0 for the surface
-in vec4 aPos;
+// aPos, the flat-map point (for the map painting and the colour):
+//   x = local mercator east from tile centre, unscaled metres
+//   y = elevation above the ellipsoid, metres
+//   z = local mercator south from tile centre, unscaled metres
+//   w = 1 for skirt vertices, 0 for the surface
+// aGlobe, the same point where it really is, in the tile's own axes, the
+// skirt already hung down (globe.js tilePoints).
+layout(location = 0) in vec4 aPos;
+layout(location = 1) in vec3 aGlobe;
 
 ${CAMERA}
-uniform vec2  uTileOffset;   // (tileCentre - camera) in true metres
-uniform float uScale;        // cos(camera latitude)
-uniform float uSkirt;
+${PLACE}
 uniform float uTileSize;    // tile width in unscaled mercator metres
 
 out float vHeight;
@@ -44,13 +46,9 @@ out vec3  vPos;
 out vec2  vUV;
 
 void main() {
-  float x = aPos.x * uScale + uTileOffset.x;
-  float z = aPos.z * uScale + uTileOffset.y;
-  float y = aPos.y - uCamAlt - uSkirt * aPos.w;
-
   vHeight = aPos.y;
   vSkirt  = aPos.w;
-  vPos    = vec3(x, y, z);
+  vPos    = uRot * aGlobe + uOrigin;
   // Positions are tile-local, so UV falls straight out of them. No extra
   // attribute, and skirt vertices inherit the UV of the edge they hang from.
   vUV     = aPos.xz / uTileSize + 0.5;
@@ -76,6 +74,7 @@ uniform float uDebug;       // 0 off, 1 tile grid + level tint
 uniform float uLevel;
 uniform vec4  uNearRect;    // camera-relative minX, minZ, maxX, maxZ where real road geometry is drawn
 uniform vec4  uWaterRect;   // the same, where water is drawn as a flat surface (watersurface.js)
+uniform vec3  uEarthCentre; // the middle of the Earth, in camera axes: "up" anywhere is away from it
 
 out vec4 frag;
 
@@ -100,7 +99,10 @@ void main() {
   vec3 n = cross(dx, dy);
   float len = length(n);
   n = len > 1e-9 ? n / len : vec3(0.0, 1.0, 0.0);
-  if (n.y < 0.0) n = -n;
+  if (dot(n, vPos) > 0.0) n = -n;     // the side facing the camera
+  // Straight up where this point is. On a round Earth that is not the
+  // camera's up: a lake 1,000 km away is tilted 9 degrees from here.
+  vec3 up = normalize(vPos - uEarthCentre);
 
   float lit = 0.55 + 0.45 * max(dot(n, uSunDir), 0.0);
   // Derivatives are evaluated per 2x2 pixel quad, so a quad straddling the
@@ -150,10 +152,10 @@ void main() {
   // (radar does badly on water), and relief shading showed every bump.
   vec3 water = deep * 0.92;
   // Water on steep ground is falling: a waterfall or rapids. Paint it white, as
-  // it looks. Steep means over about 25 degrees, fully white past 40 (n.y is the
-  // cosine of the slope). Only well inside the water, so the soft edge of the
+  // it looks. Steep means over about 25 degrees, fully white past 40 (dot(n, up)
+  // is the cosine of the slope). Only well inside the water, so the soft edge of the
   // water texture on a steep bank does not turn white.
-  float falling = (1.0 - smoothstep(0.766, 0.906, n.y)) * smoothstep(0.6, 0.9, wet);
+  float falling = (1.0 - smoothstep(0.766, 0.906, dot(n, up))) * smoothstep(0.6, 0.9, wet);
   water = mix(water, vec3(0.90, 0.93, 0.95) * (0.72 + 0.28 * lit), falling);
   c = mix(c, water, smoothstep(0.35, 0.65, wet));
 
@@ -193,8 +195,8 @@ in vec3 aPos;
 in vec4 aCol;
 in vec4 aInfo;          // building facts, see meshbuilder.js; all zero = use aCol
 ${CAMERA}
-uniform vec2  uTileOffset;
-uniform float uScale;    // mercator metres to true metres; 1 for landmarks, which are already true
+${PLACE}
+uniform vec2  uScaleXZ;  // ground metres per unit east and south: mercator scales for map tiles, 1 for landmarks
 uniform vec3  uPal[8];   // current colour set (look.js)
 uniform vec3  uType[8];  // colour per building type
 uniform vec3  uRoof[8];  // roof colours
@@ -229,10 +231,7 @@ vec3 buildingColour() {
   return c * aInfo.b;
 }
 void main() {
-  float x = aPos.x * uScale + uTileOffset.x;
-  float z = aPos.z * uScale + uTileOffset.y;
-  float y = aPos.y - uCamAlt;
-  vPos = vec3(x, y, z);
+  vPos = uRot * vec3(aPos.x * uScaleXZ.x, aPos.y, aPos.z * uScaleXZ.y) + uOrigin;
   vec3 nl = newLook();
   vCol = vNew == 1 ? nl : aInfo.a > 0.0 ? buildingColour() : aCol.rgb;
   gl_Position = toClip(vPos);

@@ -5,10 +5,12 @@ import { TERRAIN_VS, TERRAIN_FS } from './shaders.js';
 import { probe } from './perf.js';
 import { computeBlocks } from './rings.js';
 import { keyOf } from './tiles.js';
-import { CACHE_TILES, LEVELS, SKIRT } from './config.js';
+import { CACHE_TILES, LEVELS } from './config.js';
 import { tileSizeMerc, mercToTile, HALF } from './geo.js';
 import { nodeHeightAt, COARSE } from './heightgrid.js';
 import { hasPlaceTile, surveyGeneration, SURVEY_MIN_Z } from './placetiles.js';
+import { mercXToLon, mercYToLat } from './geo.js';
+import { viewOf } from './globe.js';
 
 const PX = 256;
 // The place levels come first in LEVELS (config.js); this many of them.
@@ -19,8 +21,7 @@ export class Terrain {
   constructor(gl, loader) {
     this.gl = gl;
     this.prog = G.program(gl, TERRAIN_VS, TERRAIN_FS);
-    this.u = G.uniforms(gl, this.prog, ['uProj', 'uView', 'uTileOffset', 'uScale', 'uCamAlt',
-      'uCurv', 'uSkirt', 'uFogColor', 'uFogDensity', 'uSunDir',
+    this.u = G.uniforms(gl, this.prog, ['uProj', 'uView', 'uRot', 'uOrigin', 'uEarthCentre', 'uFogColor', 'uFogDensity', 'uSunDir',
       'uTileSize', 'uMask', 'uCover', 'uLayers', 'uDebug', 'uLevel', 'uNearRect', 'uWaterRect']);
     gl.useProgram(this.prog);
     gl.uniform1i(this.u.uMask, 0);    // texture units
@@ -82,12 +83,18 @@ export class Terrain {
     if (spec.z >= SURVEY_MIN_Z && (spec.sgen || 0) !== surveyGeneration()) return;
     const vao = gl.createVertexArray();
     const vbo = gl.createBuffer();
+    const gbo = gl.createBuffer();
     const ibo = gl.createBuffer();
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
     gl.bufferData(gl.ARRAY_BUFFER, msg.positions, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 0, 0);
+    // Where each point really is on the round Earth (globe.js).
+    gl.bindBuffer(gl.ARRAY_BUFFER, gbo);
+    gl.bufferData(gl.ARRAY_BUFFER, msg.globe, gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, msg.indices, gl.STATIC_DRAW);
     gl.bindVertexArray(null);
@@ -101,10 +108,11 @@ export class Terrain {
 
     this.tiles.set(key, {
       tex, cover,
-      key, vao, vbo, ibo,
+      key, vao, vbo, gbo, ibo,
       count: msg.indices.length,
       z: spec.z, level: spec.level,
       centre: msg.centre, nw: msg.nw, size: msg.size,
+      lat: mercYToLat(msg.centre.y), lon: mercXToLon(msg.centre.x),   // where its own axes are (globe.js)
       heights: msg.heights || null,
       coarse: msg.coarse || null,     // 33 x 33 heights, for lookups far from the camera
       survey: msg.survey || null,     // { surveyed 0..1, cell metres } where built from Canada's survey
@@ -126,6 +134,7 @@ export class Terrain {
       if (live.has(k)) continue;
       gl.deleteVertexArray(t.vao);
       gl.deleteBuffer(t.vbo);
+      gl.deleteBuffer(t.gbo);
       gl.deleteBuffer(t.ibo);
       if (t.tex) gl.deleteTexture(t.tex);
       if (t.cover) gl.deleteTexture(t.cover);
@@ -235,8 +244,8 @@ export class Terrain {
     const gl = this.gl, u = this.u;
     gl.useProgram(this.prog);
     G.setCamera(gl, u, pass);
-    gl.uniform1f(u.uScale, pass.k);
-    gl.uniform1f(u.uSkirt, SKIRT);
+    const globe = viewOf(pass), ec = globe.centre;
+    gl.uniform3f(u.uEarthCentre, ec[0], ec[1], ec[2]);
     gl.uniform3fv(u.uFogColor, shading.fogColor);
     // Density 0 disables fog exactly: 1 - exp(0) = 0, no branch needed.
     gl.uniform1f(u.uFogDensity, shading.fogDensity);
@@ -247,10 +256,12 @@ export class Terrain {
     // Holes where flat water is drawn instead (watersurface.js).
     gl.uniform4fv(u.uWaterRect, shading.waterRect || [1, 1, -1, -1]);
     let drawn = 0;
+    const at = this._at || (this._at = { rot: new Float32Array(9), org: [0, 0, 0] });
     for (const t of this.visible) {
-      gl.uniform2f(u.uTileOffset,
-        (t.centre.x - pass.mercX) * pass.k,
-        (pass.mercY - t.centre.y) * pass.k);
+      // Where this tile is on the round Earth, from here (globe.js).
+      globe.place(t.lat, t.lon, 0, at);
+      gl.uniformMatrix3fv(u.uRot, false, at.rot);
+      gl.uniform3f(u.uOrigin, at.org[0], at.org[1], at.org[2]);
       gl.uniform1f(u.uTileSize, t.size);
       gl.uniform1f(u.uLevel, t.level);
       gl.activeTexture(gl.TEXTURE0);
@@ -303,7 +314,7 @@ export class Terrain {
     const gl = this.gl;
     for (const [k, t] of this.tiles) {
       if (t.z < SURVEY_MIN_Z) continue;
-      gl.deleteVertexArray(t.vao); gl.deleteBuffer(t.vbo); gl.deleteBuffer(t.ibo);
+      gl.deleteVertexArray(t.vao); gl.deleteBuffer(t.vbo); gl.deleteBuffer(t.gbo); gl.deleteBuffer(t.ibo);
       if (t.tex) gl.deleteTexture(t.tex);
       if (t.cover) gl.deleteTexture(t.cover);
       this.tiles.delete(k);

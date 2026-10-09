@@ -119,7 +119,7 @@ export class NearLayer extends TileLayer {
     const gl = this.gl, u = this.mesh.u;
     for (const t of this.tiles.values()) {
       if (!t.water || !t.water.count || t.rawX < r.x0 || t.rawX > r.x1 || t.y < r.y0 || t.y > r.y1) continue;
-      gl.uniform2f(u.uTileOffset, (t.centre.x - pass.mercX) * pass.k, (pass.mercY - t.centre.y) * pass.k);
+      this.mesh.placeTile(pass, t);
       gl.bindVertexArray(t.water.vao);
       gl.drawElements(gl.TRIANGLES, t.water.count, gl.UNSIGNED_INT, 0);
     }

@@ -70,8 +70,6 @@ export const SUN_DIR = [0.40, 0.82, 0.41];
 export function setCamera(gl, u, pass) {
   gl.uniformMatrix4fv(u.uProj, false, pass.proj);
   gl.uniformMatrix4fv(u.uView, false, pass.view);
-  gl.uniform1f(u.uCamAlt, pass.alt);
-  gl.uniform1f(u.uCurv, pass.curv);
   gl.uniform3f(u.uSunDir, SUN_DIR[0], SUN_DIR[1], SUN_DIR[2]);
 }
 

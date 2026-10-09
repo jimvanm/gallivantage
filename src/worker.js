@@ -17,6 +17,8 @@ import { decodeTerrarium, pxMetersFor, sample, meshNodes, PX, COARSE } from './h
 import { cachedFetch } from './cache.js';
 import { surveyTileHeights, parseSurveyUrl } from './surveytile.js';
 import { SURVEY_PREFIX } from './placetiles.js';
+import { tilePoints } from './globe.js';
+import { SKIRT } from './config.js';
 
 export { decodeTerrarium };
 
@@ -139,7 +141,11 @@ self.onmessage = async (ev) => {
     const { positions, indices } = buildMesh(heights, z, grid);
     const centre = tileCentreMerc(x, y, z);
     const nw = tileToMerc(x, y, z);
-    const transfer = [positions.buffer, indices.buffer];
+    // The same points where they really are on the round Earth, in the
+    // tile's own axes (globe.js). The flat ones are kept for the map
+    // painting and the heights.
+    const globe = tilePoints(positions, centre.x, centre.y, SKIRT);
+    const transfer = [positions.buffer, indices.buffer, globe.buffer];
     if (ov) transfer.push(ov.mask.buffer, ov.cover.buffer);
     let hcopy = null;
     // A small copy of every tile's heights (33 x 33 points), so the ground can
@@ -148,7 +154,7 @@ self.onmessage = async (ev) => {
     transfer.push(coarse.buffer);
     if (keepHeights) { hcopy = heights; transfer.push(hcopy.buffer); }
     self.postMessage(
-      { id, ok: true, positions, indices, centre, nw, size: tileSizeMerc(z), survey,
+      { id, ok: true, positions, globe, indices, centre, nw, size: tileSizeMerc(z), survey,
         heights: hcopy, coarse, mask: ov && ov.mask, cover: ov && ov.cover },
       transfer
     );

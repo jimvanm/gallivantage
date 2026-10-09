@@ -9,6 +9,8 @@ import { MESH_VS, MESH_FS } from './shaders.js';
 import { settings } from './settings.js';
 import { lookBits, setUniform, TYPE_UNIFORM, ROOF_UNIFORM, AUTO_WALL_UNIFORM, AUTO_ROOF_UNIFORM } from './look.js';
 import { FACADE, MODE, regionUniforms } from './facade.js';
+import { mercScales, viewOf } from './globe.js';
+import { mercXToLon, mercYToLat } from './geo.js';
 
 const SKY = [0.62, 0.74, 0.86];          // what the glass reflects
 const DEFAULT_REGION = regionUniforms('north_america');
@@ -17,7 +19,7 @@ export class MeshProgram {
   constructor(gl) {
     this.gl = gl;
     this.prog = G.program(gl, MESH_VS, MESH_FS);
-    this.u = G.uniforms(gl, this.prog, ['uProj', 'uView', 'uTileOffset', 'uScale', 'uCamAlt', 'uCurv',
+    this.u = G.uniforms(gl, this.prog, ['uProj', 'uView', 'uRot', 'uOrigin', 'uScaleXZ',
       'uSunDir', 'uPal', 'uType', 'uRoof', 'uAutoWall', 'uAutoRoof', 'uLook',
       'uWall', 'uRoofC', 'uFrame', 'uReg', 'uSky', 'uMode', 'uF1', 'uF2']);
     this.aPos = gl.getAttribLocation(this.prog, 'aPos');
@@ -33,7 +35,6 @@ export class MeshProgram {
     const gl = this.gl, u = this.u;
     gl.useProgram(this.prog);
     G.setCamera(gl, u, pass);
-    gl.uniform1f(u.uScale, pass.k);
     gl.uniform3fv(u.uPal, setUniform());
     gl.uniform3fv(u.uType, TYPE_UNIFORM);
     gl.uniform3fv(u.uRoof, ROOF_UNIFORM);
@@ -51,6 +52,25 @@ export class MeshProgram {
     gl.uniform4f(u.uF2, FACADE.size, FACADE.tower, FACADE.shine, 0);
     this.region = null;
     this.setRegion(DEFAULT_REGION);
+  }
+
+  // Where the next mesh is, seen in this pass (globe.js): a patch built in
+  // its own axes at (lat, lon), its origin at height h there. scale: ground
+  // metres per unit east and south ([1, 1] for landmarks, mercScales for map
+  // tiles).
+  place(pass, lat, lon, h, scale) {
+    const gl = this.gl, u = this.u;
+    const at = this._at || (this._at = { rot: new Float32Array(9), org: [0, 0, 0] });
+    viewOf(pass).place(lat, lon, h, at);
+    gl.uniformMatrix3fv(u.uRot, false, at.rot);
+    gl.uniform3f(u.uOrigin, at.org[0], at.org[1], at.org[2]);
+    gl.uniform2f(u.uScaleXZ, scale[0], scale[1]);
+  }
+
+  // A map tile's mesh, built in mercator units round the tile's middle.
+  placeTile(pass, t) {
+    if (t.lat === undefined) { t.lat = mercYToLat(t.centre.y); t.lon = mercXToLon(t.centre.x); t.scale = mercScales(t.lat); }
+    this.place(pass, t.lat, t.lon, 0, t.scale);
   }
 
   // The regional colours for what is drawn next (facade.js regionUniforms).

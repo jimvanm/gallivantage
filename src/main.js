@@ -6,6 +6,7 @@
 //   terrain.js, near.js, skyline.js, landmarks.js   the layers
 //   handover.js  which of near field and skyline draws which ground
 
+import { View } from './globe.js';
 import * as G from './gl.js';
 import { Loader } from './tiles.js';
 import { Terrain } from './terrain.js';
@@ -431,7 +432,8 @@ function frame(now) {
   const fov = FOV * Math.PI / 180;
   // The camera for one pass. Positions are camera-relative, so this is all a
   // shader needs to place a vertex.
-  const pass = { proj, view, k: v.k, alt: cam.alt, mercX: cam.mercX, mercY: cam.mercY, curv: v.curv };
+  // globe: where everything is on the round Earth, from here (globe.js).
+  const pass = { proj, view, k: v.k, alt: cam.alt, mercX: cam.mercX, mercY: cam.mercY, globe: new View(cam.lat, cam.lon, cam.alt) };
 
   G.perspective(proj, fov, aspect, Math.min(splitNear, far * 0.5), far);
   drawScene(pass);

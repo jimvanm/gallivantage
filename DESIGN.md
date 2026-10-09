@@ -110,7 +110,8 @@ and flight simulators lay out their screens.
 Each step waits for a "go", and leaves the app working.
 
 1. **Gallivantage is Terrain Walker 0.13.34**, renamed (0.14.0).
-2. **Round Earth,** in place, as Terrain Walker's plan describes.
+2. **Round Earth,** in place, as Terrain Walker's plan describes. Placement
+   done in 0.14.1; the view from space next.
 3. **Download limit:** 1 GB, favourites kept.
 4. **One ground:** everything asks layer 2.
 5. **Ground lab:** where Canada's survey is right and where it is wrong.

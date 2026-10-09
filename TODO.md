@@ -44,8 +44,26 @@ always with everything loaded.
 
 ## Decisions taken
 
-- **Sphere (ECEF): agreed, not started.** Pole holes accepted. Prerequisite for
-  the hemisphere view.
+- **Sphere (ECEF): placement done (0.14.1).** Everything drawn (ground tiles,
+  map tiles of roads and buildings, flat water, landmarks, moved pieces) is
+  built flat in its own local axes and placed on the WGS84 ellipsoid by a
+  turn and a position worked out in full precision (`src/globe.js`). The
+  faked curve is gone. You and the controls are unchanged: the camera's own
+  axes are still east, up, south. Pole holes accepted. **Still to do, for
+  the view from space:** coarser levels than zoom 4 so the whole ball is
+  drawn; the far end of the depth range from the true horizon distance; the
+  sky darkening to black with height; and the 80 km height limit on links
+  (`readHash` in `src/config.js`).
+- **Later, on purpose (9 October):**
+  - Kept downloads under a size limit (1 GB), favourites kept beyond it.
+    Never caused a problem; the status bar's figure is the whole site's.
+  - Flying speed far out: a quarter of your height a second crosses the
+    Earth in seconds from 36,000 km. Globe viewers usually ease off far out.
+    Leave as is until it is a problem.
+  - Lighting: the sun is fixed relative to you, so it is always day and the
+    edge of the Earth is lit like the middle. All lighting questions wait.
+  - Aiming in Tools mode (`dropper.js`, `transplant.js`) still works on the
+    flat map with the old curve: right within a few kilometres.
 - **Water is vector, draped as a texture** from afar. Not raster, not
   flatness detection, not a floating decal. **Close by, changed 8 October:
   flat.** For walking, painted water on coarse ground climbs the banks, so

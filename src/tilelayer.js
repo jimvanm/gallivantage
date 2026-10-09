@@ -143,7 +143,7 @@ export class TileLayer {
   _drawTiles(tiles, pass, roadsOn, bldOn, ringOf) {
     const gl = this.gl, u = this.mesh.u;
     let drawn = 0;
-    const offset = (t) => gl.uniform2f(u.uTileOffset, (t.centre.x - pass.mercX) * pass.k, (pass.mercY - t.centre.y) * pass.k);
+    const offset = (t) => this.mesh.placeTile(pass, t);     // where it is on the round Earth (globe.js)
     // Buildings stand clear of the ground, so they need no help with depth.
     if (bldOn) {
       for (const t of tiles) {

@@ -125,6 +125,7 @@ globalThis.addEventListener = addL();
 // Worker mock: builds a real mesh from synthetic elevation data.
 const wmod = await import('../src/worker.js');
 const geo = await import('../src/geo.js');
+const { tilePoints } = await import('../src/globe.js');
 let workerCount = 0;
 globalThis.Worker = class {
   constructor() { workerCount++; this.onmessage = null; }
@@ -153,10 +154,11 @@ globalThis.Worker = class {
     }
     const { positions, indices } = wmod.buildMesh(h, m.z, m.grid);
     const centre = geo.tileCentreMerc(m.x, m.y, m.z);
+    const globe = tilePoints(positions, centre.x, centre.y, 150);
     const nw = geo.tileToMerc(m.x, m.y, m.z);
     setTimeout(() => this.onmessage && this.onmessage({
       data: {
-        id: m.id, ok: true, positions, indices, centre, nw,
+        id: m.id, ok: true, positions, globe, indices, centre, nw,
         size: geo.tileSizeMerc(m.z), heights: m.keepHeights ? h : null,
         mask: m.vurl ? (() => { const a = new Uint8Array(256 * 256 * 4);
           for (let i = 0; i < 256 * 256; i++) { a[i*4] = (i % 256) < 90 ? 255 : 0;
@@ -230,7 +232,7 @@ ok(log.texSizes.has('256x256'), `mask textures are 256x256 (${[...log.texSizes].
 ok(keysFired === 2 * KEYS.filter((x) => x.act).length, `pressed every action key twice (${keysFired}) without throwing`);
 ok(padFired >= 8, `fired ${padFired} pad handlers without throwing`);
 ok(workerCount === 9, `spawned ${workerCount} workers (3 terrain, 4 near, 2 skyline)`);
-ok(log.uniforms.size === 32, `resolved ${log.uniforms.size} distinct uniform names (expect 32: terrain 18, mesh adds 14)`);
+ok(log.uniforms.size === 31, `resolved ${log.uniforms.size} distinct uniform names (expect 31: terrain 16, mesh adds 15)`);
 ok(log.badUniform.length === 0, `no null uniform locations (${log.badUniform.length})`);
 ok(log.nan.length === 0, `no NaN/Inf uniform values (${log.nan.length}${log.nan.length ? ': ' + log.nan.slice(0, 3) : ''})`);
 const rep = globalThis.twReport;   // left behind by the K key

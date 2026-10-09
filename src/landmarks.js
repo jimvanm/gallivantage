@@ -15,6 +15,8 @@ import { loadList, loadModel, footprintOf } from './landmark_list.js';
 import { polygonArea, edgesOf, dominantBearing, suggestYaw, ovalAxis, wrapTo } from './orient.js';
 import { paintSlab } from './citykit.js';
 
+const ONE = [1, 1];     // landmarks are built in true metres
+
 export const SINK = 6;   // metres below the ground sample, so a sloping site never shows a gap
 const UNLOAD = 1.5;      // free a shape once every placement using it is this many times out of range
 const MIN_RANGE = 20000; // always load within 20 km, however short the landmark
@@ -239,22 +241,18 @@ export class Landmarks {
   }
 
   // Draws every placement whose shape and ground are known. The mesh program
-  // must already be in use for this pass; uScale and uCamAlt are changed here,
-  // so landmarks are drawn last.
+  // must already be in use for this pass.
   // on: which layers are switched on (default: setLayers). Moved ground is
   // always drawn; its roads and buildings follow ROADS and BUILT, and the
   // landmarks, moved or not, follow LANDMARKS.
   draw(pass, on = this.on) {
-    const gl = this.gl, u = this.mesh.u;
-    gl.uniform1f(u.uScale, 1);
+    const gl = this.gl;
     for (const it of this.items) {
       if (!it.vao || it.base === null || it.hidden) continue;
       if (!it.piece && !it.ground && !on.land) continue;      // landmarks follow their button; moved ground does not
-      // Height is relative to the landmark's own base: shift the camera, not the model.
-      gl.uniform1f(u.uCamAlt, pass.alt - it.base);
-      // Offset uses the camera's scale, exactly like tile offsets do.
-      // The camera's longitude can have wrapped past 180, so take the nearest copy.
-      gl.uniform2f(u.uTileOffset, wrapMercDx(it.mx - pass.mercX) * pass.k, (pass.mercY - it.my) * pass.k);
+      // Built in true metres in its own axes, its heights from its own base:
+      // placed on the round Earth at its base (globe.js).
+      this.mesh.place(pass, mercYToLat(it.my), mercXToLon(it.mx), it.base, ONE);
       gl.bindVertexArray(it.vao);
       gl.drawElements(gl.TRIANGLES, it.count, gl.UNSIGNED_INT, 0);
       if (!it.piece || it.preview) continue;
