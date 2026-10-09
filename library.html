@@ -8,15 +8,15 @@
 /* Layout: a header with status counts, two tabs, then one table row per object with its picture drawn from the real model. */
 :root{
   --bg:#f3f5f2; --panel:#ffffff; --fg:#1b2420; --muted:#5d6b64; --line:#d9e0db; --chip:#e8eee9; --accent:#2d6a3e; --accent-ink:#fff;
-  --ok:#2f7d4a; --check:#b7791f; --rework:#c0452a; --new:#3b6ea8; --pic:#e9eee9;
+  --ok:#2f7d4a; --check:#b7791f; --pending:#7a6aa8; --rework:#c0452a; --new:#3b6ea8; --pic:#e9eee9;
   --body:"Segoe UI", system-ui, -apple-system, Roboto, sans-serif; --mono:ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631; --chip:#222c27; --accent:#6cc28a; --accent-ink:#0d1a12;
-  --ok:#6cc28a; --check:#e0b04a; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}}
+  --ok:#6cc28a; --check:#e0b04a; --pending:#b3a3e0; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631; --chip:#222c27; --accent:#6cc28a; --accent-ink:#0d1a12;
-  --ok:#6cc28a; --check:#e0b04a; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}
+  --ok:#6cc28a; --check:#e0b04a; --pending:#b3a3e0; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body)}
 .wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
@@ -70,7 +70,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button role="tab" id="tab-lm" aria-selected="false">Landmarks</button>
   </div>
   <div id="content"><p class="sub">Loading…</p></div>
-  <p class="foot">To add an object: build it in <code>library/&lt;set&gt;/build.mjs</code>, list it in <code>library/index.json</code>, then run <code>node tools/bake_library.mjs</code>. The tests check every listed object has a shape and every shape matches its builder. Status: <b>approved</b>; <b>check</b> (changed since last seen); <b>rework</b>; <b>new</b> (not seen yet).</p>
+  <p class="foot">To add an object: build it in <code>library/&lt;set&gt;/build.mjs</code>, list it in <code>library/index.json</code>, then run <code>node tools/bake_library.mjs</code>. The tests check every listed object has a shape and every shape matches its builder. Status: <b>approved</b>; <b>check</b> (changed since last seen); <b>pending</b> (waiting on something else); <b>rework</b>; <b>new</b> (not seen yet).</p>
 </div>
 
 <dialog id="dlg">
@@ -83,7 +83,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 "use strict";
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString("en-CA");
-const STATUS={approved:{label:"Approved",c:"--ok"},check:{label:"Check",c:"--check"},rework:{label:"Rework",c:"--rework"},new:{label:"New",c:"--new"}};
+const STATUS={approved:{label:"Approved",c:"--ok"},check:{label:"Check",c:"--check"},pending:{label:"Pending",c:"--pending"},rework:{label:"Rework",c:"--rework"},new:{label:"New",c:"--new"}};
 const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
 function persp(f,a,n,fa){const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0]}
 function lookAt(e,c,u){const z=norm(sub(e,c)),x=norm(cross(u,z)),y=cross(z,x);return[x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*e[0]+x[1]*e[1]+x[2]*e[2]),-(y[0]*e[0]+y[1]*e[1]+y[2]*e[2]),-(z[0]*e[0]+z[1]*e[1]+z[2]*e[2]),1]}

@@ -30,6 +30,7 @@ of the base, a colour per corner, no normals (the app shades from the screen).
 
 - `approved`: Jim has seen it and it is right.
 - `check`: changed since Jim last saw it.
+- `pending`: waiting on something else first (the notes say what).
 - `rework`: Jim has seen it and it is wrong.
 - `new`: not seen yet.
 
