@@ -1,8 +1,9 @@
 import {
   EYE_HEIGHT, WALK_SPEED, FLY_K, FLY_FLOOR, FLY_BOOST, FLY_MULT_MIN,
   FLY_MULT_MAX, WALK_MULT_MIN, WALK_MULT_MAX, GROUND_SMOOTH, DOUBLE_TAP_MS, MOUSE_SENS,
+  FLY_TURN_MAX, MAX_ALT,
 } from './config.js';
-import { mercScale, mercYToLat } from './geo.js';
+import { mercScale, mercYToLat, R_MAJOR, HALF } from './geo.js';
 
 const HALF_PI = Math.PI / 2 - 0.001;
 
@@ -161,9 +162,18 @@ export class Controls {
     if (len > 0) {
       fx /= len; fz /= len;
       const sy = Math.sin(c.yaw), cy = Math.cos(c.yaw);
+      // Far out, sideways speed eases off toward a ceiling on how fast the
+      // ground turns under you (see FLY_TURN_MAX); the wheel and Ctrl scale
+      // the ceiling too, so it starts at the same height whatever they say.
+      // The fourth power keeps it out of the way below about 1,000 km.
+      let hv = base;
+      if (c.fly) {
+        const cap = R_MAJOR * FLY_TURN_MAX * this.flyMult * boost;
+        hv = base / Math.pow(1 + (base / cap) ** 4, 0.25);
+      }
       // forward = (sin yaw, -cos yaw), right = (cos yaw, sin yaw)
-      dx = (fx * cy - fz * sy) * base * dt;
-      dz = (fx * sy + fz * cy) * base * dt;
+      dx = (fx * cy - fz * sy) * hv * dt;
+      dz = (fx * sy + fz * cy) * hv * dt;
     }
 
     let dy = 0;
@@ -176,9 +186,11 @@ export class Controls {
     const scale = mercScale(mercYToLat(c.mercY));
     c.mercX += dx / scale;
     c.mercY -= dz / scale;
+    // The map stops at 85 degrees north and south.
+    c.mercY = Math.max(-HALF, Math.min(HALF, c.mercY));
 
     if (c.fly) {
-      c.alt += dy;
+      c.alt = Math.min(MAX_ALT, c.alt + dy);
       this.grounded = false;
       // Judge the floor at the NEW position too. The ground height passed in was
       // measured before this frame's move, and a fast, low flight can cover

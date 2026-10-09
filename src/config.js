@@ -2,7 +2,7 @@
 
 // The version in the status bar. Goes up by one with every change sent, so
 // what you are running can be told apart at a glance.
-export const BUILD = '0.14.1';
+export const BUILD = '0.14.2';
 
 // Resolved at runtime to a {z}/{x}/{y} template. Never hardcode the tile URL:
 // the style points at a TileJSON, and that indirection is how the service is
@@ -66,6 +66,16 @@ export const WALK_SPEED = 5.6;
 export const FLY_K = 0.25;
 export const FLY_FLOOR = 300;
 export const FLY_BOOST = 4;
+// Far out (from about 1,000 km), sideways speed eases off so the Earth turns
+// under you no faster than this many radians a second (0.05 is about 3
+// degrees; the wheel and Ctrl still multiply it), and you can go no higher
+// than MAX_ALT. Without these, climbing at a quarter of your height a second
+// snowballs: with the wheel up and Ctrl, height doubled every tenth of a
+// second, past the Andromeda galaxy, and the numbers broke. Globe viewers
+// (Google Earth, Cesium) work the same way: speed follows height, with a
+// ceiling. Below about 1,000 km nothing changes.
+export const FLY_TURN_MAX = 0.05;
+export const MAX_ALT = 1e8;          // metres: 100,000 km (geostationary is 36,000; the Moon 384,000)
 export const FLY_MULT_MIN = 0.1;
 export const FLY_MULT_MAX = 50;
 // Wheel also scales walking speed, which makes a 'driving' mode when glued to the ground.
@@ -135,7 +145,7 @@ export function readHash() {
   // Wrapped, not clamped: a link from before longitudes were wrapped can say
   // 244.4 for -115.6, and clamping that put you in the Pacific at 180.
   const lon = num('lon', -1e6, 1e6); if (lon !== null) c.lon = wrapLon(lon);
-  const alt = num('alt', -500, 80000); if (alt !== null) { c.alt = alt; c.agl = null; }
+  const alt = num('alt', -500, MAX_ALT); if (alt !== null) { c.alt = alt; c.agl = null; }
   const yaw = num('yaw', -3600, 3600); if (yaw !== null) c.yaw = yaw;
   const pit = num('pitch', -89, 89); if (pit !== null) c.pitch = pit;
   // Deliberately NOT read from the hash: a saved link would otherwise pin an

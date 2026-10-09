@@ -189,4 +189,30 @@ console.log(R.slice(-8).join('\n'));
   ok(Math.abs(hi / lo - 100) < 0.01, 'multiplier is scale-free: same ratio at any altitude');
   c.flyMult = 1;
 }
-console.log(R.slice(-6).join('\n'));
+// --- far out: no runaway, and the Earth does not spin past (0.14.2) ---
+{
+  const { MAX_ALT, FLY_TURN_MAX } = await import('../src/config.js');
+  const cam = mkCam(45, -100, 0); cam.fly = 1; cam.alt = 1000;
+  const c = new Controls(canvas, cam);
+  for (let i = 0; i < 40; i++) c.bump(2);                 // wheel all the way up
+  key('ControlLeft'); key('KeyE'); key('KeyW');
+  for (let i = 0; i < 1800; i++) c.update(1 / 60, 0);    // 30 s: once ran away to 10^22 m
+  up('KeyE'); up('KeyW'); up('ControlLeft');
+  const lat = geo.mercYToLat(cam.mercY);
+  ok(cam.alt <= MAX_ALT && Number.isFinite(cam.alt), `climbing flat out stops at the ceiling: ${(cam.alt / 1000).toFixed(0)} km`);
+  ok(Number.isFinite(cam.mercX) && Number.isFinite(lat) && Math.abs(lat) <= 85.06, `position stays sane: ${lat.toFixed(2)} N`);
+
+  // Ground covered in one second, as an angle at the surface, at wheel x1.
+  const turn = (alt) => {
+    const k = mkCam(0, 0, 90); k.fly = 1; k.alt = alt;
+    const cc = new Controls(canvas, k);
+    const x0 = k.mercX;
+    key('KeyW'); cc.update(1, 0); up('KeyW');
+    return (k.mercX - x0) / 6378137;                         // radians of longitude at the equator
+  };
+  const plain = (alt) => 0.25 * Math.max(alt, 300) / 6378137;
+  ok(Math.abs(turn(1000) / plain(1000) - 1) < 1e-6, 'unchanged at 1 km');
+  ok(Math.abs(turn(100000) / plain(100000) - 1) < 1e-4, 'unchanged at 100 km');
+  ok(turn(35786000) <= FLY_TURN_MAX * 1.0001, `geostationary: the Earth turns ${(turn(35786000) * 180 / Math.PI).toFixed(2)} degrees a second (at most ${(FLY_TURN_MAX * 180 / Math.PI).toFixed(1)})`);
+}
+console.log(R.slice(-11).join('\n'));

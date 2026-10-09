@@ -51,15 +51,17 @@ always with everything loaded.
   faked curve is gone. You and the controls are unchanged: the camera's own
   axes are still east, up, south. Pole holes accepted. **Still to do, for
   the view from space:** coarser levels than zoom 4 so the whole ball is
-  drawn; the far end of the depth range from the true horizon distance; the
-  sky darkening to black with height; and the 80 km height limit on links
-  (`readHash` in `src/config.js`).
+  drawn; the far end of the depth range from the true horizon distance; and
+  the sky darkening to black with height. (Links now carry heights up to
+  the 100,000 km ceiling.)
 - **Later, on purpose (9 October):**
   - Kept downloads under a size limit (1 GB), favourites kept beyond it.
     Never caused a problem; the status bar's figure is the whole site's.
-  - Flying speed far out: a quarter of your height a second crosses the
-    Earth in seconds from 36,000 km. Globe viewers usually ease off far out.
-    Leave as is until it is a problem.
+  - Flying speed far out: done in 0.14.2 once it was a problem (climbing
+    flat out ran away past 10^22 m and broke the position). A ceiling of
+    100,000 km, and sideways speed eases off from about 1,000 km so the
+    Earth turns under you at no more than about 3 degrees a second (times
+    the wheel and Ctrl). Below that, unchanged.
   - Lighting: the sun is fixed relative to you, so it is always day and the
     edge of the Earth is lit like the middle. All lighting questions wait.
   - Aiming in Tools mode (`dropper.js`, `transplant.js`) still works on the
