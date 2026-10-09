@@ -128,6 +128,15 @@ always with everything loaded.
       40 km up. Probably a bad value in the usual elevation tiles that the
       spike filter (despike) misses, drawn white as steep water. Find which
       tile and zoom it comes from, and why despike lets it through.
+- [ ] **A road that ramps into the sky (Jim, 9 October, 0.14.4).** At
+      44.30009, -77.80484, by the Trent River near Campbellford, Ontario
+      (walking, 2 m above ground, facing 186, survey on, Overture look), a
+      piece of road leaves the ground and climbs as a long brown ramp into
+      the air ahead. Not looked at yet. Guesses: a bridge or overpass given a
+      height it should not have, or one road point draped on different
+      ground from its neighbours (roads drape on zoom-14 or 8 m ground while
+      the terrain draws the 2 m survey). If the second, it belongs with
+      "one ground", the fix for the torn roads in Canada.
 
 - [ ] **Painted roads, middle distance.** Close up, roads are now real ribbons
       draped on the ground (the near field, `src/near.js`, `src/roads.js`),
