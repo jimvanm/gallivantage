@@ -7,6 +7,7 @@
 //   handover.js  which of near field and skyline draws which ground
 
 import { View } from './globe.js';
+import { PoleCaps } from './polecap.js';
 import * as G from './gl.js';
 import { Loader } from './tiles.js';
 import { Terrain } from './terrain.js';
@@ -88,6 +89,7 @@ const loader = new Loader(() => {}, fatal);
 const terrain = new Terrain(gl, loader);
 const controls = new Controls(canvas, cam);
 const mesh = new MeshProgram(gl);
+const poles = new PoleCaps(gl);         // caps over the holes at the poles (polecap.js)
 const vectorTemplate = () => loader.vectorTemplate;
 const nearField = new NearLayer(gl, mesh, vectorTemplate);
 const farField = new SkylineLayer(gl, mesh, vectorTemplate);
@@ -365,6 +367,7 @@ function frame(now) {
   // opening tiles arrive without water and would need refetching.
   if (!settings.frozen && (vectorReady || now - startTime > 4000)) {
     terrain.update(v);
+    poles.update(now, (x, y) => terrain.heightAt(x, y));
     handover.update(v);
   }
   // In Tools mode you aim with the pointer; otherwise with the crosshair.
@@ -401,6 +404,7 @@ function frame(now) {
   // Everything is drawn twice per frame, once per depth range (see below).
   const drawScene = (pass) => {
     terrain.draw(pass, shading);
+    poles.draw(pass, cam);
     mesh.use(pass);
     handover.draw(pass, roadsOn, bldOn);
     if (flatWater) nearField.drawWater(pass);

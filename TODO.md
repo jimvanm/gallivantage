@@ -51,8 +51,12 @@ always with everything loaded.
   (`src/globe.js`). You and the controls are unchanged: the camera's own
   axes are still east, up, south. From space: zoom 3 and 2 levels (zoom 2
   drawn whole), so the whole ball shows; the sky darkens to black between
-  20 and 150 km up; a 100,000 km ceiling. Pole holes accepted (the data
-  stops at 85 degrees).
+  20 and 150 km up; a 100,000 km ceiling. The data stops at 85 degrees, so
+  each pole has a cosmetic cap: a compass card in the app compass's colours,
+  every degree of longitude ticked and numbered every 10 (E and W), meridians
+  every 30 degrees, circles at 87 and 89 (`src/polecap.js`, 0.14.4), its
+  edge at the height of the ground round it. Real polar ground would need
+  another source.
 - **Later, on purpose (9 October):**
   - Kept downloads under a size limit (1 GB), favourites kept beyond it.
     Never caused a problem; the status bar's figure is the whole site's.
