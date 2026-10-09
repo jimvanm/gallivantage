@@ -48,8 +48,8 @@
      "name": "Spire (spruce, fir)",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "sapling",
-     "status": "rework",
-     "notes": "Needs work."
+     "status": "check",
+     "notes": "Trunk now runs up through the layers, and each layer reaches into the next."
     },
     {
      "id": "spire-2",
@@ -152,8 +152,8 @@
      "name": "Column (cedar, cypress)",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "far away",
-     "status": "new",
-     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+     "status": "check",
+     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
     },
     {
      "id": "round-1",
@@ -192,8 +192,8 @@
      "name": "Round (maple, oak, lime)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "rework",
-     "notes": "Too symmetrical."
+     "status": "check",
+     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
     },
     {
      "id": "oval-1",
@@ -232,8 +232,8 @@
      "name": "Tall oval (poplar, birch)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "rework",
-     "notes": "Too symmetrical."
+     "status": "check",
+     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
     },
     {
      "id": "spread-1",
@@ -272,8 +272,8 @@
      "name": "Spreading (old oak, acacia)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "pending",
-     "notes": "Not sure yet; maybe."
+     "status": "check",
+     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
     },
     {
      "id": "feather-1",
@@ -354,6 +354,28 @@
      "stage": "far away",
      "status": "new",
      "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    }
+   ]
+  },
+  {
+   "id": "farm",
+   "name": "Farm",
+   "models": [
+    {
+     "id": "vine",
+     "name": "Grape vine",
+     "osm": "landuse=vineyard (rows planted inside)",
+     "stage": "",
+     "status": "new",
+     "notes": "1 m of row: a post, a short trunk, a hedge of leaves on the wires. Set 1 m apart they make a row."
+    },
+    {
+     "id": "vine-far",
+     "name": "Grape vine",
+     "osm": "landuse=vineyard",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Just the hedge."
     }
    ]
   }

@@ -25,6 +25,13 @@ export function ico(m,cx,cy,cz,rx,ry,rz,ct,cb,jit=.1){
   const ids=P.map(q=>{const k=1+jit*jr(),y=q[1]/L;return m.v(cx+q[0]/L*rx*k,cy+y*ry*k,cz+q[2]/L*rz*k,mixc(cb,ct,(y+1)/2))});
   for(const f of F)m.idx.push(ids[f[0]],ids[f[1]],ids[f[2]]);
 }
+// A lopsided octahedron: an uneven lump for far shapes (8 triangles).
+export function lump(m,cx,cy,cz,rx,ry,rz,ct,cb){
+  const q=()=>1+.28*jr(),a=m.v(cx+rx*q(),cy+ry*.2*jr(),cz+rz*.25*jr(),mixc(cb,ct,.5)),b=m.v(cx+rx*.25*jr(),cy+ry*.2*jr(),cz+rz*q(),mixc(cb,ct,.45)),
+    c=m.v(cx-rx*q(),cy+ry*.2*jr(),cz+rz*.25*jr(),mixc(cb,ct,.5)),d=m.v(cx+rx*.25*jr(),cy+ry*.2*jr(),cz-rz*q(),mixc(cb,ct,.55)),
+    t=m.v(cx+rx*.3*jr(),cy+ry*q(),cz+rz*.3*jr(),ct),u=m.v(cx,cy-ry*(.8+.2*jr()),cz,cb);
+  m.idx.push(a,b,t,b,c,t,c,d,t,d,a,t,b,a,u,c,b,u,d,c,u,a,d,u);
+}
 export function octa(m,cx,cy,cz,rx,ry,rz,ct,cb){
   const a=m.v(cx+rx,cy,cz,mixc(cb,ct,.5)),b=m.v(cx,cy,cz+rz,mixc(cb,ct,.45)),c=m.v(cx-rx,cy,cz,mixc(cb,ct,.5)),d=m.v(cx,cy,cz-rz,mixc(cb,ct,.55)),t=m.v(cx,cy+ry,cz,ct),u=m.v(cx,cy-ry,cz,cb);
   m.idx.push(a,b,t,b,c,t,c,d,t,d,a,t,b,a,u,c,b,u,d,c,u,a,d,u);
@@ -60,9 +67,11 @@ export const FROND_D=[70,120,52],FROND_L=[118,168,74],DEAD=[124,100,64];
 
 // --- builders, in real metres: H tall, W across ---
 export function spire(m,H,W,T){
-  stem(m,[[0,0,0],[0,H*.28,0]],[Math.max(.04,W*.06),Math.max(.03,W*.035)],T<4?4:5,BARK);
-  const n=T<4?6:7;
-  for(let i=0;i<T;i++){const t=T>1?i/(T-1):0,y0=H*(.04+.7*t+(i?.035/T*jr()*2:0)),y1=i===T-1?H:y0+H*(.34-.14*t)*(1+.12*jr()),r=W/2*Math.pow(1-.82*t,.9)*(1+.08*jr());
+  // A sapling's few layers are far apart, so its trunk runs up through them, and each layer reaches into the next.
+  const small=T<4;
+  stem(m,[[0,0,0],[0,H*(small?.86:.28),0]],[Math.max(.04,W*.06),Math.max(.03,W*.035)*(small?.6:1)],small?4:5,BARK);
+  const n=small?6:7;
+  for(let i=0;i<T;i++){const t=T>1?i/(T-1):0,y0=H*(.04+.7*t+(i?.035/T*jr()*2:0)),y1=i===T-1?H:y0+H*(.34-.14*t)*(1+.12*jr())*(small?1.45:1),r=W/2*Math.pow(1-.82*t,.9)*(1+.08*jr());
     const A=ring(m,0,y0,0,r,n,i*.9+jr(),mixc(SPRUCE_D,SPRUCE_L,t*.3),.08);apex(m,A,m.v(0,y1,0,mixc(SPRUCE_L,SPRUCE_D,.1)));if(i===0)fan(m,A)}
 }
 // Young pines: rings of flat clumps (one ring a year), gaps between, a tuft on top.
