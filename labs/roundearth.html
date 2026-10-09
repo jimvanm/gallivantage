@@ -6,8 +6,7 @@
 <title>Round Earth lab</title>
 <style>
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; font: 13px/1.4 system-ui, sans-serif; color: #e8ecf0; }
-  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
-  canvas:active { cursor: grabbing; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
   #panel { position: fixed; top: 12px; left: 12px; width: 250px; max-height: calc(100vh - 84px); overflow-y: auto; box-sizing: border-box;
     padding: 12px; background: rgba(12, 16, 22, .82); border-radius: 8px; }
   #panel h1 { font-size: 15px; margin: 0 0 2px; }
@@ -42,8 +41,12 @@
   <label>Finest zoom <select id="maxZ"></select></label>
   <label><input type="checkbox" id="tint"> Colour tiles by zoom</label>
   <h2>Keys</h2>
-  <div id="keys"><b>Drag</b> to look &nbsp; <b>W A S D</b> move<br><b>Space</b> up &nbsp; <b>C</b> down &nbsp; <b>Shift</b> faster<br>
-    <b>Wheel</b> higher or lower &nbsp; <b>H</b> hide panel</div>
+  <div id="keys"><b>Click</b> the view to steer with the mouse; <b>Esc</b> lets go<br>
+    <b>W A S D</b> move &nbsp; <b>Wheel</b> faster or slower<br>
+    <b>Space</b> twice (or <b>G</b>): walk or fly<br>
+    Walking: <b>Shift</b> run<br>
+    Flying: <b>Space</b>/<b>E</b> up, <b>Shift</b>/<b>Q</b> down, <b>Ctrl</b> faster<br>
+    <b>H</b> hide this panel</div>
 </div>
 <div id="status"></div>
 <div id="error"></div>

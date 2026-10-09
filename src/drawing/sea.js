@@ -3,9 +3,9 @@
 // The sea is a shell at sea level round the whole Earth. It is not built from
 // triangles (those would sag between their corners, kilometres at a time on a
 // ball this big). Instead, for every pixel, the graphics card works out where
-// that line of sight meets the ellipsoid, exactly, and draws water there. Land
-// above sea level is nearer, so it hides the water; the sea floor in the
-// height data is farther, so the water hides it. Lines of sight that miss the
+// that line of sight meets the ellipsoid, exactly, and draws water there,
+// wherever no land above sea level was drawn (the sea floor in the height
+// data is not drawn at all). Lines of sight that miss the
 // Earth get the sky: blue near the ground, black in space, with a thin blue
 // glow round the edge of the Earth seen from orbit.
 //
@@ -63,9 +63,7 @@ void main() {
     c *= 0.55 + 0.45 * max(dot(n, uSun), 0.0);
     float haze = 1.0 - exp(-t * uHaze);
     colour = vec4(mix(c, uHazeColour, haze * 0.85), 1.0);
-    // A hair behind the true surface, so land a metre above the sea always
-    // wins, even from orbit.
-    gl_FragDepth = logDepth(t * dot(d, uFwd) * 1.00002);
+    gl_FragDepth = logDepth(t * dot(d, uFwd));
     return;
   }
   // The sky. Seen from space, a glow where the line of sight passes close
@@ -102,9 +100,18 @@ export class Sea {
     gl.uniform1f(u.uHaze, pass.haze); gl.uniform1f(u.uSpace, pass.space);
     gl.uniform3fv(u.uHazeColour, pass.hazeColour);
     gl.uniform1f(u.uLogC, logDepthC(FAR));
+    // Only where no ground was drawn (globe.js marks its pixels), and there
+    // whatever the depth: the ground left unmarked is under the sea, where a
+    // line of sight can never meet land above sea level.
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilFunc(gl.EQUAL, 0, 0xff);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+    gl.depthFunc(gl.ALWAYS);
     gl.bindVertexArray(this.vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
+    gl.depthFunc(gl.LEQUAL);
+    gl.disable(gl.STENCIL_TEST);
   }
 }
 

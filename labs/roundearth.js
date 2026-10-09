@@ -13,7 +13,7 @@ import { localFrame } from '../src/geo/earth.js';
 const $ = (id) => document.getElementById(id);
 const canvas = $('view');
 const fail = (msg) => { $('error').textContent = msg; $('error').style.display = 'block'; throw new Error(msg); };
-const gl = canvas.getContext('webgl2', { antialias: true });
+const gl = canvas.getContext('webgl2', { antialias: true, stencil: true });
 if (!gl) fail('This browser has no WebGL2, which the lab needs.');
 $('ver').textContent = 'Gallivantage ' + BUILD;
 
@@ -41,10 +41,10 @@ let wantAgl = null;            // a height asked for before the ground under it 
 window.lab = { cam, globe, sea, goTo };     // for poking at from the browser's console
 
 function goTo(p) {
-  Object.assign(cam, { lat: p.lat, lon: p.lon, heading: p.heading, tilt: p.tilt });
+  Object.assign(cam, { lat: p.lat, lon: p.lon, heading: p.heading, tilt: p.tilt, fly: p.agl > EYE + 0.5 });
   const g = ground(p.lat, p.lon);
   cam.h = (g === null ? 0 : g) + p.agl;
-  wantAgl = p.agl;             // kept until finer ground arrives (see frame())
+  wantAgl = cam.fly ? p.agl : null;     // kept until finer ground arrives (see frame())
 }
 
 // ---- the panel ------------------------------------------------------------------
@@ -54,13 +54,15 @@ for (const [name, p] of PLACES) {
   b.onclick = () => goTo(p);
   $('places').appendChild(b);
 }
-// Height slider: 1.7 m to 40,000 km, spread by the logarithm.
+// Height slider: 1.7 m to 40,000 km, spread by the logarithm. Moving it
+// above standing height starts you flying.
 const H0 = Math.log(EYE), H1 = Math.log(4e7);
 const toSlider = (agl) => Math.round((Math.log(Math.max(EYE, agl)) - H0) / (H1 - H0) * 1000);
 const fromSlider = (v) => Math.exp(H0 + v / 1000 * (H1 - H0));
 $('height').oninput = (e) => {
-  const g = ground(cam.lat, cam.lon);
-  cam.h = (g === null ? 0 : g) + fromSlider(+e.target.value);
+  const g = ground(cam.lat, cam.lon), agl = fromSlider(+e.target.value);
+  cam.h = (g === null ? 0 : g) + agl;
+  cam.fly = cam.fly || agl > EYE + 0.5;
   wantAgl = null;
 };
 $('detail').value = globe.detailPx;
@@ -71,31 +73,45 @@ $('maxZ').onchange = (e) => { globe.maxZ = +e.target.value; };
 $('tint').onchange = (e) => { globe.tint = e.target.checked; };
 $('hide').onclick = () => { $('panel').style.display = 'none'; };
 
-// ---- input ----------------------------------------------------------------------
+// ---- input, as in Terrain Walker -------------------------------------------------
+// A click on the view takes the mouse, full screen and the keyboard together;
+// Esc gives them back. The keyboard lock is what stops Ctrl+W closing the
+// window while Ctrl is held to fly faster (Chrome and Edge; not Firefox).
+const MOUSE_DEG = 0.0022 * 180 / Math.PI;     // degrees turned per pixel of mouse travel
+const DOUBLE_TAP_MS = 450;
 const keys = new Set();
+let lastSpace = -Infinity;
+const grab = async () => {
+  try { if (!document.fullscreenElement) await document.documentElement.requestFullscreen(); } catch (e) { /* carry on */ }
+  try { if (navigator.keyboard && navigator.keyboard.lock) await navigator.keyboard.lock(); } catch (e) { /* carry on */ }
+  try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* next click */ }
+};
+canvas.addEventListener('click', grab);
+const locked = () => document.pointerLockElement === canvas;
+const letGo = () => { keys.clear(); if (document.pointerLockElement) document.exitPointerLock(); };
+addEventListener('blur', letGo);
+document.addEventListener('visibilitychange', () => { if (document.hidden) letGo(); });
+document.addEventListener('mousemove', (e) => {
+  if (locked()) cam.look(e.movementX * MOUSE_DEG, -e.movementY * MOUSE_DEG);
+});
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!e.repeat) {
+      // Double-tap Space: walk or fly.
+      const now = performance.now();
+      if (now - lastSpace < DOUBLE_TAP_MS) { cam.fly = !cam.fly; lastSpace = -Infinity; } else lastSpace = now;
+    }
+  }
+  if (e.code === 'KeyG' && !e.repeat) cam.fly = !cam.fly;
+  if (e.code === 'KeyQ' || e.code === 'KeyE') { cam.fly = true; e.preventDefault(); }
+  if (e.code === 'KeyH' && !e.repeat) $('panel').style.display = $('panel').style.display === 'none' ? '' : 'none';
   keys.add(e.code);
-  if (e.code === 'KeyH') $('panel').style.display = $('panel').style.display === 'none' ? '' : 'none';
-  if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', (e) => keys.delete(e.code));
-addEventListener('blur', () => keys.clear());
-let drag = null;
-canvas.addEventListener('pointerdown', (e) => { drag = [e.clientX, e.clientY]; canvas.setPointerCapture(e.pointerId); });
-canvas.addEventListener('pointerup', () => { drag = null; });
-canvas.addEventListener('pointermove', (e) => {
-  if (!drag) return;
-  const k = FOV / canvas.clientHeight;          // degrees per screen pixel
-  cam.look(-(e.clientX - drag[0]) * k, (e.clientY - drag[1]) * k);
-  drag = [e.clientX, e.clientY];
-});
-canvas.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const g = ground(cam.lat, cam.lon) ?? 0;
-  cam.h = g + Math.max(EYE, (cam.h - g) * Math.exp(e.deltaY * 0.0015));
-  wantAgl = null;
-}, { passive: false });
+// The wheel changes speed, for whichever way you are moving.
+canvas.addEventListener('wheel', (e) => cam.bump(Math.exp(-e.deltaY * 0.0012)), { passive: true });
 
 // ---- the address keeps where you are, so a link brings you back -----------------
 function readHash() {
@@ -110,6 +126,7 @@ setInterval(() => {
 
 // ---- each frame -----------------------------------------------------------------
 const fmtH = (m) => (Math.abs(m) >= 10000 ? (m / 1000).toFixed(0) + ' km' : Math.abs(m) >= 1000 ? (m / 1000).toFixed(1) + ' km' : m.toFixed(1) + ' m');
+const fmtV = (v) => (v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1) + ' km/s' : v.toFixed(v >= 100 ? 0 : 1) + ' m/s');
 let last = performance.now(), fps = 60;
 
 function frame(now) {
@@ -121,13 +138,14 @@ function frame(now) {
   const w = Math.round(canvas.clientWidth * dpr), h = Math.round(canvas.clientHeight * dpr);
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
 
-  const k = (c) => (keys.has(c) ? 1 : 0);
-  cam.move(dt, { fwd: k('KeyW') - k('KeyS'), right: k('KeyD') - k('KeyA'), up: k('Space') - k('KeyC'),
-    fast: keys.has('ShiftLeft') || keys.has('ShiftRight') }, ground);
+  const k = (c) => (keys.has(c) ? 1 : 0), any = (...c) => c.some((x) => keys.has(x));
+  cam.move(dt, { fwd: k('KeyW') - k('KeyS'), right: k('KeyD') - k('KeyA'),
+    up: any('Space', 'KeyE'), down: any('ShiftLeft', 'ShiftRight', 'KeyQ'),
+    boost: any('ControlLeft', 'ControlRight'), run: any('ShiftLeft', 'ShiftRight') }, ground);
   // A place chosen before its ground had loaded: keep the asked-for height
   // above the ground as finer ground arrives, until you move.
   if (wantAgl !== null) {
-    if (keys.size || drag) wantAgl = null;
+    if (keys.size || !cam.fly) wantAgl = null;
     else { const g = ground(cam.lat, cam.lon); if (g !== null) cam.h = g + wantAgl; }
   }
   const g = ground(cam.lat, cam.lon), agl = cam.h - (g ?? 0);
@@ -152,14 +170,17 @@ function frame(now) {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
   gl.clearColor(0, 0, 0, 1);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.clearStencil(0);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
   const proj = perspective(FOV, aspect), view = viewTurn(axes);
-  const drawn = globe.draw({ proj, view, camE, sun, hazeColour, haze });
+  const drawn = globe.draw({ proj, view, camE, sun, hazeColour, haze, aboveSea: cam.h > 0 });
   sea.draw({ axes: { ...axes, up: f.up }, camE, sun, haze, hazeColour, space, tanY: Math.tan(FOV * Math.PI / 360), aspect });
 
   $('status').textContent =
     `${Math.abs(cam.lat).toFixed(4)}° ${cam.lat >= 0 ? 'N' : 'S'}  ${Math.abs(cam.lon).toFixed(4)}° ${cam.lon >= 0 ? 'E' : 'W'}` +
-    `   above sea ${fmtH(cam.h)}   above ground ${g === null ? '?' : fmtH(agl)}   heading ${cam.heading.toFixed(0)}°  tilt ${cam.tilt.toFixed(0)}°\n` +
+    `   above sea ${fmtH(cam.h)}   above ground ${g === null ? '?' : fmtH(agl)}   heading ${cam.heading.toFixed(0)}°  tilt ${cam.tilt.toFixed(0)}°` +
+    `   ${cam.fly ? 'flying' : 'walking'} ${fmtV(cam.speed(agl))} (wheel x${(cam.fly ? cam.flyMult : cam.walkMult).toFixed(2)})` +
+    `${locked() ? '' : '   click the view to steer'}\n` +
     `tiles drawn ${drawn} (finest zoom ${globe.finest})   held ${globe.tiles.size}   loading ${globe.loading.size}   still wanted ${globe.wanted}` +
     `   downloaded ${globe.downloads} (${(globe.bytes / 1048576).toFixed(1)} MB)   ${fps.toFixed(0)} frames/s` +
     (globe.errors ? `   failures ${globe.errors}: ${globe.lastError}` : '');

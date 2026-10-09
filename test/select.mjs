@@ -62,7 +62,27 @@ ok(new Set(r.draw).size === r.draw.length, 'date line: no tile drawn twice');
 const xs = r.draw.filter((k) => parse(k)[0] >= 6).map((k) => parse(k)[1] / 2 ** parse(k)[0]);
 ok(xs.some((f) => f > 0.99) && xs.some((f) => f < 0.01), 'date line: tiles on both sides');
 
-// 5. The coarsest tiles are always fetched first.
+// 5. KEEP: throwing away every tile the view does not need changes nothing
+//    drawn and fetches nothing again (the cause of flicker in 0.1.1).
+for (const c of [new Camera({ lat: 42, lon: -93, h: 5536000, tilt: -89 }), new Camera({ lat: 51.3, lon: -116.2, h: 3000, heading: 90, tilt: -20 })]) {
+  const vw = viewFor(c), tiles = new Map();
+  settle(vw, tiles);
+  // A few tiles waiting for a missing sibling, as while loading.
+  const before = selectTiles(vw, tiles);
+  const victim = before.draw.find((k) => parse(k)[0] >= 4);
+  tiles.delete(victim);
+  const mid = selectTiles(vw, tiles);
+  for (const k of [...tiles.keys()]) if (!mid.keep.has(k)) tiles.delete(k);
+  const after = selectTiles(vw, tiles);
+  ok(mid.draw.every((k) => mid.keep.has(k)), 'keep: everything drawn is kept');
+  ok(after.draw.join() === mid.draw.join(), 'keep: dropping the rest changes nothing drawn');
+  ok(after.fetch.every((f) => f.key === victim || mid.fetch.some((m) => m.key === f.key)), 'keep: dropping the rest fetches nothing again');
+  const [vz, vx, vy] = parse(victim);
+  const sibs = [0, 1].flatMap((dx) => [0, 1].map((dy) => `${vz}/${(vx & ~1) + dx}/${(vy & ~1) + dy}`)).filter((k) => k !== victim && before.draw.includes(k));
+  ok(sibs.every((k) => tiles.has(k)), 'keep: the missing tile\'s brothers and sisters are kept while it loads');
+}
+
+// 6. The coarsest tiles are always fetched first.
 const first = selectTiles(viewFor(new Camera({ lat: 0, lon: 0, h: 100 })), new Map()).fetch;
 ok(first.slice(0, 4 ** ROOT_Z).every((f) => f.z === ROOT_Z) && first.filter((f) => f.z === ROOT_Z).length === 4 ** ROOT_Z, 'empty start: all the roots, first');
 done();

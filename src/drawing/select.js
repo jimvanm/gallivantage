@@ -64,9 +64,14 @@ export function pastHorizon(info, camDir, camH) {
 //         point p is inside when a*p.x + b*p.y + c*p.z + d >= 0 for all),
 //         pxPerRadian: screen height / field of view, detailPx, maxZ, N }
 // tiles:  Map key -> loaded tile (needs minH, maxH)
-// Returns { draw: [keys], fetch: [{ key, z, x, y, dist }] }
+// Returns { draw: [keys], fetch: [{ key, z, x, y, dist }], keep: Set of keys }
+//   keep: every tile held that this view still needs: those drawn, the
+//   coarser ones above them, and finer ones waiting for their brothers and
+//   sisters to arrive. Throwing one of those away means fetching it again,
+//   and a coarse tile waiting for four finer ones that keep being thrown
+//   away flickers for ever.
 export function selectTiles(view, tiles, infoCache = new Map()) {
-  const draw = [], fetch = [];
+  const draw = [], fetch = [], keep = new Set();
   const key = (z, x, y) => z + '/' + x + '/' + y;
   const info = (z, x, y) => {
     const k = key(z, x, y), t = tiles.get(k);
@@ -86,11 +91,16 @@ export function selectTiles(view, tiles, infoCache = new Map()) {
   const visit = (z, x, y) => {
     const i = info(z, x, y);
     if (!seen(i)) return;
+    if (tiles.has(key(z, x, y))) keep.add(key(z, x, y));
     const split = z < view.maxZ && i.cell / dist(i) * view.pxPerRadian > view.detailPx;
     if (split) {
       const kids = [];
       for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
         const kx = 2 * x + dx, ky = 2 * y + dy, ki = info(z + 1, kx, ky);
+        // Kept even when out of sight: its real heights are what show it is
+        // out of sight. Thrown away, it might reach 8,900 m, would count as
+        // in sight and missing, and its parent would stop going finer.
+        if (tiles.has(key(z + 1, kx, ky))) keep.add(key(z + 1, kx, ky));
         if (!seen(ki)) continue;
         kids.push([kx, ky]);
         want(z + 1, kx, ky, ki);
@@ -109,11 +119,12 @@ export function selectTiles(view, tiles, infoCache = new Map()) {
     for (let x = 0; x < n; x++) {
       // Roots: always fetched, seen or not, so there is always a floor.
       if (!tiles.has(key(ROOT_Z, x, y))) fetch.push({ key: key(ROOT_Z, x, y), z: ROOT_Z, x, y, dist: 0 });
+      else keep.add(key(ROOT_Z, x, y));
       visit(ROOT_Z, x, y);
     }
   }
   // Coarse first (they unlock the finer ones), then nearest first.
   fetch.sort((a, b) => a.z - b.z || a.dist - b.dist);
-  return { draw, fetch };
+  return { draw, fetch, keep };
 }
 

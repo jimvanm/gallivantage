@@ -17,7 +17,7 @@ import { FAR } from './view.js';
 
 const WORKERS = 4;
 const IN_FLIGHT = 16;              // downloads at once
-const KEEP = 700;                  // tiles held on the graphics card
+const KEEP = 1200;                 // tiles held on the graphics card, beyond those the view needs
 const UPLOADS_PER_FRAME = 4;       // so several arriving at once never stall a frame
 
 const VS = `#version 300 es
@@ -25,11 +25,11 @@ layout(location = 0) in vec4 aPos;       // metres from the tile's middle, and h
 layout(location = 1) in vec4 aNrm;
 uniform mat4 uProj, uView;
 uniform vec3 uOffset;                    // the tile's middle, relative to the camera
-out vec3 vRel; out vec3 vN; out float vH;
-// Centroid: worked out inside the triangle even at its edges. Without it, a
-// sliver seen edge-on (a skirt, far away) can get a depth from outside
-// itself, nearer than the sea, and show as a dotted line along tile edges.
-centroid out float vW;
+// Centroid: every value is worked out inside the triangle, even at its
+// edges. Without it, a sliver seen edge-on (a skirt, far away) gets values
+// from outside itself: a depth nearer than the sea, or a height above sea
+// level under open water, and dotted lines appear along tile edges.
+centroid out vec3 vRel; centroid out vec3 vN; centroid out float vH; centroid out float vW;
 void main() {
   vRel = aPos.xyz + uOffset;
   vN = aNrm.xyz; vH = aPos.w;
@@ -39,12 +39,17 @@ void main() {
 
 const FS = `#version 300 es
 precision highp float;
-in vec3 vRel; in vec3 vN; in float vH; centroid in float vW;
+centroid in vec3 vRel; centroid in vec3 vN; centroid in float vH; centroid in float vW;
 uniform vec3 uCamE, uSun, uHazeColour, uTint;
-uniform float uHaze, uTintMix;
+uniform float uHaze, uTintMix, uDropUnder;
 ${LOG_DEPTH_GLSL}
 out vec4 colour;
 void main() {
+  // Ground under sea level is not drawn: the sea covers it (sea.js). (Land
+  // truly below sea level, such as Dutch polders, shows as sea until water
+  // comes from the map.) Not when you are below sea level yourself: there
+  // is no sea drawn then, and the ground must show.
+  if (vH < 0.0 && uDropUnder > 0.5) discard;
   vec3 n = normalize(vN), up = normalize(vRel + uCamE);
   float steep = 1.0 - dot(n, up);
   // By height: lowland green, upland olive, high brown, snow on top.
@@ -57,11 +62,7 @@ void main() {
   c *= 0.38 + 0.72 * max(dot(n, uSun), 0.0);
   float haze = 1.0 - exp(-length(vRel) * uHaze);
   colour = vec4(mix(c, uHazeColour, haze * 0.85), 1.0);
-  // Ground under sea level is pushed well behind the sea, which always wins
-  // there; seen from far away the two are too close for the depth buffer to
-  // tell apart, and fought in speckles. (Land truly below sea level, such as
-  // Dutch polders, shows as sea until water comes from the map.)
-  gl_FragDepth = logDepth(vH < 0.0 ? vW * 1.02 : vW);
+  gl_FragDepth = logDepth(vW);
 }`;
 
 // One colour per zoom, for "colour tiles by zoom".
@@ -71,7 +72,7 @@ const ZOOM_TINT = [[1, 0, 0], [1, .5, 0], [1, 1, 0], [.5, 1, 0], [0, 1, 0], [0, 
 export class Globe {
   constructor(gl) {
     this.gl = gl;
-    this.prog = program(gl, VS, FS, ['uProj', 'uView', 'uOffset', 'uCamE', 'uSun', 'uHazeColour', 'uHaze', 'uLogC', 'uTint', 'uTintMix']);
+    this.prog = program(gl, VS, FS, ['uProj', 'uView', 'uOffset', 'uCamE', 'uSun', 'uHazeColour', 'uHaze', 'uLogC', 'uTint', 'uTintMix', 'uDropUnder']);
     this.tiles = new Map();        // key -> tile on the graphics card
     this.info = new Map();         // select.js's notes per tile
     this.loading = new Map();      // key -> job id
@@ -79,7 +80,7 @@ export class Globe {
     this.arrived = [];             // finished jobs waiting to be uploaded
     this.draws = [];
     this.bytes = 0; this.downloads = 0; this.errors = 0; this.lastError = '';
-    this.maxZ = 14; this.detailPx = 4; this.tint = false;
+    this.maxZ = 14; this.detailPx = 4; this.tint = false; this.limit = KEEP;
     this.workers = [];
     this.jobs = new Map();         // id -> key
     this.nextId = 1;
@@ -129,12 +130,13 @@ export class Globe {
       minH: m.minH, maxH: m.maxH, nodes: m.nodes, used: performance.now() });
   }
 
-  _evict(drawn) {
-    if (this.tiles.size <= KEEP) return;
+  // Frees the longest-unused tiles beyond KEEP, never one the view needs.
+  _evict(needed) {
+    if (this.tiles.size <= this.limit) return;
     const gl = this.gl;
-    const old = [...this.tiles.values()].filter((t) => t.z > ROOT_Z && !drawn.has(t.key)).sort((a, b) => a.used - b.used);
+    const old = [...this.tiles.values()].filter((t) => t.z > ROOT_Z && !needed.has(t.key)).sort((a, b) => a.used - b.used);
     for (const t of old) {
-      if (this.tiles.size <= KEEP) break;
+      if (this.tiles.size <= this.limit) break;
       gl.deleteVertexArray(t.vao); gl.deleteBuffer(t.vbo); gl.deleteBuffer(t.ibo);
       this.tiles.delete(t.key); this.info.delete(t.key);
     }
@@ -148,7 +150,7 @@ export class Globe {
       this._upload(key, m);
     }
     if (this.info.size > 30000) this.info.clear();     // notes on tiles long out of sight
-    const { draw, fetch } = selectTiles({ ...view, maxZ: Math.min(this.maxZ, MAX_ZOOM), detailPx: this.detailPx, N: GRID }, this.tiles, this.info);
+    const { draw, fetch, keep } = selectTiles({ ...view, maxZ: Math.min(this.maxZ, MAX_ZOOM), detailPx: this.detailPx, N: GRID }, this.tiles, this.info);
     const now = performance.now();
     for (const f of fetch) {
       if (this.loading.size >= IN_FLIGHT) break;
@@ -162,11 +164,11 @@ export class Globe {
     }
     this.wanted = fetch.length;
     this.draws = draw.map((k) => this.tiles.get(k));
-    for (const t of this.draws) t.used = now;
-    this._evict(new Set(draw));
+    for (const k of keep) this.tiles.get(k).used = now;
+    this._evict(keep);
   }
 
-  // pass: { proj, view, camE (earth-centred, full precision), sun, hazeColour, haze }
+  // pass: { proj, view, camE (earth-centred, full precision), sun, hazeColour, haze, aboveSea }
   draw(pass) {
     const gl = this.gl, u = this.prog.u;
     gl.useProgram(this.prog.p);
@@ -178,6 +180,13 @@ export class Globe {
     gl.uniform1f(u.uHaze, pass.haze);
     gl.uniform1f(u.uLogC, logDepthC(FAR));
     gl.uniform1f(u.uTintMix, this.tint ? 0.55 : 0);
+    gl.uniform1f(u.uDropUnder, pass.aboveSea ? 1 : 0);
+    // Every pixel of ground drawn is marked (stencil 1), so the sea knows to
+    // leave it alone without comparing depths: from far away a few metres of
+    // height are too small for the depth buffer, and land and sea flickered.
+    gl.enable(gl.STENCIL_TEST);
+    gl.stencilFunc(gl.ALWAYS, 1, 0xff);
+    gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
     for (const t of this.draws) {
       // The big subtraction, in full precision, here and only here.
       gl.uniform3f(u.uOffset, t.centre[0] - pass.camE[0], t.centre[1] - pass.camE[1], t.centre[2] - pass.camE[2]);
@@ -186,6 +195,7 @@ export class Globe {
       gl.drawElements(gl.TRIANGLES, t.count, gl.UNSIGNED_SHORT, 0);
     }
     gl.bindVertexArray(null);
+    gl.disable(gl.STENCIL_TEST);
     return this.draws.length;
   }
 
