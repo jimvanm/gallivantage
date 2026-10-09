@@ -11,7 +11,8 @@
 import { program, logDepthC, LOG_DEPTH_GLSL } from './gl.js';
 import { selectTiles, ROOT_Z } from './select.js';
 import { GRID, STRIDE, heightAt as nodeHeight } from './tilemesh.js';
-import { tileAt } from '../geo/earth.js';
+import { tileAt, A, B } from '../geo/earth.js';
+import { outside } from './sea.js';
 import { MAX_ZOOM } from '../sources/terrarium.js';
 import { FAR } from './view.js';
 
@@ -27,8 +28,8 @@ uniform mat4 uProj, uView;
 uniform vec3 uOffset;                    // the tile's middle, relative to the camera
 // Centroid: every value is worked out inside the triangle, even at its
 // edges. Without it, a sliver seen edge-on (a skirt, far away) gets values
-// from outside itself: a depth nearer than the sea, or a height above sea
-// level under open water, and dotted lines appear along tile edges.
+// from outside itself, such as a height above sea level under open water,
+// and dotted lines appear along tile edges.
 centroid out vec3 vRel; centroid out vec3 vN; centroid out float vH; centroid out float vW;
 void main() {
   vRel = aPos.xyz + uOffset;
@@ -42,9 +43,25 @@ precision highp float;
 centroid in vec3 vRel; centroid in vec3 vN; centroid in float vH; centroid in float vW;
 uniform vec3 uCamE, uSun, uHazeColour, uTint;
 uniform float uHaze, uTintMix, uDropUnder;
+uniform vec3 uOcs;          // camera, earth-centred, z stretched by K (as in sea.js)
+uniform float uC;           // how far the camera is outside the sea (as in sea.js)
 ${LOG_DEPTH_GLSL}
 out vec4 colour;
+const float K = ${(A / B).toFixed(12)};
 void main() {
+  // Hidden by the sea? If the line of sight dips under sea level before it
+  // gets here, this ground is behind the curve of the Earth (or on its far
+  // side), and the sea, drawn first, must show instead. Worked out exactly,
+  // as the sea itself is, not by comparing depths: a graphics card keeps
+  // depth too coarsely to tell low land from the sea round it far away, and
+  // the two flickered. The margin allows for the flat triangles of coarse
+  // tiles sagging a little under the curve.
+  if (uC > 0.0) {
+    float L = length(vRel);
+    vec3 d = vRel / L, ds = vec3(d.xy, d.z * K);
+    float a = dot(ds, ds), b = dot(ds, uOcs), disc = b * b - a * uC;
+    if (b < 0.0 && disc >= 0.0 && uC / (-b + sqrt(disc)) < L - (50.0 + L * 1e-3)) discard;
+  }
   // Ground under sea level is not drawn: the sea, drawn first, covers it
   // (sea.js). (Land truly below sea level, such as Dutch polders, shows as
   // sea until water comes from the map.) Not when you are below sea level
@@ -72,7 +89,7 @@ const ZOOM_TINT = [[1, 0, 0], [1, .5, 0], [1, 1, 0], [.5, 1, 0], [0, 1, 0], [0, 
 export class Globe {
   constructor(gl) {
     this.gl = gl;
-    this.prog = program(gl, VS, FS, ['uProj', 'uView', 'uOffset', 'uCamE', 'uSun', 'uHazeColour', 'uHaze', 'uLogC', 'uTint', 'uTintMix', 'uDropUnder']);
+    this.prog = program(gl, VS, FS, ['uProj', 'uView', 'uOffset', 'uCamE', 'uSun', 'uHazeColour', 'uHaze', 'uLogC', 'uTint', 'uTintMix', 'uDropUnder', 'uOcs', 'uC']);
     this.tiles = new Map();        // key -> tile on the graphics card
     this.info = new Map();         // select.js's notes per tile
     this.loading = new Map();      // key -> job id
@@ -181,6 +198,9 @@ export class Globe {
     gl.uniform1f(u.uLogC, logDepthC(FAR));
     gl.uniform1f(u.uTintMix, this.tint ? 0.55 : 0);
     gl.uniform1f(u.uDropUnder, pass.aboveSea ? 1 : 0);
+    const e = pass.camE;
+    gl.uniform3f(u.uOcs, e[0], e[1], e[2] * A / B);
+    gl.uniform1f(u.uC, outside(e));
     for (const t of this.draws) {
       // The big subtraction, in full precision, here and only here.
       gl.uniform3f(u.uOffset, t.centre[0] - pass.camE[0], t.centre[1] - pass.camE[1], t.centre[2] - pass.camE[2]);

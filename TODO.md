@@ -4,7 +4,7 @@ The order of work is in `SPEC.md`. This file holds what is known to be
 missing or wrong, so nothing is forgotten. Items stay until done or dropped
 on purpose.
 
-## Round Earth lab (0.1.3)
+## Round Earth lab (0.1.4)
 
 - [ ] **Check on the real data.** Built and checked only with made-up ground
       in a browser without a graphics card. Things to look at: seams or

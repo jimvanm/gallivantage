@@ -16,6 +16,7 @@ const fail = (msg) => { $('error').textContent = msg; $('error').style.display =
 const gl = canvas.getContext('webgl2', { antialias: true });
 if (!gl) fail('This browser has no WebGL2, which the lab needs.');
 $('ver').textContent = 'Gallivantage ' + BUILD;
+const DEPTH_BITS = gl.getParameter(gl.DEPTH_BITS);     // how finely this graphics card keeps depth
 
 // Places to test from. Each tests something: walking height, low flying,
 // cruise height, the edge of space, orbit, the 85-degree edge of the data,
@@ -182,7 +183,7 @@ function frame(now) {
     `   ${cam.fly ? 'flying' : 'walking'} ${fmtV(cam.speed(agl))} (wheel x${(cam.fly ? cam.flyMult : cam.walkMult).toFixed(2)})` +
     `${locked() ? '' : '   click the view to steer'}\n` +
     `tiles drawn ${drawn} (finest zoom ${globe.finest})   held ${globe.tiles.size}   loading ${globe.loading.size}   still wanted ${globe.wanted}` +
-    `   downloaded ${globe.downloads} (${(globe.bytes / 1048576).toFixed(1)} MB)   ${fps.toFixed(0)} frames/s` +
+    `   downloaded ${globe.downloads} (${(globe.bytes / 1048576).toFixed(1)} MB)   ${fps.toFixed(0)} frames/s   depth ${DEPTH_BITS} bits` +
     (globe.errors ? `   failures ${globe.errors}: ${globe.lastError}` : '');
   requestAnimationFrame(frame);
 }
