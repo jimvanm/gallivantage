@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gallivantage Library</title>
+<style>
+/* Layout: a header with status counts, two tabs, then one table row per object with its picture drawn from the real model. */
+:root{
+  --bg:#f3f5f2; --panel:#ffffff; --fg:#1b2420; --muted:#5d6b64; --line:#d9e0db; --chip:#e8eee9; --accent:#2d6a3e; --accent-ink:#fff;
+  --ok:#2f7d4a; --check:#b7791f; --rework:#c0452a; --new:#3b6ea8; --pic:#e9eee9;
+  --body:"Segoe UI", system-ui, -apple-system, Roboto, sans-serif; --mono:ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631; --chip:#222c27; --accent:#6cc28a; --accent-ink:#0d1a12;
+  --ok:#6cc28a; --check:#e0b04a; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631; --chip:#222c27; --accent:#6cc28a; --accent-ink:#0d1a12;
+  --ok:#6cc28a; --check:#e0b04a; --rework:#f0784f; --new:#7fb0ea; --pic:#26302b; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:20px 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+h1{margin:0;font-size:26px;letter-spacing:-.01em}
+.sub{margin:4px 0 0;color:var(--muted)}
+.counts{display:flex;flex-wrap:wrap;gap:6px}
+.counts button{font:600 13px var(--body);border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:5px 11px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.counts button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{font:600 14px var(--body);border:0;background:none;color:var(--muted);padding:8px 12px;cursor:pointer;border-bottom:3px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:820px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th{font-size:12px;color:var(--muted);font-weight:700;background:var(--panel);position:sticky;top:0}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pic{width:96px;height:96px;border-radius:6px;background:var(--pic);display:block;cursor:zoom-in;border:0;padding:0}
+.pic img{width:96px;height:96px;display:block;border-radius:6px}
+.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.name{font-weight:700}
+.osm{font-family:var(--mono);font-size:12px;color:var(--muted);max-width:220px}
+.status{font:700 12px var(--body);padding:3px 9px;border-radius:999px;white-space:nowrap;display:inline-flex;gap:6px;align-items:center;background:var(--chip)}
+.notes{color:var(--muted);font-size:13px;max-width:280px}
+.foot{margin-top:24px;color:var(--muted);font-size:13px;max-width:70ch}
+.foot code{font-family:var(--mono);background:var(--chip);padding:1px 4px;border-radius:3px}
+dialog{border:1px solid var(--line);border-radius:10px;padding:0;background:var(--panel);color:var(--fg);width:min(860px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dhead{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.dhead button{font:600 13px var(--body);border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer}
+#view{display:block;width:100%;height:min(560px,70vh);touch-action:none;cursor:grab;background:#e9eee9}
+.dfoot{padding:8px 14px;color:var(--muted);font-size:13px}
+.err{padding:12px 14px;border-radius:8px;background:var(--chip);border-left:3px solid var(--rework)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Gallivantage Library</h1>
+      <p class="sub">Every object the app can draw, pictured from its actual model.</p>
+    </div>
+    <div class="counts" id="counts" role="group" aria-label="Show by status"></div>
+  </header>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-obj" aria-selected="true">Objects</button>
+    <button role="tab" id="tab-lm" aria-selected="false">Landmarks</button>
+  </div>
+  <div id="content"><p class="sub">Loading…</p></div>
+  <p class="foot">To add an object: build it in <code>library/&lt;set&gt;/build.mjs</code>, list it in <code>library/index.json</code>, then run <code>node tools/bake_library.mjs</code>. The tests check every listed object has a shape and every shape matches its builder. Status: <b>approved</b>; <b>check</b> (changed since last seen); <b>rework</b>; <b>new</b> (not seen yet).</p>
+</div>
+
+<dialog id="dlg">
+  <div class="dhead"><div><span class="name" id="d-name"></span> <span class="id" id="d-id"></span></div><button id="d-close">Close</button></div>
+  <canvas id="view" aria-label="3D view of the object; drag to turn, scroll to zoom"></canvas>
+  <div class="dfoot" id="d-foot"></div>
+</dialog>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString("en-CA");
+const STATUS={approved:{label:"Approved",c:"--ok"},check:{label:"Check",c:"--check"},rework:{label:"Rework",c:"--rework"},new:{label:"New",c:"--new"}};
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
+function persp(f,a,n,fa){const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0]}
+function lookAt(e,c,u){const z=norm(sub(e,c)),x=norm(cross(u,z)),y=cross(z,x);return[x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*e[0]+x[1]*e[1]+x[2]*e[2]),-(y[0]*e[0]+y[1]*e[1]+y[2]*e[2]),-(z[0]*e[0]+z[1]*e[1]+z[2]*e[2]),1]}
+function mm(a,b){const r=new Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];r[i*4+j]=s}return r}
+function extent(m){let H=0,W=0,lo=0;for(let i=0;i<m.pos.length;i+=3){H=Math.max(H,m.pos[i+1]);lo=Math.min(lo,m.pos[i+1]);W=Math.max(W,Math.abs(m.pos[i]),Math.abs(m.pos[i+2]))}return{H,W:W*2,lo}}
+
+// ---- drawing: the app's own shading (face direction from screen slopes, 5-bit colour) ----
+function renderer(canvas,opts={}){
+  const gl=canvas.getContext("webgl2",{antialias:true,preserveDrawingBuffer:!!opts.keep});
+  if(!gl)return null;
+  const mk=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh};
+  const p=gl.createProgram();
+  gl.attachShader(p,mk(gl.VERTEX_SHADER,`#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; uniform mat4 uVP; uniform vec3 uEye; out vec3 vRel; out vec3 vCol;
+void main(){ vRel=aPos-uEye; vCol=aCol/255.0; gl_Position=uVP*vec4(aPos,1.0); }`));
+  gl.attachShader(p,mk(gl.FRAGMENT_SHADER,`#version 300 es
+precision highp float; in vec3 vRel; in vec3 vCol; uniform vec3 uSun; out vec4 o;
+void main(){ vec3 n=cross(dFdx(vRel),dFdy(vRel)); float l=length(n); n=l>1e-9?n/l:vec3(0,1,0);
+  if(dot(n,vRel)>0.0) n=-n; float lit=0.55+0.45*max(dot(n,uSun),0.0);
+  o=vec4(floor(vCol*lit*31.0+0.5)/31.0,1.0); }`));
+  gl.linkProgram(p);
+  const U={vp:gl.getUniformLocation(p,"uVP"),eye:gl.getUniformLocation(p,"uEye"),sun:gl.getUniformLocation(p,"uSun")};
+  const cache=new Map();
+  function upload(m){if(cache.has(m))return cache.get(m);
+    const R=extent(m),pos=[...m.pos],col=[...m.col],idx=[...m.idx],n=pos.length/3,g=Math.max(R.W,R.H*.45)*.75;
+    // a plain round patch of ground under it, for scale
+    pos.push(0,-.005,0);col.push(176,186,170);for(let k=0;k<24;k++){const a=k/24*Math.PI*2;pos.push(Math.cos(a)*g,-.005,Math.sin(a)*g);col.push(176,186,170)}
+    for(let k=0;k<24;k++)idx.push(n,n+1+k,n+1+(k+1)%24);
+    const vao=gl.createVertexArray();gl.bindVertexArray(vao);
+    const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(pos),gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+    const c=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,c);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(col),gl.STATIC_DRAW);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,0,0);
+    const e=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,e);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(idx),gl.STATIC_DRAW);
+    const r={vao,count:idx.length,R};cache.set(m,r);return r}
+  function draw(m,view){
+    const W=canvas.width,H=canvas.height;gl.viewport(0,0,W,H);
+    const bg=opts.bg||[.914,.933,.914];gl.clearColor(bg[0],bg[1],bg[2],1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);
+    const u=upload(m),R=u.R,c=[0,R.H*.45,0],rad=.5*Math.hypot(R.H,R.W)*1.08,fov=.6;
+    const d=(view.dist||1)*rad/Math.sin(fov/2),y=view.yaw,pt=view.pitch;
+    const eye=[c[0]+d*Math.cos(pt)*Math.sin(y),c[1]+d*Math.sin(pt),c[2]+d*Math.cos(pt)*Math.cos(y)];
+    gl.useProgram(p);gl.uniformMatrix4fv(U.vp,false,mm(persp(fov,W/H,d*.02,d*4),lookAt(eye,c,[0,1,0])));gl.uniform3fv(U.eye,eye);gl.uniform3fv(U.sun,norm([.5,.75,.35]));
+    gl.bindVertexArray(u.vao);gl.drawElements(gl.TRIANGLES,u.count,gl.UNSIGNED_INT,0);
+  }
+  return{draw,gl};
+}
+const thumbCanvas=document.createElement("canvas");thumbCanvas.width=192;thumbCanvas.height=192;
+const thumbs=renderer(thumbCanvas,{keep:true});
+function picture(m){if(!thumbs)return"";thumbs.draw(m,{yaw:.65,pitch:.28,dist:1});return thumbCanvas.toDataURL("image/png")}
+
+// ---- data: from the repo files, or carried in the page ----
+async function load(){
+  if(window.LIBRARY_INLINE)return window.LIBRARY_INLINE;
+  const get=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(`${u}: ${r.status}`);return r.json()};
+  const index=await get("library/index.json"),models={};
+  for(const s of index.sets)models[s.id]=await get(`library/${s.id}/models.json`);
+  let landmarks=[];
+  try{const ids=await get("landmarks/index.json");landmarks=await Promise.all(ids.map(async id=>({id,info:await get(`landmarks/${id}/landmark.json`),model:await get(`landmarks/${id}/model.json`)})))}catch(e){landmarks=null}
+  return{index,models,landmarks};
+}
+
+let DATA=null,tab="obj",filter=null;
+const statusChip=s=>{const S=STATUS[s]||{label:s,c:"--muted"};return`<span class="status"><span class="dot" style="background:var(${S.c})"></span>${S.label}</span>`};
+const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const size=m=>{const R=extent(m);return`${R.H<10?R.H.toFixed(1):fmt(R.H)} × ${R.W<10?R.W.toFixed(1):fmt(R.W)}`};
+const pics=new Map();
+const picOf=(key,m)=>{if(!pics.has(key))pics.set(key,picture(m));return pics.get(key)};
+
+function renderCounts(){
+  const all=DATA.index.sets.flatMap(s=>s.models),n=k=>all.filter(e=>e.status===k).length;
+  $("counts").innerHTML=`<button data-s="" aria-pressed="${!filter}">All <b>${all.length}</b></button>`+Object.entries(STATUS).map(([k,S])=>`<button data-s="${k}" aria-pressed="${filter===k}"><span class="dot" style="background:var(${S.c})"></span>${S.label} <b>${n(k)}</b></button>`).join("");
+}
+function render(){
+  renderCounts();
+  const box=$("content");
+  if(tab==="obj"){
+    box.innerHTML=DATA.index.sets.map(s=>{const rows=s.models.filter(e=>!filter||e.status===filter);if(!rows.length)return"";
+      return`<h2>${esc(s.name)}</h2><div class="tablebox"><table><thead><tr><th>Picture</th><th>Object</th><th>Stage</th><th>Map tag</th><th class="n">Height × width (m)</th><th class="n">Triangles</th><th>Status</th><th>Notes</th></tr></thead><tbody>`+
+      rows.map(e=>{const m=DATA.models[s.id][e.id];return`<tr><td><button class="pic" data-set="${s.id}" data-id="${e.id}" aria-label="Look at ${esc(e.name)}"><img alt="" src="${picOf(s.id+"/"+e.id,m)}"></button></td>
+        <td><div class="name">${esc(e.name)}</div><div class="id">${esc(s.id)}/${esc(e.id)}</div></td><td>${esc(e.stage)}</td><td class="osm">${esc(e.osm)}</td>
+        <td class="n">${size(m)}</td><td class="n">${fmt(m.tris)}</td><td>${statusChip(e.status)}</td><td class="notes">${esc(e.notes)}</td></tr>`}).join("")+`</tbody></table></div>`}).join("")||`<p class="sub">Nothing with that status.</p>`;
+  }else{
+    if(!DATA.landmarks){box.innerHTML=`<p class="err">The landmark files could not be read.</p>`;return}
+    box.innerHTML=`<h2>Landmarks</h2><div class="tablebox"><table><thead><tr><th>Picture</th><th>Landmark</th><th>City</th><th class="n">Height (m)</th><th class="n">Triangles</th><th class="n">Where</th><th class="n">Facing</th></tr></thead><tbody>`+
+      DATA.landmarks.map(L=>`<tr><td><button class="pic" data-lm="${L.id}" aria-label="Look at ${esc(L.info.name)}"><img alt="" src="${picOf("lm/"+L.id,L.model)}"></button></td>
+        <td><div class="name">${esc(L.info.name)}</div><div class="id">landmarks/${esc(L.id)}</div></td><td>${esc(L.info.city)}</td><td class="n">${fmt(L.info.height)}</td><td class="n">${fmt(L.model.tris)}</td>
+        <td class="n">${L.info.lat.toFixed(5)}, ${L.info.lon.toFixed(5)}</td><td class="n">${L.info.yawDeg??0}°</td></tr>`).join("")+`</tbody></table></div>`;
+  }
+}
+$("counts").onclick=e=>{const b=e.target.closest("button");if(!b)return;filter=b.dataset.s||null;render()};
+for(const[id,t]of[["tab-obj","obj"],["tab-lm","lm"]])$(id).onclick=()=>{tab=t;$("tab-obj").setAttribute("aria-selected",String(t==="obj"));$("tab-lm").setAttribute("aria-selected",String(t==="lm"));render()};
+
+// ---- the close look ----
+const viewCanvas=$("view");let viewer=null,current=null;const vcam={yaw:.65,pitch:.28,dist:1};
+function drawView(){if(!viewer||!current)return;const dpr=Math.min(devicePixelRatio||1,2);viewCanvas.width=Math.round(viewCanvas.clientWidth*dpr);viewCanvas.height=Math.round(viewCanvas.clientHeight*dpr);viewer.draw(current,vcam)}
+$("content").onclick=e=>{const b=e.target.closest(".pic");if(!b)return;
+  let m,name,id,foot;
+  if(b.dataset.lm){const L=DATA.landmarks.find(x=>x.id===b.dataset.lm);m=L.model;name=L.info.name;id="landmarks/"+L.id;foot=`${fmt(L.info.height)} m tall · ${fmt(m.tris)} triangles`}
+  else{const s=DATA.index.sets.find(x=>x.id===b.dataset.set),en=s.models.find(x=>x.id===b.dataset.id);m=DATA.models[s.id][en.id];name=en.name+(en.stage?`, ${en.stage}`:"");id=s.id+"/"+en.id;foot=`${size(m)} m · ${fmt(m.tris)} triangles · ${STATUS[en.status]?.label||en.status}${en.notes?" · "+en.notes:""}`}
+  $("d-name").textContent=name;$("d-id").textContent=id;$("d-foot").textContent=foot+" · Drag to turn, scroll to zoom.";
+  current=m;Object.assign(vcam,{yaw:.65,pitch:.28,dist:1});$("dlg").showModal();
+  if(!viewer)viewer=renderer(viewCanvas,{bg:[.914,.933,.914]});requestAnimationFrame(drawView)};
+$("d-close").onclick=()=>$("dlg").close();
+let drag=null;
+viewCanvas.addEventListener("pointerdown",e=>{viewCanvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY}});
+viewCanvas.addEventListener("pointerup",()=>drag=null);
+viewCanvas.addEventListener("pointermove",e=>{if(!drag)return;vcam.yaw-=(e.clientX-drag.x)*.008;vcam.pitch=Math.max(-.2,Math.min(1.5,vcam.pitch+(e.clientY-drag.y)*.006));drag={x:e.clientX,y:e.clientY};drawView()});
+viewCanvas.addEventListener("wheel",e=>{e.preventDefault();vcam.dist=Math.max(.15,Math.min(4,vcam.dist*Math.exp(e.deltaY*.0012)));drawView()},{passive:false});
+addEventListener("resize",drawView);
+
+load().then(d=>{DATA=d;render()}).catch(e=>{$("content").innerHTML=`<p class="err">Could not load the library: ${esc(e.message)}. Open this page through the app's server (serve.bat), not as a file.</p>`});
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+{
+ "note": "Every object the app can draw from the library. status: approved, check (changed since last seen), rework, new (not yet seen).",
+ "sets": [
+  {
+   "id": "playground",
+   "name": "Playground",
+   "models": [
+    {
+     "id": "swing",
+     "name": "Swing",
+     "osm": "playground=swing",
+     "stage": "",
+     "status": "approved",
+     "notes": "Two seats, nothing moves."
+    },
+    {
+     "id": "slide",
+     "name": "Slide",
+     "osm": "playground=slide",
+     "stage": "",
+     "status": "approved",
+     "notes": "Ladder to 1.5 m and a 45° ramp. Shares the ladder with the climbing frame."
+    },
+    {
+     "id": "climbingframe",
+     "name": "Climbing frame",
+     "osm": "playground=climbingframe",
+     "stage": "",
+     "status": "approved",
+     "notes": "Three ladders: two upright, one across the top. 2 m tall and wide."
+    },
+    {
+     "id": "sandpit",
+     "name": "Sandpit",
+     "osm": "playground=sandpit",
+     "stage": "",
+     "status": "approved",
+     "notes": ""
+    }
+   ]
+  },
+  {
+   "id": "trees",
+   "name": "Trees",
+   "models": [
+    {
+     "id": "spire-1",
+     "name": "Spire (spruce, fir)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "sapling",
+     "status": "check",
+     "notes": "3 layers. Height variation added between layers; check it."
+    },
+    {
+     "id": "spire-2",
+     "name": "Spire (spruce, fir)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "young",
+     "status": "check",
+     "notes": "5 layers. Height variation added; check it."
+    },
+    {
+     "id": "spire-3",
+     "name": "Spire (spruce, fir)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "mature",
+     "status": "check",
+     "notes": "7 layers. Height variation added; check it."
+    },
+    {
+     "id": "spire-4",
+     "name": "Spire (spruce, fir)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "old",
+     "status": "check",
+     "notes": "9 layers. Height variation added; check it."
+    },
+    {
+     "id": "spire-far",
+     "name": "Spire (spruce, fir)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "pine-1",
+     "name": "Pine",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "sapling",
+     "status": "check",
+     "notes": "Uneven rings of clumps; redone, not yet seen."
+    },
+    {
+     "id": "pine-2",
+     "name": "Pine",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "pole",
+     "status": "check",
+     "notes": "Uneven rings of clumps; redone, not yet seen."
+    },
+    {
+     "id": "pine-3",
+     "name": "Pine",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "mature",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "pine-4",
+     "name": "Pine",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "old",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "pine-far",
+     "name": "Pine",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "far away",
+     "status": "rework",
+     "notes": "Looks wrong on the mountain. Rethink with the pines as a whole."
+    },
+    {
+     "id": "column-1",
+     "name": "Column (cedar, cypress)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "sapling",
+     "status": "check",
+     "notes": "Zig-zag added to the middle rings; check it."
+    },
+    {
+     "id": "column-2",
+     "name": "Column (cedar, cypress)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "young",
+     "status": "check",
+     "notes": "Zig-zag added to the middle rings; check it."
+    },
+    {
+     "id": "column-3",
+     "name": "Column (cedar, cypress)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "mature",
+     "status": "check",
+     "notes": "Zig-zag added to the middle rings; check it."
+    },
+    {
+     "id": "column-far",
+     "name": "Column (cedar, cypress)",
+     "osm": "natural=tree, leaf_type=needleleaved",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "round-1",
+     "name": "Round (maple, oak, lime)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "sapling",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "round-2",
+     "name": "Round (maple, oak, lime)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "young",
+     "status": "check",
+     "notes": "Branches added; check them."
+    },
+    {
+     "id": "round-3",
+     "name": "Round (maple, oak, lime)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "mature",
+     "status": "check",
+     "notes": "Branches added; check them."
+    },
+    {
+     "id": "round-4",
+     "name": "Round (maple, oak, lime)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "old",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "round-far",
+     "name": "Round (maple, oak, lime)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "oval-1",
+     "name": "Tall oval (poplar, birch)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "sapling",
+     "status": "check",
+     "notes": "Trunk now reaches into the foliage; check it."
+    },
+    {
+     "id": "oval-2",
+     "name": "Tall oval (poplar, birch)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "young",
+     "status": "check",
+     "notes": "Trunk now reaches into the foliage; check it."
+    },
+    {
+     "id": "oval-3",
+     "name": "Tall oval (poplar, birch)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "mature",
+     "status": "check",
+     "notes": "Trunk now reaches into the foliage; check it."
+    },
+    {
+     "id": "oval-4",
+     "name": "Tall oval (poplar, birch)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "old",
+     "status": "check",
+     "notes": "Trunk now reaches into the foliage; check it."
+    },
+    {
+     "id": "oval-far",
+     "name": "Tall oval (poplar, birch)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "spread-1",
+     "name": "Spreading (old oak, acacia)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "sapling",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "spread-2",
+     "name": "Spreading (old oak, acacia)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "young",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "spread-3",
+     "name": "Spreading (old oak, acacia)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "mature",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "spread-4",
+     "name": "Spreading (old oak, acacia)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "old",
+     "status": "approved",
+     "notes": ""
+    },
+    {
+     "id": "spread-far",
+     "name": "Spreading (old oak, acacia)",
+     "osm": "natural=tree, leaf_type=broadleaved",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "feather-1",
+     "name": "Feather palm (coconut)",
+     "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
+     "stage": "seedling",
+     "status": "check",
+     "notes": "Upper fronds droop more now; check it."
+    },
+    {
+     "id": "feather-2",
+     "name": "Feather palm (coconut)",
+     "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
+     "stage": "young, no trunk",
+     "status": "check",
+     "notes": "Upper fronds droop more now; check it."
+    },
+    {
+     "id": "feather-3",
+     "name": "Feather palm (coconut)",
+     "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
+     "stage": "trunked",
+     "status": "check",
+     "notes": "Upper fronds droop more now; check it."
+    },
+    {
+     "id": "feather-4",
+     "name": "Feather palm (coconut)",
+     "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
+     "stage": "mature",
+     "status": "check",
+     "notes": "Upper fronds droop more now; check it."
+    },
+    {
+     "id": "feather-far",
+     "name": "Feather palm (coconut)",
+     "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    },
+    {
+     "id": "fan-1",
+     "name": "Fan palm (Washingtonia)",
+     "osm": "natural=tree, leaf_type=palm (rare)",
+     "stage": "seedling",
+     "status": "new",
+     "notes": "Rebuilt from photos; not yet seen."
+    },
+    {
+     "id": "fan-2",
+     "name": "Fan palm (Washingtonia)",
+     "osm": "natural=tree, leaf_type=palm (rare)",
+     "stage": "young, no trunk",
+     "status": "new",
+     "notes": "Rebuilt from photos; not yet seen."
+    },
+    {
+     "id": "fan-3",
+     "name": "Fan palm (Washingtonia)",
+     "osm": "natural=tree, leaf_type=palm (rare)",
+     "stage": "trunked",
+     "status": "new",
+     "notes": "Rebuilt from photos; not yet seen."
+    },
+    {
+     "id": "fan-4",
+     "name": "Fan palm (Washingtonia)",
+     "osm": "natural=tree, leaf_type=palm (rare)",
+     "stage": "mature",
+     "status": "new",
+     "notes": "Rebuilt from photos; not yet seen."
+    },
+    {
+     "id": "fan-far",
+     "name": "Fan palm (Washingtonia)",
+     "osm": "natural=tree, leaf_type=palm (rare)",
+     "stage": "far away",
+     "status": "new",
+     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+    }
+   ]
+  }
+ ]
+}
