@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gallivantage</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9eb3cc; }
+  body { font: 12px/1.5 ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; color: #fff; }
+  #c { display: block; width: 100vw; height: 100vh; cursor: pointer; }
+  /* :has() means the cursor can only hide while a lock is actually held. */
+  body.locked #c { cursor: none; }
+  #overlay { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
+  #overlay polyline, #overlay line { fill: none; stroke: #ffd479; stroke-width: 2; }
+  #overlay line.next { stroke-dasharray: 6 5; opacity: .8; }
+  #overlay circle { fill: #ffd479; }
+  html:not(:has(#c)) , body:not(.locked) #c { cursor: pointer; }
+  .panel {
+    position: fixed; background: rgba(12,16,22,.72); padding: 6px 10px;
+    border-radius: 4px; pointer-events: none; white-space: nowrap;
+  }
+  /* The status bar wraps onto more lines rather than running off the screen.
+     Each item stays whole; it stops short of the button column on the right. */
+  #hud { left: 10px; bottom: 34px; white-space: normal; max-width: calc(100vw - 190px); }
+  #hud .it { display: inline-block; white-space: nowrap; }
+  #hud .sep { color: #6d7d90; margin: 0 6px; }
+  #hud .ok { color: #6be08a; }
+  #attrib { left: 10px; bottom: 10px; opacity: .75; font-size: 10px; padding: 3px 10px; }
+  #perf { position: fixed; left: 10px; bottom: 74px; border-radius: 4px; pointer-events: none; }
+  #perf.hide { display: none; }
+  .listpanel { position: fixed; right: 10px; top: 52px; width: 210px; z-index: 5;
+          background: rgba(12,16,22,.78); border-radius: 4px; font-size: 12px; }
+  .listpanel button, .listpanel input { font: inherit; color: #dbe3ec; background: none; border: 0; cursor: pointer; }
+  .listpanel .fhead { display: flex; justify-content: space-between; padding: 4px 6px; }
+  .listpanel .ftitle { font-weight: 600; padding: 2px 4px; }
+  .listpanel .fpin { border: 1px solid #3a4552; border-radius: 3px; padding: 1px 8px; color: #ffd479; }
+  .listpanel .flist { max-height: 40vh; overflow-y: auto; border-top: 1px solid #2a3340; padding: 3px 0; }
+  .listpanel .frow { display: flex; align-items: center; }
+  .listpanel .fgo { flex: 1; text-align: left; padding: 4px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .listpanel .fgo:hover { background: #2a4f6b; }
+  .listpanel .fstar { padding: 4px 6px; color: #6d7d90; }
+  .listpanel .fstar.on { color: #ffd479; }
+  .listpanel .fdel { padding: 4px 8px; color: #8b97a6; }
+  .listpanel .fdel:hover, .listpanel .fdel.armed { color: #ff6b60; }
+  .listpanel .fname { flex: 1; margin: 2px 6px; padding: 3px 6px; background: #1d2530; border: 1px solid #5aa0d0; border-radius: 3px; cursor: text; min-width: 0; }
+  .listpanel .fempty { padding: 6px 10px; color: #93a1b2; white-space: normal; }
+  .listpanel .freach { font: inherit; color: #dbe3ec; background: #1d2530; border: 1px solid #3a4552; border-radius: 3px; margin-right: 6px; }
+  .listpanel .fres .fgo { width: 100%; }
+  .listpanel .fglass { padding: 0 6px 0 0; }
+  .listpanel button:focus-visible, .listpanel select:focus-visible { outline: 1px solid #ffd479; outline-offset: 1px; }
+  .listpanel .fabout { padding: 0 8px 4px; color: #6d7d90; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.locked .listpanel { opacity: .55; }
+  /* PLACES in Navigation, PIECES (pieces of ground) in Tools, in the same spot. */
+  body.tools #favs, body:not(.tools) #pieces { display: none; }
+  /* The key menu: a column down the left, one key per row, under headings.
+     On a short screen it splits into two columns rather than running into
+     the status bar. */
+  /* The key menus: one per mode, stacked. The current mode's is in front; the
+     other sits behind, shifted down and right so its title peeks out below. */
+  #menus { position: fixed; left: 10px; top: 10px; }
+  #menus.hide { display: none; }
+  #menus .menu { position: absolute; left: 0; top: 0; padding: 4px 10px 6px; line-height: 1.45;
+                 background: rgba(12,16,22,.86); }
+  #menus .menu.front { z-index: 2; }
+  #menus .menu.back { z-index: 1; left: 10px; top: 24px; overflow: hidden; background: rgba(42,51,64,.9);
+                      pointer-events: auto; cursor: pointer; display: flex; flex-direction: column; }
+  #menus .menu.back > :not(.mtitle) { display: none; }
+  #menus .menu.back .mtitle { margin-top: auto; }
+  #menus .mtitle { color: #ffd479; font-size: 10px; letter-spacing: .12em; font-weight: 600;
+                   margin-top: 6px; display: flex; justify-content: space-between; gap: 12px; }
+  #menus .mtitle span { color: #6d7d90; letter-spacing: 0; font-weight: 400; }
+  #menus .menu.front .mtitle { color: #93a1b2; }
+  #menus .grp { break-inside: avoid; display: grid; grid-template-columns: max-content auto; column-gap: 12px; }
+  #menus .gh { grid-column: 1 / -1; color: #93a1b2; font-size: 10px; letter-spacing: .08em;
+              text-transform: uppercase; margin: 6px 0 1px; border-bottom: 1px solid #2a3340; }
+  #menus .row { display: contents; }
+  #menus .k { color: #93a1b2; }
+  #menus b { color: #ffd479; font-weight: 600; }
+  #drop { left: 50%; top: 10px; transform: translateX(-50%); color: #ffd479; }
+  #drop.hide { display: none; }
+  @media (max-height: 760px) { #menus .menu.front { column-count: 2; column-gap: 18px; } }
+  #ctrl {
+    position: fixed; right: 10px; top: 10px; background: rgba(12,16,22,.72);
+    padding: 6px 10px; border-radius: 4px; display: flex; gap: 8px; align-items: center;
+  }
+  #ctrl input { width: 90px; }
+  #cross {
+    position: fixed; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px;
+    background: rgba(255,255,255,.65); border-radius: 50%; pointer-events: none; display: none;
+  }
+  body.locked #cross { display: block; }
+  /* One bottom-anchored column. The old version positioned each block with its
+     own hardcoded bottom offset, so adding a row silently overlapped the next
+     block. Flex makes that impossible rather than merely unlikely. */
+  #ui { position:fixed; right:14px; bottom:44px; width:136px;
+        display:flex; flex-direction:column; gap:6px; align-items:stretch; }
+  #ui .grid { display:grid; gap:5px; }
+  #layers, #looks { grid-template-columns:repeat(2,1fr); }
+  #ui .panelhead { font:600 10px ui-monospace,monospace; color:#dbe3ec; letter-spacing:.08em; text-align:center;
+                   background:rgba(12,16,22,.78); border-radius:4px; padding:3px 0; margin-top:4px; }
+  #pad    { grid-template-columns:repeat(3,1fr); }
+  #ui button { font:600 11px ui-monospace,monospace; color:#8b97a6; cursor:pointer;
+               background:rgba(12,16,22,.78); border:1px solid #3a4552;
+               border-radius:4px; padding:7px 0; text-align:center; }
+  #ui button:hover { border-color:#6d7d90; }
+  #pad button { color:#dbe3ec; }
+  #pad button.on { background:#2f6b45; border-color:#4ac07a; color:#fff; }
+  #layers button.on, #looks button.on { background:#2a4f6b; border-color:#5aa0d0; color:#fff; }
+  #ui button.wide { grid-column:1 / -1; }
+  body.locked #ui button { cursor:default; opacity:.9; }
+
+  /* Aviation directional gyro. The card is sized to fill the column width so
+     its outer ring lines up with the buttons above it. */
+  #compass { position:relative; width:136px; height:136px; }
+  #compass svg { width:100%; height:100%; display:block; }
+  #compass .face { fill:rgba(12,16,22,.78); stroke:#4a5666; stroke-width:1.5; }
+  #compass .tick { stroke:#c9d4e0; stroke-width:1.4; }
+  #compass .tickmaj { stroke:#fff; stroke-width:2.2; }
+  #compass .lab { fill:#e8eef5; font:400 12px ui-monospace,monospace; text-anchor:middle; }
+  #compass .card { fill:#ffd479; font:400 14px ui-monospace,monospace; text-anchor:middle; }
+  #compass .lub { fill:#ffd479; }
+  #hdg { position:absolute; left:0; right:0; top:57px; text-align:center;
+         font:400 21px ui-monospace,monospace; color:#fff; letter-spacing:.5px; }
+  #hdgsub { position:absolute; left:0; right:0; top:82px; text-align:center;
+            font:10px ui-monospace,monospace; color:#93a1b2; }
+
+  #loading {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    background: rgba(12,16,22,.85); padding: 14px 22px; border-radius: 5px;
+  }
+  #error {
+    position: fixed; inset: 24px; display: none; overflow: auto; z-index: 10;
+    background: #2a1212; color: #ffb4b4; padding: 20px; border-radius: 6px;
+    white-space: pre-wrap; border: 1px solid #6a2b2b;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="cross"></div>
+<!-- The outline being drawn in Tools mode (N). -->
+<svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+<div id="loading" class="panel">loading terrain&hellip;</div>
+
+<!-- Built from the key table in src/ui/keys.js. -->
+<div id="menus">
+  <div id="tools" class="panel menu"></div>
+  <div id="help" class="panel menu"></div>
+</div>
+<!-- What M (drop a landmark) is about to do. -->
+<div id="drop" class="panel hide"></div>
+
+<div id="ctrl">
+  <label for="levels">view</label>
+  <input id="levels" type="range" min="2" max="9" step="1" value="9">
+</div>
+
+<div id="favs" class="listpanel"></div>
+<div id="pieces" class="listpanel"></div>
+
+<div id="ui">
+  <div id="layers" class="grid"></div>
+
+  <div id="pad" class="grid">
+    <button data-hold="down" title="descend (Q or shift)">DN</button>
+    <button data-hold="boost" title="boost 4x (ctrl)">BOOST</button>
+    <button data-hold="up" title="ascend (E or space)">UP</button>
+    <button data-act="fly" class="wide" title="walk / fly (G)">FLY</button>
+    <button data-act="slower" title="slower (wheel down)">SPD &minus;</button>
+    <button data-act="fog" title="fog (F)">FOG</button>
+    <button data-act="faster" title="faster (wheel up)">SPD +</button>
+    <button data-act="grab" class="wide" title="fullscreen + keyboard lock">CAPTURE</button>
+  </div>
+
+  <div id="compass">
+    <svg viewBox="-68 -68 136 136" aria-hidden="true">
+      <circle class="face" cx="0" cy="0" r="66"></circle>
+      <g id="card"></g>
+      <polygon class="lub" points="0,-66 -7,-53 7,-53"></polygon>
+    </svg>
+    <div id="hdg">---</div>
+    <div id="hdgsub">HDG</div>
+  </div>
+</div>
+
+<canvas id="perf"></canvas>
+<div id="hud" class="panel">starting&hellip;</div>
+<div id="attrib" class="panel">Elevation: Mapzen / AWS Open Data Terrain Tiles &middot; Water: &copy; OpenStreetMap contributors, &copy; OpenMapTiles via OpenFreeMap</div>
+<div id="error"></div>
+
+<script>
+  window.addEventListener('keydown', function (e) {
+    // Last-resort cursor rescue, works even if the module never loaded.
+    if (e.code === 'Escape') {
+      document.body.classList.remove('locked');
+      if (document.pointerLockElement) document.exitPointerLock();
+    }
+  });
+  window.addEventListener('blur', function () {
+    document.body.classList.remove('locked');
+  });
+  window.addEventListener('error', function (e) {
+    var el = document.getElementById('error');
+    el.textContent = 'Error: ' + (e.message || e) + '\n\n' +
+      (e.filename ? e.filename + ':' + e.lineno : '') +
+      '\n\nIf this says "Failed to fetch" or mentions CORS, you are probably ' +
+      'opening the file directly. Serve the folder over HTTP instead:\n\n' +
+      '    caddy run      (in the Gallivantage folder; see the README)\n\nthen open http://localhost:8080/';
+    el.style.display = 'block';
+  });
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

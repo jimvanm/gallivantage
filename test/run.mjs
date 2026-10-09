@@ -1,7 +1,10 @@
 // Runs every test in this folder:   node test/run.mjs
-// Add a name to run only matching tests:   node test/run.mjs earth
-// Files starting with _ are shared helpers, not tests. Each test runs in its
-// own Node process, so what one fakes on the global object cannot leak.
+// Add a name to run only matching tests:   node test/run.mjs near
+// Files starting with _ are shared helpers, not tests.
+//
+// Each test runs in its own Node process, because each one fakes a different
+// slice of the browser (document, Worker, WebGL) on the global object, and
+// those fakes must not leak into each other.
 
 import { readdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
@@ -14,20 +17,33 @@ const files = readdirSync(here)
   .filter((f) => f.endsWith('.mjs') && f !== 'run.mjs' && !f.startsWith('_') && f.includes(only))
   .sort();
 
-const run = (file) => new Promise((resolve) => {
-  const child = spawn(process.execPath, [join(here, file)], { cwd: dirname(here) });
-  let out = '';
-  child.stdout.on('data', (d) => { out += d; });
-  child.stderr.on('data', (d) => { out += d; });
-  const timer = setTimeout(() => { out += '\n(timed out)'; child.kill(); }, 60000);
-  child.on('close', (code) => { clearTimeout(timer); resolve({ file, ok: code === 0, out }); });
-});
+const TIMEOUT_MS = 120000;
 
-let failed = 0;
-for (const f of files) {
-  const r = await run(f);
-  console.log((r.ok ? 'pass  ' : 'FAIL  ') + f);
-  if (!r.ok) { failed++; console.log(r.out.replace(/^/gm, '      ')); }
+function runOne(file) {
+  return new Promise((resolve) => {
+    const t0 = Date.now();
+    const child = spawn(process.execPath, [join(here, file)], { cwd: dirname(here) });
+    let out = '';
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { out += d; });
+    const timer = setTimeout(() => { out += '\n(timed out)'; child.kill(); }, TIMEOUT_MS);
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ file, ok: code === 0, out, ms: Date.now() - t0 });
+    });
+  });
 }
-console.log(`\n${files.length - failed} of ${files.length} passed`);
-process.exit(failed ? 1 : 0);
+
+const results = [];
+for (const f of files) {
+  const r = await runOne(f);
+  results.push(r);
+  console.log(`${r.ok ? 'pass' : 'FAIL'}  ${f.padEnd(22)} ${(r.ms / 1000).toFixed(1)} s`);
+}
+
+const failed = results.filter((r) => !r.ok);
+for (const r of failed) {
+  console.log(`\n---- ${r.file} ----\n${r.out.trim().split('\n').slice(-25).join('\n')}`);
+}
+console.log(`\n${results.length - failed.length} of ${results.length} passed`);
+process.exit(failed.length ? 1 : 0);
