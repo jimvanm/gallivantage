@@ -294,6 +294,37 @@ tiles. Decided: leave it as is for now, come back with walking.
       need a design review before more fixes (see the newest handover).
 - [ ] Other countries' surveys (US 3DEP, much of Europe), later.
 
+## Roads built to rules (road lab, 0.14.5; not in the app yet)
+
+`roadlab.html`: today's draped roads beside roads built the way engineers
+build them (`src/roadrules.js`, shapes in `src/roadshape.js`). Notes and
+reasoning: the project's `ROADS-DRAFT.md`.
+
+- Each kind of road (from the map's classes) has a design speed, a steepest
+  grade and how gently it must round off over a hilltop or through a dip
+  (`KINDS`). Its height line follows the ground as closely as those allow.
+- Higher kinds first; lower ones meet them at junctions and give way at
+  crossings. Which is on top: the map's bridge/tunnel tags and layers, then
+  the ground just beyond the other road (approach mounds = over, cutting =
+  under), then "a motorway never meets anything level".
+- More than 10 m of earth: a bridge; a cutting deeper than 18 m: a tunnel.
+  Elsewhere the ground is cut and filled (sides 1 in 2). Roads left in the
+  air become decks with piers.
+- Creeks: the road does not dip into them (culvert); rivers, canals and the
+  map's water are bridged.
+- [ ] Jim to look at the 407 at Brock Road and Campbellford with real data.
+- [ ] Roads are joined across tiles only within the lab's area. In the app,
+      a road's height line must agree at tile edges (the same road, worked
+      out from different tiles, must come out the same).
+- [ ] Divided roads: each half gets its own height line; they may differ a
+      little.
+- [ ] Bends: the map's line is straight pieces, so the tightest-curve rule
+      is only a hint (off by default in the lab). Smoothing the line in plan
+      is not done.
+- [ ] Urban streets: their own rules (follow the ground, buildings fixed,
+      junctions everywhere, sidewalks). Not started.
+- [ ] Then into the app (the one ground), then physics and a car.
+
 ## Untested, in rough order of risk
 
 - [ ] **Antimeridian crossing.** Flown once (Naples to Banff eastward) with no
