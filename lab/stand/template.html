@@ -475,6 +475,7 @@ function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s=
   else{settings.range=2500;settings.near=200}
   $("range").value=settings.range;$("near").value=settings.near;showRange();plant(true)}
 $("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");$("s-vines").onclick=()=>setScene("vines");
+$("s-vines").hidden=!(LIB.extra||[]).some(e=>e.vineyard);   // only when there is a vineyard trial to plant
 
 // ================= frame =================
 const SKY=[.73,.83,.91],SUN=norm([.5,.75,.35]);
