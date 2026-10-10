@@ -20,45 +20,30 @@ body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--body)}
 .app{display:grid;grid-template-columns:minmax(0,1fr) 360px;height:100%}
 .stage{position:relative;min-width:0;overflow:hidden;background:#b9d3e6}
 canvas{display:block;width:100%;height:100%}
-.hud{position:absolute;top:10px;left:10px;font:600 13px var(--mono);color:#14211b;background:rgba(255,255,255,.85);padding:4px 9px;border-radius:4px;pointer-events:none;white-space:pre}
+.hud{position:absolute;top:10px;left:10px;font:400 13px var(--mono);color:#14211b;background:rgba(255,255,255,.85);padding:4px 9px;border-radius:4px;pointer-events:none;white-space:pre}
 .cross{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;pointer-events:none}
 .cross::before,.cross::after{content:"";position:absolute;background:rgba(255,255,255,.9);box-shadow:0 0 2px #000}
 .cross::before{left:6px;top:0;width:2px;height:14px}.cross::after{top:6px;left:0;height:2px;width:14px}
 .hint{position:absolute;left:10px;right:10px;bottom:26px;font-size:12px;color:#14211b;pointer-events:none}
 .hint span{background:rgba(255,255,255,.82);padding:3px 8px;border-radius:4px;display:inline-block}
 .credit{position:absolute;right:8px;bottom:4px;font-size:11px;color:#14211b;background:rgba(255,255,255,.7);padding:1px 6px;border-radius:3px;pointer-events:none}
-#busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,30,25,.35);color:#fff;font:700 18px var(--body);text-align:center;padding:20px}
+#busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,30,25,.35);color:#fff;font:400 18px var(--mono);text-align:center;padding:20px}
 #busy[hidden]{display:none}
-.panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.3}
-h1{font-size:17px;margin:0}
-.lede{margin:2px 0 0;color:var(--muted);font-size:12px}
-details{border-top:1px solid var(--line);padding-top:5px}
-summary{cursor:pointer;font:700 11px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;list-style:none}
-summary::before{content:"▸ ";} details[open]>summary::before{content:"▾ ";}
-.help{color:var(--muted);font-size:11.5px;margin:0 0 4px}
-.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:3px}
-.row label{font-weight:600}
-output{font:11.5px var(--mono);color:var(--muted);white-space:nowrap}
-select,input[type=text]{font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--fg)}
-input[type=text]{width:100%}
-input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:14px;display:block}
-.check{display:inline-flex;gap:5px;align-items:center;font-weight:600;margin-right:12px}
-.chips{display:flex;flex-wrap:wrap;gap:5px}
-.chips button,.btn{font:600 11.5px var(--body);padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer}
-button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-dl{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;margin:0}
-dt{color:var(--muted)} dd{margin:0;font:11.5px var(--mono);text-align:right}
-.mix{display:grid;grid-template-columns:auto 1fr 3em;gap:1px 6px;align-items:center;font-size:12px;margin-top:4px}
-.bar{height:6px;border-radius:3px;background:var(--accent)}
-.note{color:var(--muted);font-size:11.5px;margin:0}
-.settings{font:11px var(--mono);word-break:break-all;background:var(--chip);padding:4px 6px;border-radius:5px;user-select:all;margin-top:3px}
-/* the distance strip: what you see, near to far */
-.strip{position:relative;height:16px;border-radius:4px;overflow:hidden;margin:2px 0 1px;background:#7f8f62}
-.strip span{position:absolute;top:0;bottom:0}
-.ticks{position:relative;height:13px;font:10.5px var(--mono);color:var(--muted)}
-.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
-.legend{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted);margin-bottom:3px}
-.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+/* The panel: one font, plain controls, one line a setting. */
+.panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:6px 8px;font:12px/1.25 var(--mono)}
+.panel,.panel *{font-weight:normal}   /* no bold: headings are in capitals instead */
+.panel h1{font-size:13px;margin:0 0 2px}
+.panel h2{font-size:12px;margin:6px 0 2px;padding-top:4px;border-top:1px solid var(--line)}
+.r{display:grid;grid-template-columns:minmax(0,1fr) 92px 64px;gap:4px;align-items:center;margin:1px 0}
+.r label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r output{text-align:right;white-space:nowrap}
+.panel input[type=range]{width:100%;margin:0;height:13px}
+.panel button,.panel select,.panel input[type=text]{font:inherit;margin:1px 2px 1px 0}
+.panel input[type=text]{width:100%}
+.panel dl{display:grid;grid-template-columns:auto 1fr;gap:0 6px;margin:0}
+.panel dd{margin:0;text-align:right}
+.panel .settings{word-break:break-all;user-select:all;margin:2px 0}
+.panel label.c{margin-right:8px;white-space:nowrap}
 @media (max-width:820px){.app{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}.stage{height:60vh}.panel{border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
@@ -73,37 +58,29 @@ dt{color:var(--muted)} dd{margin:0;font:11.5px var(--mono);text-align:right}
     <div class="credit">Ground: Mapzen / AWS Terrain Tiles · Map: © OpenStreetMap contributors, © OpenMapTiles via OpenFreeMap · Climate zones: Rubel et al. 2017</div>
   </div>
   <aside class="panel" id="panel">
-    <header><h1>Biome Lab</h1><p class="lede">Trees worked out on the spot from the climate zone, height, slope and the map. Nothing is stored: a tile's trees come from its address, the same every visit.</p></header>
-    <details open><summary>Place</summary>
-      <div class="chips" id="places"></div>
-      <div class="row"><input type="text" id="ll" placeholder="or type lat, lon and press Enter" spellcheck="false"></div>
-      <div class="row"><label for="size">Area</label>
-        <select id="size"><option value="6000">6 km square</option><option value="8000">8 km square</option><option value="10000" selected>10 km square</option><option value="14000">14 km square</option><option value="20000">20 km square</option><option value="30000">30 km square</option></select></div>
-    </details>
-    <details open><summary id="read-h">Where you look</summary>
-      <dl id="read"></dl>
-      <div class="mix" id="mix"></div>
-    </details>
-    <details open><summary>Distance: what you see, near to far</summary>
-      <p class="help">Each stage hands over to the next gradually, tree by tree, so no edge follows you.</p>
-      <div class="strip" id="strip"></div><div class="ticks" id="ticks"></div>
-      <div class="legend"><span><i style="background:#1f5130"></i>detailed trees</span><span><i style="background:#3f7a48"></i>simple trees</span><span><i style="background:#8fc27a"></i>soft dots</span><span><i style="background:#7f8f62"></i>canopy</span></div>
-      <div id="dist"></div>
-      <div style="margin-top:4px"><label class="check"><input type="checkbox" id="show-trees" checked> Trees</label><label class="check"><input type="checkbox" id="show-dots" checked> Dots</label><label class="check"><input type="checkbox" id="show-canopy" checked> Canopy</label><label class="check"><input type="checkbox" id="show-vines" checked> Vines</label></div>
-    </details>
-    <details open><summary>Forest: how many trees</summary><div id="g-forest"></div></details>
-    <details open><summary>Mountains and slopes</summary><div id="g-mountain"></div></details>
-    <details><summary>Climate zones and vineyards</summary><div id="g-other"></div>
-      <div class="row"><label for="vsp">Vine rows apart</label><output id="vsp-o"></output></div>
-      <input type="range" id="vsp" min="1.2" max="3.5" step="0.1" value="2.6">
-    </details>
-    <details open><summary>Settings line</summary>
-      <p class="help">What the app would use: only what differs from the start.</p>
-      <div class="settings" id="settings"></div>
-      <div class="row"><button class="btn" id="reset">Back to the starting settings</button></div>
-    </details>
-    <details open><summary>What it costs</summary><dl id="costs"></dl></details>
-    <p class="note">Trees and vines are the library's (<code>library/</code>). Rules: <code>src/biome.js</code>, <code>src/vines.js</code>; zones: <code>src/zones.js</code>.</p>
+    <h1>BIOME LAB</h1>
+    <h2>PLACE</h2>
+    <div id="places"></div>
+    <input type="text" id="ll" placeholder="lat, lon + Enter" spellcheck="false">
+    <div class="r"><label for="size">Area</label><span></span><select id="size"><option value="6000">6 km</option><option value="8000">8 km</option><option value="10000" selected>10 km</option><option value="14000">14 km</option><option value="20000">20 km</option><option value="30000">30 km</option></select></div>
+    <h2 id="read-h">WHERE YOU LOOK</h2>
+    <dl id="read"></dl>
+    <div id="mix"></div>
+    <h2>DISTANCE (NEAR TO FAR)</h2>
+    <div id="dist"></div>
+    <div><label class="c"><input type="checkbox" id="show-trees" checked>Trees</label><label class="c"><input type="checkbox" id="show-dots" checked>Dots</label><label class="c"><input type="checkbox" id="show-canopy" checked>Canopy</label><label class="c"><input type="checkbox" id="show-vines" checked>Vines</label></div>
+    <h2>FOREST</h2>
+    <div id="g-forest"></div>
+    <h2>MOUNTAINS AND SLOPES</h2>
+    <div id="g-mountain"></div>
+    <h2>CLIMATE AND VINES</h2>
+    <div id="g-other"></div>
+    <div class="r"><label for="vsp">Vine rows apart</label><input type="range" id="vsp" min="1.2" max="3.5" step="0.1" value="2.6"><output id="vsp-o"></output></div>
+    <h2>SETTINGS LINE</h2>
+    <div class="settings" id="settings"></div>
+    <button id="reset">Reset all</button>
+    <h2>COST</h2>
+    <dl id="costs"></dl>
   </aside>
 </div>
 
@@ -415,11 +392,16 @@ function naturalRGB(zone) {
   return [100, 132, 68];
 }
 // Each tree style's look from afar: the average colour of its far shape, and its usual grown height.
+// The leaf colour (green corners only, as the dots use), so the canopy and the dots match where they meet.
 const KIND_FAR = TREE_KINDS.map((k, ki) => {
-  const m = LIB[`${k}-far`] || LIB[KINDS[ki].stages[KINDS[ki].stages.length - 1]], c = [0, 0, 0];
-  for (let i = 0; i < m.col.length; i += 3) for (let q = 0; q < 3; q++) c[q] += m.col[i + q];
+  const m = LIB[`${k}-far`] || LIB[KINDS[ki].stages[KINDS[ki].stages.length - 1]], c = [0, 0, 0], all = [0, 0, 0];
+  let n = 0;
+  for (let i = 0; i < m.col.length; i += 3) {
+    for (let q = 0; q < 3; q++) all[q] += m.col[i + q];
+    if (m.col[i + 1] > m.col[i] * 1.05) { for (let q = 0; q < 3; q++) c[q] += m.col[i + q]; n++; }
+  }
   const sh = KINDS[ki].shapes;
-  return { rgb: c.map((v) => v / (m.col.length / 3)), H: sh.reduce((t, s) => t + s.H, 0) / sh.length };
+  return { rgb: n ? c.map((v) => v / n) : all.map((v) => v / (m.col.length / 3)), H: sh.reduce((t, s) => t + s.H, 0) / sh.length };
 });
 // Treetops are not one colour: a fixed speckle per grid point (no random numbers, so it never changes).
 const speckle = (i, j) => { let h = Math.imul(i, 374761393) + Math.imul(j, 668265263); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; };
@@ -442,7 +424,8 @@ function colourGround() {
       const rgb = [0, 0, 0]; let H = 0;
       s.mix.forEach((m, ki) => { if (m) { for (let q = 0; q < 3; q++) rgb[q] += m * KIND_FAR[ki].rgb[q]; H += m * KIND_FAR[ki].H; } });
       // lit crowns average about their own colour; speckle it brighter and darker, crown by crown
-      const sp = 0.78 + 0.42 * speckle(i, j);
+      // Dots are shaded as balls (on average about 0.8 of full light) where the ground is lit flat: darken to match.
+      const sp = (0.6 + 0.5 * speckle(i, j)) * 0.8;
       for (let q = 0; q < 3; q++) can[k * 4 + q] = Math.min(255, rgb[q] * sp);
       can[k * 4 + 3] = Math.round(255 * Math.min(1, s.density * 0.9));
       canH[k] = H * s.size * (0.45 + 0.6 * speckle(j + 7919, i));   // bumpy, like a field of crowns
@@ -499,7 +482,7 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 5000, dotFade: 0.6, thinFrom: 2500 };
+const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 10000, dotFade: 0.6, thinFrom: 2500 };
 const VIEW0 = { ...settings };
 // The share of trees kept as dots at distance d (fewer, bigger, past thinFrom), and the tile level that covers it.
 const thinAt = (d) => d <= settings.thinFrom ? 1 : Math.max(1 / 64, (settings.thinFrom / d) ** 3);
@@ -678,36 +661,36 @@ function buildFar(eye, now) {
 }
 
 // ================= the panel =================
-// Rules (what grows where) in two groups; distances (how far each stage reaches) with the strip.
+// Rules (what grows where) in two groups; distances (how far each stage reaches), in the order you meet them going outward.
 const RULE_UI = {
   'g-forest': [
-    ['density', 'Forest density', 'Trees a hectare in a full forest. More makes a closed canopy.', 0.25, 8, 0.25, (v) => `${fmt(v * 100)} a ha`],
-    ['scatter', 'Trees outside mapped forest', 'On land the map says nothing about, as a share of a forest.', 0, 1, 0.05, (v) => `${fmt(v * 100)}%`],
-    ['spacing', 'Closest two trees', 'The tightest trees can stand; denser forests go closer by themselves.', 3, 12, 0.5, (v) => `${fmt(v, 1)} m`],
+    ['density', 'Density', 'Trees a hectare in a full forest. More makes a closed canopy.', 0.25, 8, 0.25, (v) => `${fmt(v * 100)}/ha`],
+    ['scatter', 'Outside mapped forest', 'On land the map says nothing about, as a share of a forest.', 0, 1, 0.05, (v) => `${fmt(v * 100)}%`],
+    ['spacing', 'Closest spacing', 'The tightest trees can stand; denser forests go closer by themselves.', 3, 12, 0.5, (v) => `${fmt(v, 1)} m`],
   ],
   'g-mountain': [
     ['treeline', 'Treeline height', 'Times the latitude rule (about 2,200 m at Banff).', 0.5, 1.5, 0.05, (v) => `× ${fmt(v, 2)}`],
-    ['edge', 'Trees thin and shrink below it over', 'How gradually the forest gives out near the treeline.', 50, 800, 10, (v) => `${fmt(v)} m`],
-    ['snow', 'Snow begins above the treeline', '', 0, 2000, 50, (v) => `+${fmt(v)} m`],
-    ['steep', 'No trees on slopes steeper than', '', 0.3, 1.5, 0.05, (v) => `${fmt(Math.atan(v) * 180 / Math.PI)}°`],
-    ['sunny', 'Sunny against shady slopes', 'How much a slope facing the sun differs (pines, dryness, treeline).', 0, 2, 0.1, (v) => `× ${fmt(v, 1)}`],
+    ['edge', 'Thin out below it over', 'How gradually the forest gives out near the treeline.', 50, 800, 10, (v) => `${fmt(v)} m`],
+    ['snow', 'Snow above treeline', '', 0, 2000, 50, (v) => `+${fmt(v)} m`],
+    ['steep', 'No trees steeper than', '', 0.3, 1.5, 0.05, (v) => `${fmt(Math.atan(v) * 180 / Math.PI)}°`],
+    ['sunny', 'Sunny vs shady', 'How much a slope facing the sun differs (pines, dryness, treeline).', 0, 2, 0.1, (v) => `× ${fmt(v, 1)}`],
   ],
   'g-other': [
-    ['blend', 'Climate zone edges blended over', '', 0, 5, 0.25, (v) => `${fmt(v, 2)} km`],
+    ['blend', 'Zone edges blended', '', 0, 5, 0.25, (v) => `${fmt(v, 2)} km`],
     ['palm', 'Palms only below', 'Warm zones only.', 0, 1500, 25, (v) => `${fmt(v)} m`],
   ],
 };
-const slider = (id, label, help, min, max, step) => `<div class="row"><label for="${id}"${help ? ` title="${help}"` : ''}>${label}</label><output id="${id}-o"></output></div><input type="range" id="${id}" min="${min}" max="${max}" step="${step}">`;
+const slider = (id, label, help, min, max, step) => `<div class="r"><label for="${id}" title="${help || label}">${label}</label><input type="range" id="${id}" min="${min}" max="${max}" step="${step}"><output id="${id}-o"></output></div>`;
 for (const [g, list] of Object.entries(RULE_UI)) $(g).innerHTML = list.map(([id, label, help, min, max, step]) => slider('r-' + id, label, help, min, max, step)).join('');
 // Distances, in the order you meet them going outward.
 const km = (m) => m < 1000 ? `${fmt(m)} m` : `${fmt(m / 1000, 1)} km`;
 const DIST_UI = [
-  ['near', 'Detailed trees out to', 0, 1000, 10, () => settings.near ? km(settings.near) : 'none'],
-  ['fade', 'Trees start turning into dots at', 0.05, 0.95, 0.05, () => km(settings.fade * settings.range)],
-  ['range', 'Last trees gone by', 500, 8000, 100, () => km(settings.range)],
-  ['thinFrom', 'Dots get fewer and bigger past', 500, 10000, 250, () => km(settings.thinFrom)],
-  ['dotFade', 'Dots start melting into the canopy at', 0.2, 0.95, 0.05, () => km(dotBand()[0])],
-  ['dotRange', 'Last dots gone by', 1000, 15000, 250, () => km(Math.max(settings.dotRange, settings.range))],
+  ['near', 'Detailed trees to', 0, 1000, 10, () => settings.near ? km(settings.near) : 'none'],
+  ['fade', 'Trees become dots from', 0.05, 0.95, 0.05, () => km(settings.fade * settings.range)],
+  ['range', 'All trees dots by', 500, 8000, 100, () => km(settings.range)],
+  ['thinFrom', 'Dots fewer, bigger past', 500, 10000, 250, () => km(settings.thinFrom)],
+  ['dotFade', 'Dots become canopy from', 0.2, 0.95, 0.05, () => km(dotBand()[0])],
+  ['dotRange', 'All dots canopy by', 1000, 15000, 250, () => km(Math.max(settings.dotRange, settings.range))],
 ];
 $('dist').innerHTML = DIST_UI.map(([id, label, min, max, step]) => slider('d-' + id, label, '', min, max, step)).join('');
 let laterT = 0;
@@ -724,21 +707,8 @@ function showRules() {
   $('vsp').value = settings.vineSpacing; $('vsp-o').textContent = `${fmt(settings.vineSpacing, 1)} m`;
   showSettings();
 }
-// The strip: each stage as a band of colour along the distance, fading into the next where they hand over.
 function showView() {
   for (const [id, , , , , show] of DIST_UI) { $('d-' + id).value = settings[id]; $(`d-${id}-o`).textContent = show(); }
-  const R = settings.range, F = settings.fade * R, [b0, b1] = settings.dots ? dotBand() : [F, R], max = Math.max(b1, R) * 1.08, pc = (m) => `${Math.min(100, m / max * 100)}%`;
-  const DET = '#1f5130', TRE = '#3f7a48', DOT = '#8fc27a', CAN = '#7f8f62';
-  const seg = (a, b, bg) => b > a ? `<span style="left:${pc(a)};width:calc(${pc(b)} - ${pc(a)});background:${bg}"></span>` : '';
-  const near = Math.min(settings.near, F);
-  let h = seg(0, near, DET) + seg(near, F, TRE);
-  if (settings.dots) h += seg(F, R, `linear-gradient(90deg,${TRE},${DOT})`) + seg(R, b0, DOT) + seg(b0, b1, `linear-gradient(90deg,${DOT},${CAN})`);
-  else h += seg(F, R, `linear-gradient(90deg,${TRE},${CAN})`);
-  if (settings.dots && settings.thinFrom < b1) h += `<span style="left:${pc(settings.thinFrom)};width:2px;background:#fff;opacity:.8" title="dots fewer and bigger from here"></span>`;
-  $('strip').innerHTML = h;
-  const step = max > 12000 ? 5000 : max > 5000 ? 2000 : 1000;
-  let t = ''; for (let m = 0; m <= max; m += step) t += `<span style="left:${pc(m)}">${m ? km(m) : '0'}</span>`;
-  $('ticks').innerHTML = t;
   showSettings();
 }
 for (const list of Object.values(RULE_UI)) for (const [id] of list) $('r-' + id).addEventListener('input', (e) => { rules[id] = Number(e.target.value); showRules(); later(rulesChanged); });
@@ -750,7 +720,7 @@ $('show-canopy').onchange = (e) => { settings.canopy = e.target.checked; };
 $('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; dirty = true; farDirty = true; showView(); };
 $('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; dirty = true; };
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
-$('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0]}</button>`).join('');
+$('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0].split(' ')[0]}</button>`).join('');
 $('places').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const p = PLACES[+b.dataset.i]; $('size').value = String(p[3]); load(p[1], p[2], p[3], p[4]); };
 $('ll').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
@@ -789,7 +759,7 @@ function showReading(eye, fwd) {
   if (!area) return;
   let p = lookedAt(eye, fwd), where = 'where you look';
   if (!p) { p = { x: eye[0], z: eye[2], d: 0 }; where = 'under you'; }
-  $('read-h').textContent = where === 'under you' ? 'Under you' : 'Where you look';
+  $('read-h').textContent = where === 'under you' ? 'UNDER YOU' : 'WHERE YOU LOOK';
   const [lat, lon] = latLonAt(p.x, p.z), h = groundAt(p.x, p.z), [gx, gz] = gradAt(p.x, p.z), cv = coverAt(p.x, p.z);
   const s = readSpot({ lat, lon, h, slope: Math.hypot(gx, gz), sunny: sunnyFrom(gx, gz, lat), cover: cv }, rules);
   const how = { map: 'from the zone map', nearby: 'from the zone next door', latitude: 'not on the zone map: from latitude' }[s.how] || s.how;
@@ -805,8 +775,8 @@ function showReading(eye, fwd) {
     ['Trees here', s.density > 0 ? `about ${fmt(s.density * 100)} a hectare` : h >= s.treeline ? 'none: above the treeline' : 'none'],
   ];
   $('read').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
-  $('mix').innerHTML = s.mix && s.density > 0 ? TREE_KINDS.map((k, i) => [k, s.mix[i]]).filter((e) => e[1] > 0.005).sort((a, b) => b[1] - a[1])
-    .map(([k, v]) => `<span>${KIND_WORDS[k]}</span><span class="bar" style="width:${Math.max(2, v * 100)}%"></span><span>${fmt(v * 100)}%</span>`).join('') : '';
+  $('mix').textContent = s.mix && s.density > 0 ? TREE_KINDS.map((k, i) => [k, s.mix[i]]).filter((e) => e[1] > 0.005).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `${KIND_WORDS[k]} ${fmt(v * 100)}%`).join(', ') : '';
 }
 
 // ================= the app's controls =================
