@@ -29,26 +29,36 @@ canvas{display:block;width:100%;height:100%}
 .credit{position:absolute;right:8px;bottom:4px;font-size:11px;color:#14211b;background:rgba(255,255,255,.7);padding:1px 6px;border-radius:3px;pointer-events:none}
 #busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,30,25,.35);color:#fff;font:700 18px var(--body);text-align:center;padding:20px}
 #busy[hidden]{display:none}
-.panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px}
-h1{font-size:22px;margin:0}
-.lede{margin:4px 0 0;color:var(--muted)}
-h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 6px;color:var(--muted)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.row label{font-weight:700}
-output{font:13px var(--mono);color:var(--muted)}
-select,input[type=text]{font:inherit;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+.panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.3}
+h1{font-size:17px;margin:0}
+.lede{margin:2px 0 0;color:var(--muted);font-size:12px}
+details{border-top:1px solid var(--line);padding-top:5px}
+summary{cursor:pointer;font:700 11px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;list-style:none}
+summary::before{content:"▸ ";} details[open]>summary::before{content:"▾ ";}
+.help{color:var(--muted);font-size:11.5px;margin:0 0 4px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:3px}
+.row label{font-weight:600}
+output{font:11.5px var(--mono);color:var(--muted);white-space:nowrap}
+select,input[type=text]{font:inherit;padding:2px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--fg)}
 input[type=text]{width:100%}
-input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 6px}
-.check{display:flex;gap:8px;align-items:center;font-weight:700}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chips button,.btn{font:600 12px var(--body);padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
-dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
-.mix{display:grid;grid-template-columns:auto 1fr 3.2em;gap:2px 8px;align-items:center;font-size:13px;margin-top:6px}
-.bar{height:8px;border-radius:4px;background:var(--accent)}
-.note{color:var(--muted);font-size:13px;margin:0}
-.settings{font:12px var(--mono);word-break:break-all;background:var(--chip);padding:6px 8px;border-radius:6px;user-select:all}
+input[type=range]{width:100%;accent-color:var(--accent);margin:0;height:14px;display:block}
+.check{display:inline-flex;gap:5px;align-items:center;font-weight:600;margin-right:12px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chips button,.btn{font:600 11.5px var(--body);padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:1px 8px;margin:0}
+dt{color:var(--muted)} dd{margin:0;font:11.5px var(--mono);text-align:right}
+.mix{display:grid;grid-template-columns:auto 1fr 3em;gap:1px 6px;align-items:center;font-size:12px;margin-top:4px}
+.bar{height:6px;border-radius:3px;background:var(--accent)}
+.note{color:var(--muted);font-size:11.5px;margin:0}
+.settings{font:11px var(--mono);word-break:break-all;background:var(--chip);padding:4px 6px;border-radius:5px;user-select:all;margin-top:3px}
+/* the distance strip: what you see, near to far */
+.strip{position:relative;height:16px;border-radius:4px;overflow:hidden;margin:2px 0 1px;background:#7f8f62}
+.strip span{position:absolute;top:0;bottom:0}
+.ticks{position:relative;height:13px;font:10.5px var(--mono);color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:11px;color:var(--muted);margin-bottom:3px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px;vertical-align:-1px}
 @media (max-width:820px){.app{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}.stage{height:60vh}.panel{border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
@@ -64,48 +74,35 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
   </div>
   <aside class="panel" id="panel">
     <header><h1>Biome Lab</h1><p class="lede">Trees worked out on the spot from the climate zone, height, slope and the map. Nothing is stored: a tile's trees come from its address, the same every visit.</p></header>
-    <section>
-      <h2>Place</h2>
+    <details open><summary>Place</summary>
       <div class="chips" id="places"></div>
-      <div class="row" style="margin-top:8px"><input type="text" id="ll" placeholder="or type lat, lon and press Enter" spellcheck="false"></div>
-      <div class="row" style="margin-top:8px"><label for="size">Area</label>
+      <div class="row"><input type="text" id="ll" placeholder="or type lat, lon and press Enter" spellcheck="false"></div>
+      <div class="row"><label for="size">Area</label>
         <select id="size"><option value="6000">6 km square</option><option value="8000">8 km square</option><option value="10000" selected>10 km square</option><option value="14000">14 km square</option><option value="20000">20 km square</option><option value="30000">30 km square</option></select></div>
-    </section>
-    <section>
-      <h2 id="read-h">What the rules read where you look</h2>
+    </details>
+    <details open><summary id="read-h">Where you look</summary>
       <dl id="read"></dl>
       <div class="mix" id="mix"></div>
-    </section>
-    <section>
-      <h2>Rules</h2>
-      <div id="rules"></div>
-      <div class="row" style="margin-top:4px"><label for="vsp">Vine rows apart</label><output id="vsp-o"></output></div>
+    </details>
+    <details open><summary>Distance: what you see, near to far</summary>
+      <p class="help">Each stage hands over to the next gradually, tree by tree, so no edge follows you.</p>
+      <div class="strip" id="strip"></div><div class="ticks" id="ticks"></div>
+      <div class="legend"><span><i style="background:#1f5130"></i>detailed trees</span><span><i style="background:#3f7a48"></i>simple trees</span><span><i style="background:#8fc27a"></i>soft dots</span><span><i style="background:#7f8f62"></i>canopy</span></div>
+      <div id="dist"></div>
+      <div style="margin-top:4px"><label class="check"><input type="checkbox" id="show-trees" checked> Trees</label><label class="check"><input type="checkbox" id="show-dots" checked> Dots</label><label class="check"><input type="checkbox" id="show-canopy" checked> Canopy</label><label class="check"><input type="checkbox" id="show-vines" checked> Vines</label></div>
+    </details>
+    <details open><summary>Forest: how many trees</summary><div id="g-forest"></div></details>
+    <details open><summary>Mountains and slopes</summary><div id="g-mountain"></div></details>
+    <details><summary>Climate zones and vineyards</summary><div id="g-other"></div>
+      <div class="row"><label for="vsp">Vine rows apart</label><output id="vsp-o"></output></div>
       <input type="range" id="vsp" min="1.2" max="3.5" step="0.1" value="2.6">
-      <p class="note" style="margin:6px 0">Settings line (what the app would use):</p>
+    </details>
+    <details open><summary>Settings line</summary>
+      <p class="help">What the app would use: only what differs from the start.</p>
       <div class="settings" id="settings"></div>
-      <div class="row" style="margin-top:8px"><button class="btn" id="reset">Back to the starting rules</button></div>
-    </section>
-    <section>
-      <h2>Show</h2>
-      <label class="check"><input type="checkbox" id="show-trees" checked> Trees</label>
-      <label class="check"><input type="checkbox" id="show-vines" checked> Vines</label>
-      <label class="check"><input type="checkbox" id="show-dots" checked> Distant trees as soft dots</label>
-      <div class="row" style="margin-top:8px"><label for="dotr">Far trees (soft dots) drawn within</label><output id="dotr-o"></output></div>
-      <input type="range" id="dotr" min="1000" max="15000" step="250" value="5000">
-      <div class="row"><label for="dotf">Dots thin into the canopy from</label><output id="dotf-o"></output></div>
-      <input type="range" id="dotf" min="0.2" max="0.95" step="0.05" value="0.6">
-      <label class="check"><input type="checkbox" id="show-canopy" checked> Distant forest as a canopy on the ground</label>
-      <div class="row" style="margin-top:8px"><label for="fade">Trees thin out (into dots, or the canopy) from</label><output id="fade-o"></output></div>
-      <input type="range" id="fade" min="0.05" max="0.95" step="0.05" value="0.35">
-      <div class="row" style="margin-top:8px"><label for="range">Full trees drawn within</label><output id="range-o"></output></div>
-      <input type="range" id="range" min="500" max="8000" step="100" value="2500">
-      <div class="row"><label for="near">Detailed shape within</label><output id="near-o"></output></div>
-      <input type="range" id="near" min="0" max="1000" step="10" value="200">
-    </section>
-    <section>
-      <h2>What it costs</h2>
-      <dl id="costs"></dl>
-    </section>
+      <div class="row"><button class="btn" id="reset">Back to the starting settings</button></div>
+    </details>
+    <details open><summary>What it costs</summary><dl id="costs"></dl></details>
     <p class="note">Trees and vines are the library's (<code>library/</code>). Rules: <code>src/biome.js</code>, <code>src/vines.js</code>; zones: <code>src/zones.js</code>.</p>
   </aside>
 </div>
@@ -208,7 +205,7 @@ const NSH_MAX = 128;
 if (NSH > NSH_MAX) throw new Error('too many shapes for the dot colours');
 const DP = prog(`#version 300 es
 layout(location=0) in vec2 aCorner; layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
-uniform mat4 uVP; uniform vec3 uEye,uRight,uUp; uniform float uRange,uFade0,uDot0,uDot1; uniform vec3 uShapeCol[${NSH_MAX}];
+uniform mat4 uVP; uniform vec3 uEye,uRight,uUp; uniform float uRange,uFade0,uDot0,uDot1,uThin; uniform vec3 uShapeCol[${NSH_MAX}];
 out vec2 vQ; out vec3 vRel; out vec3 vCol; out float vSeed;
 float spot(vec2 q){ vec3 p3=fract(vec3(q.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 void main(){ float h=iSize.x*0.01,w=iSize.y*0.01; vec2 cell=floor(iPos.xz*4.0);
@@ -216,6 +213,11 @@ void main(){ float h=iSize.x*0.01,w=iSize.y*0.01; vec2 cell=floor(iPos.xz*4.0);
   // it begins where its tree ends (the same end, worked out the same way), and ends somewhere in the dots' own band
   float e1=uRange*(uFade0+(1.0-uFade0)*spot(cell)), e2=uDot0+(uDot1-uDot0)*spot(cell+17.0);
   float k=clamp((d-e1+uRange*0.04)/(uRange*0.04),0.0,1.0)*clamp((e2-d)/(uDot1*0.04),0.0,1.0);
+  // Past uThin, fewer and bigger: only the trees whose facing number is below the share kept (the same ones the far
+  // tiles were made with), each enlarged so together they cover the same ground. Share: (uThin/d) cubed, at least 1/64.
+  float keep=d<=uThin?1.0:max(1.0/64.0,pow(uThin/d,3.0));
+  if(floor(iMisc.x*255.0+0.5)>=keep*256.0) k=0.0;
+  k*=inversesqrt(keep);
   vec3 c=iPos+vec3(0.0,h*0.55,0.0); vec3 dir=normalize(c-uEye);
   // seen from the side a tall tree's dot is tall; seen from above it is round, like its crown
   float rx=0.58*w, ry=mix(rx,0.4*h,1.0-abs(dir.y));
@@ -228,7 +230,7 @@ void main(){ float a=atan(vQ.y,vQ.x), r2=dot(vQ,vQ)*(1.0+0.13*sin(a*5.0+vSeed)+0
   vec3 n=normalize(uRight*vQ.x+uUp*vQ.y-normalize(vRel)*sqrt(1.0-r2));
   float lit=0.55+0.45*max(dot(n,uSun),0.0); vec3 c=floor(vCol*lit*31.0+0.5)/31.0;
   o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),clamp((1.0-r2)*5.0,0.0,1.0)); }`);
-const UD = Object.fromEntries(['uVP', 'uEye', 'uRight', 'uUp', 'uRange', 'uFade0', 'uDot0', 'uDot1', 'uShapeCol', 'uSun', 'uSky', 'uFog'].map((n) => [n, gl.getUniformLocation(DP, n)]));
+const UD = Object.fromEntries(['uVP', 'uEye', 'uRight', 'uUp', 'uRange', 'uFade0', 'uDot0', 'uDot1', 'uThin', 'uShapeCol', 'uSun', 'uSky', 'uFog'].map((n) => [n, gl.getUniformLocation(DP, n)]));
 {
   // each shape's leaf colour, for its dot: the average of its green corners (trunks left out)
   const cols = new Float32Array(NSH_MAX * 3);
@@ -497,13 +499,17 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 5000, dotFade: 0.6 };
+const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 5000, dotFade: 0.6, thinFrom: 2500 };
+const VIEW0 = { ...settings };
+// The share of trees kept as dots at distance d (fewer, bigger, past thinFrom), and the tile level that covers it.
+const thinAt = (d) => d <= settings.thinFrom ? 1 : Math.max(1 / 64, (settings.thinFrom / d) ** 3);
+const levelFor = (d) => Math.min(1, 2 ** Math.ceil(Math.log2(thinAt(Math.max(1, d)))));
 // The dots' band: where they thin out into the canopy (never starting before the trees have all gone).
 const dotBand = () => { const D = Math.max(settings.dotRange, settings.range); return [Math.max(settings.range, D * settings.dotFade), D]; };
 const reach = () => settings.dots ? Math.max(settings.dotRange, settings.range) : settings.range;
 const live = new Map();         // key -> { cx, cz, rad, n, u8 }   (trees of one tile, or vines of one parcel)
-let queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
-function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; lastWant = null; }
+let farDirty = true, queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
+function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; farDirty = true; lastWant = null; }
 
 function put(u8, f32, u16, i, x, y, z, h, w, yaw, shade, warm, shape) {
   f32[i * 5] = x; f32[i * 5 + 1] = y; f32[i * 5 + 2] = z; u16[i * 10 + 6] = Math.min(65535, Math.round(h * 100)); u16[i * 10 + 7] = Math.min(65535, Math.round(w * 100));
@@ -511,10 +517,10 @@ function put(u8, f32, u16, i, x, y, z, h, w, yaw, shade, warm, shape) {
 }
 function batch(n) { const buf = new ArrayBuffer(n * 20); return { u8: new Uint8Array(buf), f32: new Float32Array(buf), u16: new Uint16Array(buf) }; }
 
-function makeTileTrees(t) {
+function makeTileTrees(t, keep = 1) {
   const s = tileSizeMerc(16), nw = tileToMerc(t.x, t.y, 16);
   const x0 = (nw.x - area.cmx) * area.k, z0 = (area.cmy - nw.y) * area.k, size = s * area.k;
-  const T = plantTile({ seed: tileSeed(16, t.x, t.y), x0, z0, size, latLon: latLonAt, ground: groundAt, grad: gradAt, cover: coverAt }, rules);
+  const T = plantTile({ seed: tileSeed(16, t.x, t.y), x0, z0, size, latLon: latLonAt, ground: groundAt, grad: gradAt, cover: coverAt, keep: keep < 1 ? keep : undefined }, rules);
   const n = T.length / TREE_STRIDE, B = batch(n);
   let m = 0;
   for (let i = 0; i < T.length; i += TREE_STRIDE) {
@@ -524,7 +530,17 @@ function makeTileTrees(t) {
     const yaw = T[i + 6], shade = T[i + 7], warm = ((yaw * 13.7) % 1) < 0.15 ? 200 : ((yaw * 7.3) % 1) * 60;
     put(B.u8, B.f32, B.u16, m++, x, groundAt(x, z) - 0.3, z, sh.H * size, sh.W * size * T[i + 5], Math.floor(yaw * 256), Math.floor(shade * 255), warm, sh.n);
   }
-  return { cx: x0 + size / 2, cz: z0 + size / 2, rad: size * 0.71, n: m, u8: B.u8.subarray(0, m * 20) };
+  // sorted by facing number, so the share kept far away is always the front of the list
+  const order = Array.from({ length: m }, (_, i) => i).sort((a, b) => B.u8[a * 20 + 16] - B.u8[b * 20 + 16]);
+  const u8 = new Uint8Array(m * 20);
+  order.forEach((o, i) => u8.set(B.u8.subarray(o * 20, o * 20 + 20), i * 20));
+  return { cx: x0 + size / 2, cz: z0 + size / 2, rad: size * 0.71, n: m, u8, u32: new Uint32Array(u8.buffer), keep };
+}
+// How many of a tile's trees (sorted) have a facing number below share f.
+function prefix(b, f) {
+  const lim = f * 256; let lo = 0, hi = b.n;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (b.u8[m * 20 + 16] < lim) lo = m + 1; else hi = m; }
+  return lo;
 }
 function makeParcelVines(p, pi) {
   // the parcel's average rise, from spots inside it
@@ -541,7 +557,7 @@ function makeParcelVines(p, pi) {
   });
   const B = batch(out.length);
   out.forEach((v, i) => put(B.u8, B.f32, B.u16, i, ...v));
-  return { cx: p.cx, cz: p.cz, rad: p.rad, n: out.length, u8: B.u8, rows: rows.length };
+  return { cx: p.cx, cz: p.cz, rad: p.rad, n: out.length, u8: B.u8, u32: new Uint32Array(B.u8.buffer), rows: rows.length };
 }
 
 // What should be live around the eye; made nearest first, a few milliseconds a frame.
@@ -559,7 +575,9 @@ function want(eye) {
       const d = Math.hypot(cx - eye[0], cz - eye[2]) - s * 0.71;
       if (d > R) continue;
       const key = `t${x}/${y}`; keep.add(key);
-      if (!live.has(key)) todo.push({ key, d, make: () => makeTileTrees({ x, y }) });
+      // all its trees while it may show trees; past that, only the share the dots need (made again if it comes closer)
+      const need = d <= RV + 300 ? 1 : levelFor(d - 300), have = live.get(key);
+      if (!have || have.keep < need) todo.push({ key, d, keep: need, make: () => makeTileTrees({ x, y }, need) });
     }
   }
   if (settings.vines) area.parcels.forEach((p, pi) => {
@@ -569,16 +587,18 @@ function want(eye) {
     if (!live.has(key)) todo.push({ key, d, make: () => makeParcelVines(p, pi) });
   });
   // hold a little beyond range, so turning back does not make it all again
-  for (const [key, b] of live) if (!keep.has(key) && Math.hypot(b.cx - eye[0], b.cz - eye[2]) - b.rad > (key[0] === 'v' ? RV : R) + 300) { live.delete(key); dirty = true; }
+  for (const [key, b] of live) if (!keep.has(key) && Math.hypot(b.cx - eye[0], b.cz - eye[2]) - b.rad > (key[0] === 'v' ? RV : R) + 300) { live.delete(key); dirty = true; farDirty = true; }
   queue = todo.sort((p, q) => p.d - q.d);
 }
 function makeSome(budgetMs) {
   const t0 = performance.now();
   while (queue.length && performance.now() - t0 < budgetMs) {
     const job = queue.shift();
-    if (live.has(job.key)) continue;
+    const have = live.get(job.key);
+    if (have && (job.keep === undefined || have.keep >= job.keep)) continue;
     const t = performance.now(), b = job.make();
-    live.set(job.key, b); dirty = true;
+    if (have) farDirty = true;
+    live.set(job.key, b); dirty = true; farDirty = true;
     if (job.key[0] === 't') { planted.tiles++; planted.trees += b.n; planted.ms += performance.now() - t; } else planted.rows += b.rows;
   }
 }
@@ -586,42 +606,45 @@ function makeSome(budgetMs) {
 // ================= what is drawn (the Tree Lab's lists, by batch) =================
 const DOTS = NB;                 // the last bin: every tree that may be showing as a dot
 const lists = { count: new Uint32Array(NB + 1), start: new Uint32Array(NB + 1) };
-let inst = new Uint8Array(0), lastBuild = null, rebuildMs = 0, lastBuildT = 0;
+let inst = new Uint8Array(0), inst32 = new Uint32Array(0), lastBuild = null, rebuildMs = 0, lastBuildT = 0;
 function rebuild(eye, yaw, hfov, pitch, now) {
-  const key = `${settings.range}|${settings.near}|${settings.trees}|${settings.vines}|${settings.dots}|${settings.dotRange}|${settings.fade}`;
+  const key = `${settings.range}|${settings.near}|${settings.trees}|${settings.vines}|${settings.dots}|${settings.dotRange}|${settings.fade}|${settings.thinFrom}`;
   const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > Math.max(20, 0.15 * (eye[1] - groundAt(eye[0], eye[2]))) || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
   if (!moved && !(dirty && now - lastBuildT > 150)) return;
+  if (lastBuild && lastBuild.k !== key) farDirty = true;
   const t0 = performance.now(), R = settings.range, R2 = R * R, NR2 = settings.near * settings.near, vx = Math.sin(yaw), vz = -Math.cos(yaw), cull = pitch > -0.85, half = hfov / 2 + 0.15;
-  const dots = settings.dots && settings.trees, RD = dots ? reach() : R, F2 = (settings.fade * R - R * 0.05) ** 2;
+  const dots = settings.dots && settings.trees, F2 = (settings.fade * R - R * 0.05) ** 2;
   const chosen = [];
   for (const [k, b] of live) {
     if (k[0] === 't' ? !settings.trees : !settings.vines) continue;
     const mx = b.cx - eye[0], mz = b.cz - eye[2], d = Math.hypot(mx, mz);
-    if (d - b.rad > (k[0] === 't' ? RD : R)) continue;
+    // tiles wholly past the trees' range belong to the far list; note when one changes sides
+    const far = k[0] === 't' && d - b.rad > R;
+    if (b.far !== far) { b.far = far; farDirty = true; }
+    if (far || d - b.rad > R) continue;
     if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
     chosen.push([b, d, k[0] === 't']);
   }
   chosen.sort((a, b) => a[1] - b[1]);             // nearest first, so the card skips hidden pixels
   const cnt = new Uint32Array(NB + 1);
   const bin = (u8, i, d2) => { const s = u8[i * 20 + 19]; return d2 < NR2 ? s : NSH + SHAPE_KIND[s]; };
-  // A tile wholly past the trees' range goes to the dots whole; otherwise tree by tree (a tree past where trees
-  // start thinning may be showing as a tree or as a dot, so it goes to both; the card decides which shows).
-  const whole = (b, d) => d - b.rad > R;
-  for (const [b, d, tree] of chosen) {
-    if (tree && dots && whole(b, d)) { cnt[DOTS] += b.n; continue; }
+  // A tree past where trees start turning into dots may show as either, so it goes to both lists; the card decides.
+  // Past thinFrom only the share of trees kept as dots goes in.
+  const isDot = (u8, i, d2) => d2 > F2 && u8[i * 20 + 16] < thinAt(Math.sqrt(d2)) * 256;
+  for (const [b, , tree] of chosen) {
     const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
-    for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; if (tree && dots && d2 > F2) cnt[DOTS]++; }
+    for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; if (tree && dots && isDot(b.u8, i, d2)) cnt[DOTS]++; }
   }
   const starts = new Uint32Array(NB + 1); let tot = 0; for (let k = 0; k <= NB; k++) { starts[k] = tot; tot += cnt[k]; }
-  if (inst.length < tot * 20) inst = new Uint8Array(Math.max(tot * 20, inst.length * 1.5 | 0, 2000));
+  if (inst.length < tot * 20) { inst = new Uint8Array(Math.ceil(Math.max(tot * 20, inst.length * 1.5, 2000) / 20) * 20); inst32 = new Uint32Array(inst.buffer); }
   const w = starts.slice();
-  for (const [b, d, tree] of chosen) {
-    if (tree && dots && whole(b, d)) { inst.set(b.u8.subarray(0, b.n * 20), w[DOTS] * 20); w[DOTS] += b.n; continue; }
+  const copy = (src, i, j) => { const a = i * 5, o = j * 5; inst32[o] = src[a]; inst32[o + 1] = src[a + 1]; inst32[o + 2] = src[a + 2]; inst32[o + 3] = src[a + 3]; inst32[o + 4] = src[a + 4]; };
+  for (const [b, , tree] of chosen) {
     const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
     for (let i = 0; i < b.n; i++) {
-      const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz, one = b.u8.subarray(i * 20, i * 20 + 20);
-      if (d2 <= R2) inst.set(one, w[bin(b.u8, i, d2 + dy * dy)]++ * 20);
-      if (tree && dots && d2 > F2) inst.set(one, w[DOTS]++ * 20);
+      const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz;
+      if (d2 <= R2) copy(b.u32, i, w[bin(b.u8, i, d2 + dy * dy)]++);
+      if (tree && dots && isDot(b.u8, i, d2)) copy(b.u32, i, w[DOTS]++);
     }
   }
   lists.count.set(cnt); lists.start.set(starts);
@@ -629,51 +652,102 @@ function rebuild(eye, yaw, hfov, pitch, now) {
   rebuildMs = performance.now() - t0; lastBuild = { k: key, x: eye[0], y: eye[1], z: eye[2], yaw, pitch }; lastBuildT = now; dirty = false;
 }
 
+// The far dots: every tile wholly past the trees' range, as one list of tiles, each its front share (enough for its
+// nearest point, with 300 m to spare). Rebuilt only when tiles change or after 300 m of travel, not every few metres;
+// each frame draws the tiles in view straight from it.
+const fbuf = gl.createBuffer();
+let farTiles = [], farInst = new Uint8Array(0), farAt = null, farMs = 0, farT = 0, farCount = 0;
+function buildFar(eye, now) {
+  const movedFar = !farAt || Math.hypot(eye[0] - farAt[0], eye[2] - farAt[1]) > 300;
+  if (!movedFar && !(farDirty && now - farT > 250)) return;
+  const t0 = performance.now(), R = settings.range, RD = reach();
+  farTiles = []; let tot = 0;
+  if (settings.dots && settings.trees) for (const [k, b] of live) {
+    if (k[0] !== 't') continue;
+    const d = Math.hypot(b.cx - eye[0], b.cz - eye[2]);
+    if (d - b.rad <= R || d - b.rad > RD) continue;
+    const n = prefix(b, thinAt(Math.max(1, d - b.rad - 300)));
+    if (n) { farTiles.push({ b, n, start: tot }); tot += n; }
+  }
+  farTiles.sort((p, q) => Math.hypot(p.b.cx - eye[0], p.b.cz - eye[2]) - Math.hypot(q.b.cx - eye[0], q.b.cz - eye[2]));
+  tot = 0; for (const t of farTiles) { t.start = tot; tot += t.n; }
+  if (farInst.length < tot * 20) farInst = new Uint8Array(Math.max(tot * 20, farInst.length * 1.5 | 0, 2000));
+  for (const t of farTiles) farInst.set(t.b.u8.subarray(0, t.n * 20), t.start * 20);
+  gl.bindBuffer(gl.ARRAY_BUFFER, fbuf); gl.bufferData(gl.ARRAY_BUFFER, farInst.subarray(0, tot * 20), gl.STATIC_DRAW);
+  farCount = tot; farAt = [eye[0], eye[2]]; farT = now; farDirty = false; farMs = performance.now() - t0;
+}
+
 // ================= the panel =================
-const RULE_UI = [
-  ['density', 'Forest density (in a full forest)', 0.25, 8, 0.25, (v) => `${fmt(v * 100)} trees a hectare`],
-  ['scatter', 'Trees where the map says nothing', 0, 1, 0.05, (v) => `${fmt(v * 100)}% of a forest`],
-  ['treeline', 'Treeline height', 0.5, 1.5, 0.05, (v) => `× ${fmt(v, 2)}`],
-  ['edge', 'Trees thin out below the treeline over', 50, 800, 10, (v) => `${fmt(v)} m`],
-  ['snow', 'Snow starts above the treeline by', 0, 2000, 50, (v) => `${fmt(v)} m`],
-  ['palm', 'Palms only below', 0, 1500, 25, (v) => `${fmt(v)} m`],
-  ['steep', 'No trees on slopes steeper than', 0.3, 1.5, 0.05, (v) => `${fmt(Math.atan(v) * 180 / Math.PI)}°`],
-  ['sunny', 'How much facing the sun matters', 0, 2, 0.1, (v) => `× ${fmt(v, 1)}`],
-  ['blend', 'Climate zone edges blended over', 0, 5, 0.25, (v) => `${fmt(v, 2)} km`],
-  ['spacing', 'Closest two trees can stand', 3, 12, 0.5, (v) => `${fmt(v, 1)} m`],
+// Rules (what grows where) in two groups; distances (how far each stage reaches) with the strip.
+const RULE_UI = {
+  'g-forest': [
+    ['density', 'Forest density', 'Trees a hectare in a full forest. More makes a closed canopy.', 0.25, 8, 0.25, (v) => `${fmt(v * 100)} a ha`],
+    ['scatter', 'Trees outside mapped forest', 'On land the map says nothing about, as a share of a forest.', 0, 1, 0.05, (v) => `${fmt(v * 100)}%`],
+    ['spacing', 'Closest two trees', 'The tightest trees can stand; denser forests go closer by themselves.', 3, 12, 0.5, (v) => `${fmt(v, 1)} m`],
+  ],
+  'g-mountain': [
+    ['treeline', 'Treeline height', 'Times the latitude rule (about 2,200 m at Banff).', 0.5, 1.5, 0.05, (v) => `× ${fmt(v, 2)}`],
+    ['edge', 'Trees thin and shrink below it over', 'How gradually the forest gives out near the treeline.', 50, 800, 10, (v) => `${fmt(v)} m`],
+    ['snow', 'Snow begins above the treeline', '', 0, 2000, 50, (v) => `+${fmt(v)} m`],
+    ['steep', 'No trees on slopes steeper than', '', 0.3, 1.5, 0.05, (v) => `${fmt(Math.atan(v) * 180 / Math.PI)}°`],
+    ['sunny', 'Sunny against shady slopes', 'How much a slope facing the sun differs (pines, dryness, treeline).', 0, 2, 0.1, (v) => `× ${fmt(v, 1)}`],
+  ],
+  'g-other': [
+    ['blend', 'Climate zone edges blended over', '', 0, 5, 0.25, (v) => `${fmt(v, 2)} km`],
+    ['palm', 'Palms only below', 'Warm zones only.', 0, 1500, 25, (v) => `${fmt(v)} m`],
+  ],
+};
+const slider = (id, label, help, min, max, step) => `<div class="row"><label for="${id}"${help ? ` title="${help}"` : ''}>${label}</label><output id="${id}-o"></output></div><input type="range" id="${id}" min="${min}" max="${max}" step="${step}">`;
+for (const [g, list] of Object.entries(RULE_UI)) $(g).innerHTML = list.map(([id, label, help, min, max, step]) => slider('r-' + id, label, help, min, max, step)).join('');
+// Distances, in the order you meet them going outward.
+const km = (m) => m < 1000 ? `${fmt(m)} m` : `${fmt(m / 1000, 1)} km`;
+const DIST_UI = [
+  ['near', 'Detailed trees out to', 0, 1000, 10, () => settings.near ? km(settings.near) : 'none'],
+  ['fade', 'Trees start turning into dots at', 0.05, 0.95, 0.05, () => km(settings.fade * settings.range)],
+  ['range', 'Last trees gone by', 500, 8000, 100, () => km(settings.range)],
+  ['thinFrom', 'Dots get fewer and bigger past', 500, 10000, 250, () => km(settings.thinFrom)],
+  ['dotFade', 'Dots start melting into the canopy at', 0.2, 0.95, 0.05, () => km(dotBand()[0])],
+  ['dotRange', 'Last dots gone by', 1000, 15000, 250, () => km(Math.max(settings.dotRange, settings.range))],
 ];
-$('rules').innerHTML = RULE_UI.map(([id, label, min, max, step]) =>
-  `<div class="row"><label for="r-${id}">${label}</label><output id="r-${id}-o"></output></div><input type="range" id="r-${id}" min="${min}" max="${max}" step="${step}">`).join('');
+$('dist').innerHTML = DIST_UI.map(([id, label, min, max, step]) => slider('d-' + id, label, '', min, max, step)).join('');
 let laterT = 0;
 const later = (fn) => { clearTimeout(laterT); laterT = setTimeout(fn, 300); };
 function rulesChanged() { dropAll(); recolour(); }
-function showRules() {
-  for (const [id, , , , , show] of RULE_UI) { $('r-' + id).value = rules[id]; $(`r-${id}-o`).textContent = show(rules[id]); }
-  $('vsp').value = settings.vineSpacing; $('vsp-o').textContent = `${fmt(settings.vineSpacing, 1)} m`;
+function showSettings() {
   const out = {};
   for (const k of Object.keys(rules)) if (rules[k] !== START[k]) out[k] = rules[k];
-  if (settings.vineSpacing !== 2.6) out.vineSpacing = settings.vineSpacing;
-  $('settings').textContent = Object.keys(out).length ? JSON.stringify(out) : '(the starting rules, unchanged)';
+  for (const k of ['vineSpacing', 'near', 'fade', 'range', 'thinFrom', 'dotFade', 'dotRange']) if (settings[k] !== VIEW0[k]) out[k] = settings[k];
+  $('settings').textContent = Object.keys(out).length ? JSON.stringify(out) : '(the starting settings, unchanged)';
 }
-for (const [id] of RULE_UI) $('r-' + id).addEventListener('input', (e) => { rules[id] = Number(e.target.value); showRules(); later(rulesChanged); });
-$('vsp').addEventListener('input', (e) => { settings.vineSpacing = Number(e.target.value); showRules(); later(rulesChanged); });
-$('reset').onclick = () => { rules = defaultRules(); settings.vineSpacing = 2.6; showRules(); rulesChanged(); };
+function showRules() {
+  for (const list of Object.values(RULE_UI)) for (const [id, , , , , , show] of list) { $('r-' + id).value = rules[id]; $(`r-${id}-o`).textContent = show(rules[id]); }
+  $('vsp').value = settings.vineSpacing; $('vsp-o').textContent = `${fmt(settings.vineSpacing, 1)} m`;
+  showSettings();
+}
+// The strip: each stage as a band of colour along the distance, fading into the next where they hand over.
 function showView() {
-  $('range').value = settings.range; $('near').value = settings.near;
-  $('range-o').textContent = `${fmt(settings.range / 1000, 1)} km`; $('near-o').textContent = settings.near ? `${fmt(settings.near)} m` : 'never';
-  const [b0, b1] = dotBand();
-  $('dotr').value = settings.dotRange; $('dotr-o').textContent = `${fmt(Math.max(settings.dotRange, settings.range) / 1000, 2)} km`;
-  $('dotf').value = settings.dotFade; $('dotf-o').textContent = `${fmt(b0 / 1000, 1)} km`;
-  $('fade').value = settings.fade; $('fade-o').textContent = `${fmt(settings.fade * 100)}% of the tree range (${fmt(settings.fade * settings.range / 1000, 1)} km)`;
+  for (const [id, , , , , show] of DIST_UI) { $('d-' + id).value = settings[id]; $(`d-${id}-o`).textContent = show(); }
+  const R = settings.range, F = settings.fade * R, [b0, b1] = settings.dots ? dotBand() : [F, R], max = Math.max(b1, R) * 1.08, pc = (m) => `${Math.min(100, m / max * 100)}%`;
+  const DET = '#1f5130', TRE = '#3f7a48', DOT = '#8fc27a', CAN = '#7f8f62';
+  const seg = (a, b, bg) => b > a ? `<span style="left:${pc(a)};width:calc(${pc(b)} - ${pc(a)});background:${bg}"></span>` : '';
+  const near = Math.min(settings.near, F);
+  let h = seg(0, near, DET) + seg(near, F, TRE);
+  if (settings.dots) h += seg(F, R, `linear-gradient(90deg,${TRE},${DOT})`) + seg(R, b0, DOT) + seg(b0, b1, `linear-gradient(90deg,${DOT},${CAN})`);
+  else h += seg(F, R, `linear-gradient(90deg,${TRE},${CAN})`);
+  if (settings.dots && settings.thinFrom < b1) h += `<span style="left:${pc(settings.thinFrom)};width:2px;background:#fff;opacity:.8" title="dots fewer and bigger from here"></span>`;
+  $('strip').innerHTML = h;
+  const step = max > 12000 ? 5000 : max > 5000 ? 2000 : 1000;
+  let t = ''; for (let m = 0; m <= max; m += step) t += `<span style="left:${pc(m)}">${m ? km(m) : '0'}</span>`;
+  $('ticks').innerHTML = t;
+  showSettings();
 }
-$('range').oninput = (e) => { settings.range = +e.target.value; lastWant = null; showView(); };
-$('near').oninput = (e) => { settings.near = +e.target.value; showView(); };
-$('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; dirty = true; };
+for (const list of Object.values(RULE_UI)) for (const [id] of list) $('r-' + id).addEventListener('input', (e) => { rules[id] = Number(e.target.value); showRules(); later(rulesChanged); });
+for (const [id] of DIST_UI) $('d-' + id).addEventListener('input', (e) => { settings[id] = Number(e.target.value); lastWant = null; farDirty = true; showView(); });
+$('vsp').addEventListener('input', (e) => { settings.vineSpacing = Number(e.target.value); showRules(); later(rulesChanged); });
+$('reset').onclick = () => { rules = defaultRules(); Object.assign(settings, { vineSpacing: VIEW0.vineSpacing, near: VIEW0.near, fade: VIEW0.fade, range: VIEW0.range, thinFrom: VIEW0.thinFrom, dotFade: VIEW0.dotFade, dotRange: VIEW0.dotRange }); showRules(); showView(); lastWant = null; rulesChanged(); };
+$('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; dirty = true; farDirty = true; };
 $('show-canopy').onchange = (e) => { settings.canopy = e.target.checked; };
-$('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; dirty = true; };
-$('dotr').oninput = (e) => { settings.dotRange = +e.target.value; lastWant = null; showView(); };
-$('dotf').oninput = (e) => { settings.dotFade = +e.target.value; showView(); };
-$('fade').oninput = (e) => { settings.fade = +e.target.value; showView(); };
+$('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; dirty = true; farDirty = true; showView(); };
 $('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; dirty = true; };
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
 $('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0]}</button>`).join('');
@@ -715,7 +789,7 @@ function showReading(eye, fwd) {
   if (!area) return;
   let p = lookedAt(eye, fwd), where = 'where you look';
   if (!p) { p = { x: eye[0], z: eye[2], d: 0 }; where = 'under you'; }
-  $('read-h').textContent = `What the rules read ${where}`;
+  $('read-h').textContent = where === 'under you' ? 'Under you' : 'Where you look';
   const [lat, lon] = latLonAt(p.x, p.z), h = groundAt(p.x, p.z), [gx, gz] = gradAt(p.x, p.z), cv = coverAt(p.x, p.z);
   const s = readSpot({ lat, lon, h, slope: Math.hypot(gx, gz), sunny: sunnyFrom(gx, gz, lat), cover: cv }, rules);
   const how = { map: 'from the zone map', nearby: 'from the zone next door', latitude: 'not on the zone map: from latitude' }[s.how] || s.how;
@@ -739,14 +813,14 @@ function showReading(eye, fwd) {
 // x is east and z south, in true metres from the area's middle; the camera's mercX/mercY carry them.
 const cam = { mercX: 0, mercY: 0, alt: 400, yaw: 0, pitch: -0.2, fly: 1 };
 const controls = new Controls(canvas, cam);
-window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules };   // for tests and the console
+window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => makeSome(ms), get queued() { return queue.length; } };   // for tests and the console
 
 // ================= frame =================
 const SKY = [0.73, 0.83, 0.91], SUN = norm([0.5, 0.75, 0.35]);
 function persp(f, a, n, fa) { const t = 1 / Math.tan(f / 2); return [t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (fa + n) / (n - fa), -1, 0, 0, 2 * fa * n / (n - fa), 0]; }
 function lookAt(e, c, u) { const z = norm(sub(e, c)), x = norm(cross(u, z)), y = cross(z, x); return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -(x[0] * e[0] + x[1] * e[1] + x[2] * e[2]), -(y[0] * e[0] + y[1] * e[1] + y[2] * e[2]), -(z[0] * e[0] + z[1] * e[1] + z[2] * e[2]), 1]; }
 function mm(a, b) { const r = new Array(16); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + j] * b[i * 4 + k]; r[i * 4 + j] = s; } return r; }
-let last = performance.now(), ft = [], statT = 0, calls = 0, tris = 0;
+let last = performance.now(), ft = [], statT = 0, calls = 0, tris = 0, lastFarDrawn = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now; ft.push(dt * 1000); if (ft.length > 90) ft.shift();
@@ -757,7 +831,7 @@ function frame(now) {
   const eye = [cam.mercX, cam.alt, -cam.mercY], cp = Math.cos(cam.pitch), fwd = [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp];
   const agl = cam.alt - groundAt(eye[0], eye[2]), vfov = 0.9, hfov = 2 * Math.atan(Math.tan(vfov / 2) * W / H), near = Math.max(0.1, Math.min(20, agl * 0.05)), far = Math.max(25000, area.S * 1.6, agl * 6);
   const vp = mm(persp(vfov, W / H, near, far), lookAt(eye, [eye[0] + fwd[0], eye[1] + fwd[1], eye[2] + fwd[2]], [0, 1, 0]));
-  want(eye); makeSome(6); rebuild(eye, cam.yaw, hfov, cam.pitch, now);
+  want(eye); makeSome(5); rebuild(eye, cam.yaw, hfov, cam.pitch, now); buildFar(eye, now);
   const fog = Math.min(0.00012, 0.9 / Math.max(area.S * 2, agl * 2.5));
   gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
   gl.useProgram(TP); gl.bindVertexArray(tvao); gl.uniformMatrix4fv(UN.uVP.t, false, vp); gl.uniform3fv(UN.uEye.t, eye); gl.uniform1f(UN.uRange.t, settings.range); gl.uniform1f(UN.uFade0.t, settings.fade); gl.uniform3fv(UN.uSun.t, SUN); gl.uniform3fv(UN.uSky.t, SKY); gl.uniform1f(UN.uFog.t, fog);
@@ -770,16 +844,21 @@ function frame(now) {
     gl.uniform1f(UN.uShear.t, KINDS[k < NSH ? SHAPE_KIND[k] : k - NSH].row ? 1 : 0);
     gl.drawElementsInstanced(gl.TRIANGLES, count, gl.UNSIGNED_INT, first * 4, n); calls++; tris += n * count / 3;
   }
-  if (lists.count[DOTS]) {
-    const right = norm(cross(fwd, [0, 1, 0])), up = cross(right, fwd), o = lists.start[DOTS] * 20, [d0, d1] = dotBand();
-    gl.useProgram(DP); gl.bindVertexArray(dvao); gl.bindBuffer(gl.ARRAY_BUFFER, ibuf);
-    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 20, o); gl.vertexAttribPointer(3, 2, gl.UNSIGNED_SHORT, false, 20, o + 12); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 20, o + 16);
+  let farDrawn = 0;
+  if (lists.count[DOTS] || farTiles.length) {
+    const right = norm(cross(fwd, [0, 1, 0])), up = cross(right, fwd), [d0, d1] = dotBand();
+    gl.useProgram(DP); gl.bindVertexArray(dvao);
     gl.uniformMatrix4fv(UD.uVP, false, vp); gl.uniform3fv(UD.uEye, eye); gl.uniform3fv(UD.uRight, right); gl.uniform3fv(UD.uUp, up);
-    gl.uniform1f(UD.uRange, settings.range); gl.uniform1f(UD.uFade0, settings.fade); gl.uniform1f(UD.uDot0, d0); gl.uniform1f(UD.uDot1, d1);
+    gl.uniform1f(UD.uRange, settings.range); gl.uniform1f(UD.uFade0, settings.fade); gl.uniform1f(UD.uDot0, d0); gl.uniform1f(UD.uDot1, d1); gl.uniform1f(UD.uThin, settings.thinFrom);
     gl.uniform3fv(UD.uSun, SUN); gl.uniform3fv(UD.uSky, SKY); gl.uniform1f(UD.uFog, fog);
-    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, lists.count[DOTS]); gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
-    calls++; tris += lists.count[DOTS] * 2;
+    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+    const point = (buf, o) => { gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 20, o); gl.vertexAttribPointer(3, 2, gl.UNSIGNED_SHORT, false, 20, o + 12); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 20, o + 16); };
+    if (lists.count[DOTS]) { point(ibuf, lists.start[DOTS] * 20); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, lists.count[DOTS]); calls++; tris += lists.count[DOTS] * 2; }
+    // the far list in one go, nearest tiles first (the card drops what is out of view cheaply: four corners a dot)
+    if (farCount) { point(fbuf, 0); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, farCount); farDrawn = farCount; calls++; tris += farCount * 2; }
+    gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
   }
+  lastFarDrawn = farDrawn;
   if (!gvao) return;
   gl.useProgram(GP); gl.bindVertexArray(gvao); gl.uniformMatrix4fv(UN.uVP.g, false, vp); gl.uniform3fv(UN.uEye.g, eye); gl.uniform3fv(UN.uSun.g, SUN); gl.uniform3fv(UN.uSky.g, SKY); gl.uniform1f(UN.uFog.g, fog);
   const [c0, c1] = settings.dots ? dotBand() : [settings.fade * settings.range, settings.range];
@@ -801,9 +880,9 @@ function stats() {
     ['Making one tile', planted.tiles ? `${fmt(planted.ms / planted.tiles, 1)} ms` : '–'],
     ['Still to make', fmt(queue.length)],
     ['Held now', `${fmt(nLive)} trees, ${fmt(nVines)} vine pieces`],
-    ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)], ['Dots, drawn or waiting their turn', fmt(lists.count[DOTS])],
+    ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)], ['Dots near (with the trees)', fmt(lists.count[DOTS])], ['Dots far', fmt(farCount)],
     ['Draw calls', fmt(calls + 1)], ['Triangles a frame', fmt(tris)],
-    ['List refresh', `${fmt(rebuildMs, 1)} ms`], ['Frame time', `${fmt(avg, 1)} ms (${fmt(1000 / avg)} fps)`],
+    ['List refresh: near, far', `${fmt(rebuildMs, 1)} ms, ${fmt(farMs, 1)} ms`], ['Frame time', `${fmt(avg, 1)} ms (${fmt(1000 / avg)} fps)`],
   ];
   $('costs').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
 }

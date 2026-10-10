@@ -172,7 +172,9 @@ const STRIDE = 8;   // per tree: x, z, kind, age (0..1), size (times the style's
 export { STRIDE as TREE_STRIDE };
 
 // The trees of one tile. ctx: { seed, x0, z0, size (metres, square, x east and z south from x0, z0),
-// latLon(x, z) -> [lat, lon], ground(x, z), grad(x, z) -> [gx, gz], cover(x, z) }.
+// latLon(x, z) -> [lat, lon], ground(x, z), grad(x, z) -> [gx, gz], cover(x, z), keep (optional, 0..1) }.
+// keep: only the trees whose facing number is below it (a fixed, even share of them), for far away, where
+// fewer trees are drawn, each bigger. The rest are not worked out at all, so a far tile is quick to make.
 // Returns a Float32Array, STRIDE numbers a tree.
 export function plantTile(ctx, R) {
   // Spots closer together when the forest is denser than they allow (at most 90% of spots taken).
@@ -183,6 +185,7 @@ export function plantTile(ctx, R) {
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     // every spot draws the same number of random numbers, so changing one rule moves no other tree
     const jx = r(), jz = r(), pick = r(), kindPick = r(), ageR = r(), sizeR = r(), widthR = r(), yaw = r(), shade = r(), bx = r(), bz = r();
+    if (ctx.keep !== undefined && yaw >= ctx.keep) continue;
     const x = ctx.x0 + (i + jx) * cell, z = ctx.z0 + (j + jz) * cell;
     const cover = ctx.cover(x, z);
     if (cover === COVER.FARM || cover === COVER.VINEYARD || cover === COVER.ORCHARD || cover === COVER.BUILT ||

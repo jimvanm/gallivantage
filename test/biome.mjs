@@ -102,3 +102,13 @@ console.log('biome: ok');
   assert.ok(dense > 5 * n, `800 a hectare gives far more trees: ${dense} against ${n}`);
   console.log('biome: dense ok');
 }
+
+// Far tiles keep an even share of their trees, and exactly the same ones.
+{
+  const all = plantTile(ctx(tileSeed(16, 11400, 22000)), R), quarter = plantTile({ ...ctx(tileSeed(16, 11400, 22000)), keep: 0.25 }, R);
+  const set = new Set(); for (let i = 0; i < all.length; i += TREE_STRIDE) set.add(keyOf(all, i));
+  for (let i = 0; i < quarter.length; i += TREE_STRIDE) { assert.ok(set.has(keyOf(quarter, i)), 'a share keeps the same trees'); assert.ok(quarter[i + 6] < 0.25); }
+  const share = quarter.length / all.length;
+  assert.ok(share > 0.18 && share < 0.32, 'about a quarter: ' + share);
+  console.log('biome: keep ok');
+}
