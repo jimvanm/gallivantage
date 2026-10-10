@@ -181,24 +181,40 @@ function bucket(D){CN=HALF*2/CELL;const cnt=new Uint32Array(CN*CN+1),cell=new Ui
 function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 // One tree of kind k at growth fraction age (0..1), +-10% on size.
 // Vines keep their exact size and facing, so neighbours join into one continuous row.
-function plant(D,n,r,x,z,k,age,yawByte){const st=KINDS[k].shapes,sh=st[Math.min(st.length-1,Math.floor(age*st.length))],exact=k===K.vine;
-  put(D,n,x,groundAt(x,z)-(exact?.05:.3),z,sh.H*(exact?1:.9+.2*r()),sh.W*(exact?1:.9+.2*r()),yawByte??r()*255,exact?110+40*r():r()*255,exact?r()*40:r()<.15?200:r()*60,sh.n)}
+function plant(D,n,r,x,z,k,age,yawByte,wf=1){const st=KINDS[k].shapes,sh=st[Math.min(st.length-1,Math.floor(age*st.length))],exact=k===K.vine;
+  put(D,n,x,groundAt(x,z)-(exact?.05:.3),z,sh.H*(exact?1:.9+.2*r()),sh.W*(exact?1:(.9+.2*r())*wf),yawByte??r()*255,exact?110+40*r():r()*255,exact?r()*40:r()<.15?200:r()*60,sh.n)}
 
 // ---- the mountain ----
 const PEAK=[375,-600],TREELINE=1600;
 function mountainHeight(x,z){const r1=((x-PEAK[0])**2+(z-PEAK[1])**2)/(2*1100**2),r2=((x+1700)**2+(z-1200)**2)/(2*750**2),r3=((x-1950)**2+(z-1650)**2)/(2*680**2),ridge=1-Math.abs(fbm(x/800,z/800,4)*2-1);
   return 260+1750*Math.exp(-r1)+520*Math.exp(-r2)+360*Math.exp(-r3)+320*ridge*Math.exp(-r1*.5)+70*fbm(x/250,z/250,4)}
+let CLUMP=null,PINEP=null,SUNNY=null;
+function makeGrid(fn){const G=new Float32Array(GN*GN);for(let j=0;j<GN;j++)for(let i=0;i<GN;i++)G[j*GN+i]=fn(-HALF+i*GS,-HALF+j*GS);return G}
 function forestDensity(x,z){const h=sample(HGT,x,z),s=sample(SLOPE,x,z),p=sample(EXTRA,x,z),line=TREELINE+240*(p-.5);
-  if(h>line||s>.9)return 0;let d=Math.min(1,Math.max(0,(p-(h<520?.5:.36))/.14));if(h>line-320)d*=(line-h)/320;return d*Math.sqrt(1-s/.9)}
-function mountain(N){HALF=3000;GS=20;buildGrids(mountainHeight,(x,z)=>fbm(x/650+20,z/650+20,4));
+  if(h>line||s>.9)return 0;let d=Math.min(1,Math.max(0,(p-(h<520?.5:.36))/.14));if(h>line-320)d*=(line-h)/320;
+  // trees bunch up and thin out, with small clearings, instead of standing evenly spaced
+  if(CLUMP)d*=sample(CLUMP,x,z);
+  return Math.min(1,d*Math.sqrt(1-s/.9))}
+function mountain(N){HALF=3000;GS=20;CLUMP=null;buildGrids(mountainHeight,(x,z)=>fbm(x/650+20,z/650+20,4));
+  CLUMP=makeGrid((x,z)=>{const c=fbm(x/70+3,z/70+3,3),g=fbm(x/170+9,z/170+9,3);return(.45+1.1*c)*(g<.3?.15:1)});
+  PINEP=makeGrid((x,z)=>fbm(x/380+70,z/380+70,3));
+  // how much a slope faces the sun (sun from the east-southeast here): -1 shaded, +1 full sun
+  SUNNY=makeGrid((x,z)=>{const dx=(mountainHeight(x+GS,z)-mountainHeight(x-GS,z))/(2*GS),dz=(mountainHeight(x,z+GS)-mountainHeight(x,z-GS))/(2*GS),g=Math.hypot(dx,dz);return g<.02?0:(-dx*.82-dz*.57)/g});
   groundMesh(301,(x,z)=>{const h=groundAt(x,z),s=sample(SLOPE,x,z);let c=mixc([112,142,74],[96,128,66],Math.min(1,Math.max(0,(h-300)/600)));
     c=mixc(c,[50,76,44],forestDensity(x,z)*.85);c=mixc(c,[132,128,118],Math.min(1,Math.max(0,(h-1500)/250,(s-.75)/.3)));return mixc(c,[236,240,244],Math.min(1,Math.max(0,(h-1950)/120)))});
   const r=rng(1234),D=alloc(N);let n=0,tries=0;
   while(n<N&&tries<N*12){tries++;const x=(r()*2-1)*(HALF-20),z=(r()*2-1)*(HALF-20);if(r()>forestDensity(x,z))continue;
-    const h0=groundAt(x,z),con=Math.min(1,Math.max(0,(h0-430)/300)),q=r();let k;
-    if(r()<con)k=q<.58?K.spire:q<.88?K.pine:K.column;else k=q<.5?K.round:q<.8?K.oval:K.spread;
+    const h0=groundAt(x,z),con=Math.min(1,Math.max(0,(h0-430)/300)),q=r();let k,wf=1;
+    if(r()<con){
+      // Low down, the mixed forest stays as it was. Up the slopes, spruce and fir fill the ground;
+      // pines grow only in their own stands on the sunny side, and are narrower there, as forest-grown pines are.
+      const up=Math.min(1,Math.max(0,(h0-620)/260)),stand=sample(PINEP,x,z)>.56&&sample(SUNNY,x,z)>-.1;
+      const pPine=(1-up)*.3+up*(stand?.85:.04),pCol=(1-up)*.12+up*.04;
+      k=q<pPine?K.pine:q<pPine+pCol?K.column:K.spire;
+      if(k===K.pine&&up>.5&&stand)wf=.72;
+    }else k=q<.5?K.round:q<.8?K.oval:K.spread;
     let age=k<=K.column?.5+.5*r():.15+.85*r();if(h0>TREELINE-400)age*=Math.max(.2,(TREELINE-h0)/400+.15);
-    plant(D,n++,r,x,z,k,age)}
+    plant(D,n++,r,x,z,k,age,undefined,wf)}
   D.n=n;return bucket(D)}
 
 // ---- Tuscany: rolling hills, vineyards in rows, a lane lined with cypresses, olive groves ----
@@ -254,6 +270,7 @@ function rebuild(eye,yaw,hfov,pitch){
 // World x is east and z is south; the lab sits on the equator, where map metres are true metres.
 const cam={mercX:0,mercY:0,alt:0,yaw:0,pitch:0,fly:0};
 const controls=new Controls(canvas,cam);
+window.treelab={cam,groundAt:(x,z)=>groundAt(x,z)};   // for tests and the console
 $("panel").addEventListener("wheel",e=>e.stopPropagation());   // scrolling the panel must not change speed
 const STARTS={
   mountain:[["Valley floor",-1500,1500,0,-.1,0],["Hillside",-900,500,0,.05,0],["Treeline",-150,-150,500,0,0],["Above it all",-2600,2600,2500,-.45,1]],

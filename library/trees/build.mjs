@@ -25,7 +25,7 @@ export const STYLES=[
    far(m){cone(m,.06,1,.46,5,[34,66,44],[58,102,60])}},
   {key:"pine",name:"Pine",like:"Pine",conifer:true,stages:[
     [m=>pineWhorls(m,3.5,2.2,.14,4)],[m=>pineWhorls(m,10,3.8,.42,4)],[m=>pineCrown(m,20,7,.55,5)],[m=>pineCrown(m,27,10,.62,5)]],
-   far(m){stem(m,[[0,0,0],[.03,.72,0]],[.03,.02],3,PINEBARK);octa(m,0,.8,0,.42,.17,.4,NEEDLE_L,NEEDLE_D);octa(m,.05,.92,.02,.26,.08,.24,NEEDLE_L,NEEDLE_D)}},
+   far(m){stem(m,[[0,0,0],[.02,.6,0]],[.026,.018],3,[100,84,70]);lump(m,0,.7,0,.34,.2,.32,NEEDLE_L,NEEDLE_D);lump(m,.04,.87,.02,.25,.14,.23,NEEDLE_L,NEEDLE_D)}},   // a pine top in a canopy: grey-brown trunk, taller rounder crown
   {key:"column",name:"Column",like:"Cedar, cypress",conifer:true,stages:[
     [m=>column(m,3,.9,true)],[m=>column(m,8,2.3)],[m=>column(m,14,3.8)]],
    far(m){const A=ring(m,0,.04,0,.38,5,0,[40,76,48],.1),B=ring(m,0,.45,0,.5,5,.6,[52,92,58],.14);band(m,A,B);apex(m,B,m.v(.03,1,.02,[70,114,70]));fan(m,A)}},
