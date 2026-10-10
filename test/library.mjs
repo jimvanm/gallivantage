@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 const ROOT = new URL('../library/', import.meta.url);
 const read = (p) => JSON.parse(readFileSync(new URL(p, ROOT), 'utf8'));
 const index = read('index.json');
-const STATUS = ['approved', 'check', 'pending', 'rework', 'new'];
+const STATUS = ['approved', 'check', 'testing', 'pending', 'rework', 'new'];
 const round = (v) => Math.round(v * 1000) / 1000 + 0;   // + 0 turns -0 into 0, as JSON does
 
 assert.ok(Array.isArray(index.sets) && index.sets.length > 0, 'index.json lists the sets');

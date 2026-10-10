@@ -46,7 +46,9 @@ export const STYLES=[
     [m=>broad(m,6,4.5,.1,.45,BARK,[[.2,.72,.05,.32,.14,.3],[-.2,.76,-.08,.3,.13,.3]],OAK_L,OAK_D,[[.2,.68,.05],[-.2,.72,-.08]])],
     [m=>broad(m,11,12,.3,.32,BARK,[[.24,.62,.06,.3,.18,.3],[-.23,.6,-.1,.3,.18,.3],[0,.74,.1,.3,.17,.28]],OAK_L,OAK_D,[[.26,.52,.06],[-.24,.5,-.08]])],
     [m=>broad(m,15,20,.5,.28,BARK,[[.3,.58,.05,.22,.14,.22],[-.28,.56,-.1,.22,.14,.22],[.02,.66,.28,.22,.13,.2],[-.04,.68,-.28,.2,.13,.2],[0,.8,0,.28,.13,.28]],OAK_L,OAK_D,[[.3,.5,.05],[-.28,.48,-.1],[.02,.55,.28],[-.04,.56,-.28]])]],
-   far(m){stem(m,[[0,0,0],[0,.5,0]],[.07,.05],3,BARK);lump(m,.2,.56,.05,.33,.2,.3,OAK_L,OAK_D);lump(m,-.2,.54,-.08,.32,.18,.3,OAK_L,OAK_D)}},
+   far(m){   // worked out from the mature shape: its trunk, two limbs and three clumps, each made simple
+     stem(m,[[0,0,0],[.02,.32,0]],[.07,.05],3,BARK);stem(m,[[0,.27,0],[.26,.52,.06]],[.035,.022],3,BARK);stem(m,[[0,.27,0],[-.24,.5,-.08]],[.035,.022],3,BARK);
+     lump(m,.24,.62,.06,.3,.18,.3,OAK_L,OAK_D);lump(m,-.23,.6,-.1,.3,.18,.3,OAK_L,OAK_D);lump(m,0,.74,.1,.3,.17,.28,OAK_L,OAK_D)}},
   {key:"feather",name:"Feather palm",like:"Coconut",conifer:false,stages:[
     [m=>featherSeedling(m)],[m=>featherPalm(m,0,0,12)],[m=>featherPalm(m,3,.3,14)],[m=>featherPalm(m,14,1.6,14)]],
    far(m){stem(m,[[0,0,0],[.04,.45,0],[.12,.85,0]],[.025,.02,.018],3,COCO_BARK[0]);for(let k=0;k<6;k++)fronds(m,[.12,.86,0],1,.5*(1+.22*jr()),.16+.14*jr(),.08,FROND_D,FROND_L,k*1.05+.45*jr(),1)}},   // six fronds, each its own angle, length and droop

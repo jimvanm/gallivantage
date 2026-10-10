@@ -1,5 +1,5 @@
 {
- "note": "Every object the app can draw from the library. status: approved, check (changed since last seen), pending (waiting on something else), rework, new (not yet seen).",
+ "note": "Every object the app can draw from the library. status: approved, check (changed since last seen), testing (to be judged in the world), pending (waiting on something else), rework, new (not yet seen).",
  "sets": [
   {
    "id": "playground",
@@ -192,8 +192,8 @@
      "name": "Round (maple, oak, lime)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "check",
-     "notes": "Trunk now reaches up into the foliage."
+     "status": "approved",
+     "notes": ""
     },
     {
      "id": "oval-1",
@@ -273,7 +273,7 @@
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
      "status": "check",
-     "notes": "Trunk raised and foliage lowered to meet halfway."
+     "notes": "Started again: worked out from the mature shape (trunk, two limbs, three clumps, each made simple)."
     },
     {
      "id": "feather-1",
@@ -312,8 +312,8 @@
      "name": "Feather palm (coconut)",
      "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
      "stage": "far away",
-     "status": "check",
-     "notes": "Six fronds, each at its own angle, length and droop."
+     "status": "testing",
+     "notes": "Needs judging in the world, at a distance."
     },
     {
      "id": "fan-1",
@@ -367,7 +367,7 @@
      "osm": "landuse=vineyard (rows planted inside)",
      "stage": "",
      "status": "new",
-     "notes": "1 m of row: a post, a short trunk, a hedge of leaves on the wires. Set 1 m apart they make a row."
+     "notes": "After the fan palm."
     },
     {
      "id": "vine-far",
@@ -375,7 +375,7 @@
      "osm": "landuse=vineyard",
      "stage": "far away",
      "status": "new",
-     "notes": "Just the hedge."
+     "notes": "After the fan palm."
     }
    ]
   }
