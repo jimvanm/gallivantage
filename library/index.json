@@ -337,7 +337,7 @@
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "trunked",
      "status": "check",
-     "notes": "Flat leaves, each turned about its stalk at random so the fans face every which way."
+     "notes": "Flat leaves made of ten fingers radiating from the stalk, with gaps between; each leaf turned at random."
     },
     {
      "id": "fan-4",
@@ -345,7 +345,7 @@
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "mature",
      "status": "check",
-     "notes": "Flat leaves, each turned about its stalk at random so the fans face every which way."
+     "notes": "Flat leaves made of ten fingers radiating from the stalk, with gaps between; each leaf turned at random."
     },
     {
      "id": "fan-far",

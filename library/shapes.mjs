@@ -132,7 +132,7 @@ export function featherPalm(m,T,lean,n){
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);   // low fronds rest on the ground, never through it
 }
 export function featherSeedling(m){for(let k=0;k<4;k++)feather(m,[0,.05,0],k*1.7,1.0,1.25,.35,.06,FROND_L,FROND_D)}
-// Fan leaf (Washingtonia): a stalk, then a big fan with a spiky edge. 8 triangles.
+// Fan leaf (Washingtonia): a stalk, then a big fan: flat fingers (12 triangles) or folded (8 triangles).
 export const FAN_L=[112,156,72],FAN_D=[70,112,52];
 export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   const d=[Math.cos(a)*Math.cos(el),Math.sin(el),Math.sin(a)*Math.cos(el)];let s=norm(cross(d,[0,1,0])),n=norm(cross(s,d));
@@ -141,9 +141,16 @@ export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   const P=[base[0]+d[0]*stalk,base[1]+d[1]*stalk,base[2]+d[2]*stalk],w=.05;
   const b0=m.v(base[0]+s[0]*w,base[1],base[2]+s[2]*w,c0),b1=m.v(base[0]-s[0]*w,base[1],base[2]-s[2]*w,c0),pc=m.v(...P,c0),p1=m.v(P[0]-s[0]*w,P[1],P[2]-s[2]*w,c0);
   m.idx.push(b0,b1,pc,b1,p1,pc);
+  if(flat){
+    // Flat: narrow fingers radiating from the end of the stalk, with gaps between them, as the
+    // real leaf's segments do; each finger is one triangle, its tip a little longer or shorter.
+    const F=10,span=3.5;
+    for(let f=0;f<F;f++){const a0=-span/2+span*(f+.12)/F,a1=-span/2+span*(f+.88)/F,r=R*(.9+.1*jr()),tip=(a,rr)=>m.v(P[0]+rr*(Math.cos(a)*d[0]+Math.sin(a)*s[0]),P[1]+rr*(Math.cos(a)*d[1]+Math.sin(a)*s[1]),P[2]+rr*(Math.cos(a)*d[2]+Math.sin(a)*s[2]),c1);
+      m.idx.push(pc,tip(a0,r),tip(a1,r))}
+    return;
+  }
   const K=6,rim=[];
-  // Flat: one shape with the real fan's outline, its fingers suggested by the spiky edge.
-  // Not flat (the young palms, as Jim preferred them): folds and drooping tips.
+  // Not flat (the young palms, as Jim preferred them): a fan with folds and drooping tips.
   for(let i=0;i<=K;i++){const f=-1.7+3.4*i/K,c=Math.cos(f),sn=Math.sin(f),r=R*(i%2?1:.78),pl=flat?0:(i%2?.1:-.05)*R,drop=flat?0:R*(.18+.32*Math.abs(sn));
     rim.push(m.v(P[0]+r*(c*d[0]+sn*s[0])+pl*n[0],P[1]+r*(c*d[1]+sn*s[1])+pl*n[1]-drop,P[2]+r*(c*d[2]+sn*s[2])+pl*n[2],c1))}
   for(let i=0;i<K;i++)m.idx.push(pc,rim[i],rim[i+1]);
