@@ -77,11 +77,17 @@ ul.finds li:hover{outline:1px solid var(--line)}
     <div class="tag" id="tagR">engineered: built to rules</div>
     <div class="hud" id="hud"></div>
     <div id="busy">Loading…</div>
-    <div class="hint"><span>Click to look around (the app's controls): WASD move · mouse looks · wheel sets speed · double-tap Space to fly, Space/E up, Q/Shift down · Ctrl boosts · Esc lets go · <b>Enter</b> drives the nearest road · <b>T</b> drives today's road instead</span></div>
+    <div class="hint"><span>Click to look around (the app's controls): WASD move · mouse looks · wheel sets speed · double-tap Space to fly, Space/E up, Q/Shift down · Ctrl boosts · Esc lets go · <b>Enter</b> drives the nearest road · <b>T</b> drives today's road instead · <b>F</b> saves this spot to a file · <b>[ ]</b> roads see-through</span></div>
   </div>
   <aside class="panel" id="panel">
     <header><h1>Road Lab</h1>
       <p class="lede">Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, rides on the ground or above it, and is a bridge where it rides well above. The ground is never changed: it is the truth.</p></header>
+
+    <section>
+      <h2>A spot that looks wrong?</h2>
+      <div class="chips"><button class="btn primary" id="saveSpot">Save this spot to a file (F)</button></div>
+      <p class="note">Saves the roads and the ground for 600 m square round where you are, so Claude can rerun the rules on the same data. Attach the file in the chat.</p>
+    </section>
 
     <section>
       <h2>Place</h2>
@@ -115,12 +121,6 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="row" style="margin-top:6px"><label for="driveSpeed">Speed</label><output id="driveSpeed-o"></output></div>
       <input type="range" id="driveSpeed" min="0.25" max="2" step="0.05" value="1">
       <p class="note">At each road's design speed (×1). At a junction you carry straight on where you can.</p>
-    </section>
-
-    <section>
-      <h2>A spot that looks wrong</h2>
-      <div class="chips"><button class="btn" id="saveSpot">Save this spot to a file</button></div>
-      <p class="note">Saves the map's roads and the ground for 400 m round where you are, so Claude can work it out from the same data. Attach the file in the chat.</p>
     </section>
 
     <section>
@@ -176,9 +176,11 @@ import { buildRoadShapes, roadPoint } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 0) => Number(v).toLocaleString('en-CA', { maximumFractionDigits: d, minimumFractionDigits: d });
+// [name, lat, lon, heading, metres above the ground]
 const PLACES = [
-  ['407 at Brock Road, Pickering', 43.92427, -79.09194, 216],
-  ['Campbellford, Trent River', 44.30009, -77.80484, 0],
+  ['407 at Brock Road, Pickering', 43.92427, -79.09194, 216, 62],
+  ['Campbellford: the junction on the hill', 44.30787, -77.79357, 138, 15],
+  ['Campbellford: Trent River', 44.30009, -77.80484, 0, 62],
 ];
 
 // ---- rules and their controls ------------------------------------------------------
@@ -307,7 +309,7 @@ async function loadMap(a) {
   return { lines, waterways, water, mapTiles };
 }
 
-async function load(lat, lon, heading) {
+async function load(lat, lon, heading, up = 62, at = null) {
   const id = ++loadId;
   stopDriving();
   downloaded = 0;
@@ -328,7 +330,12 @@ async function load(lat, lon, heading) {
   rebuild();
   // Start 62 m above the ground in the middle, looking the given way.
   const g0 = natAt(0, 0);
-  Object.assign(cam, { mercX: 0, mercY: 0, alt: g0 + 62, yaw: heading * Math.PI / 180, pitch: -0.28, fly: 1 });
+  // Start in the middle, `up` metres above the ground, looking the given way,
+  // or at `at` ({ x, z, up, yaw, pitch }: a remembered spot inside the area).
+  if (at && Math.abs(at.x) < S / 2 && Math.abs(at.z) < S / 2) {
+    const g1 = natAt(at.x, at.z);
+    Object.assign(cam, { mercX: at.x, mercY: -at.z, alt: (Number.isFinite(g1) ? g1 : g0) + at.up, yaw: at.yaw, pitch: at.pitch, fly: 1 });
+  } else Object.assign(cam, { mercX: 0, mercY: 0, alt: g0 + up, yaw: heading * Math.PI / 180, pitch: up < 30 ? -0.12 : -0.28, fly: 1 });
   busy(null);
 }
 
@@ -603,6 +610,7 @@ const showAlpha = () => { const v = Number($('roadAlpha').value); $('roadAlpha-o
 $('roadAlpha').oninput = showAlpha; showAlpha();
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  if (e.code === 'KeyF' && !e.repeat) { $('saveSpot').click(); return; }
   if (e.key !== '[' && e.key !== ']') return;
   const el = $('roadAlpha');
   el.value = Math.max(0, Math.min(1, Number(el.value) + (e.key === ']' ? 0.25 : -0.25)));
@@ -739,14 +747,14 @@ function frame(now) {
   // Where you are, so every screenshot says so (type it back into the box to return).
   const lat = mercYToLat(area.cmy - (-cam.mercY) / area.k), lon = mercXToLon(area.cmx + cam.mercX / area.k);
   const hd = ((cam.yaw * 180 / Math.PI) % 360 + 360) % 360;
-  t += `\n${lat.toFixed(5)}, ${lon.toFixed(5)} · heading ${hd.toFixed(0)}° · ${fmt(cam.alt)} m above sea level`;
+  t += `\n${lat.toFixed(5)}, ${lon.toFixed(5)} · heading ${hd.toFixed(0)}° · ${fmt(cam.alt)} m above sea level · ${BUILD_NO}`;
   if (now < flashT) t += '\n' + flashMsg;
   $('hud').textContent = t;
 }
 
 // ---- start ---------------------------------------------------------------------------------
 $('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0]}</button>`).join('');
-$('places').onclick = (e) => { const b = e.target.closest('button'); if (b) { const p = PLACES[Number(b.dataset.i)]; load(p[1], p[2], p[3]); } };
+$('places').onclick = (e) => { const b = e.target.closest('button'); if (b) { const p = PLACES[Number(b.dataset.i)]; load(p[1], p[2], p[3], p[4]); } };
 $('ll').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   e.stopPropagation();
@@ -768,7 +776,18 @@ $('ll').addEventListener('keydown', (e) => {
 $('size').onchange = () => { if (area) load(area.lat, area.lon, cam.yaw * 180 / Math.PI); };
 showRules();
 requestAnimationFrame(frame);
-load(PLACES[0][1], PLACES[0][2], PLACES[0][3]);
+// Reopen where you were last time (kept in this browser only), else at the first place.
+const SPOT_KEY = 'roadlab-spot';
+let lastSpot = null;
+try { lastSpot = JSON.parse(localStorage.getItem(SPOT_KEY) || 'null'); } catch (e) { lastSpot = null; }
+if (lastSpot && Number.isFinite(lastSpot.areaLat)) load(lastSpot.areaLat, lastSpot.areaLon, 0, 62, lastSpot);
+else load(PLACES[0][1], PLACES[0][2], PLACES[0][3], PLACES[0][4]);
+setInterval(() => {
+  if (!area || $('busy').hidden === false) return;
+  const g = natAt(cam.mercX, -cam.mercY);
+  const spot = { areaLat: area.lat, areaLon: area.lon, x: cam.mercX, z: -cam.mercY, up: cam.alt - (Number.isFinite(g) ? g : 0), yaw: cam.yaw, pitch: cam.pitch };
+  try { localStorage.setItem(SPOT_KEY, JSON.stringify(spot)); } catch (e) { /* not kept: fine */ }
+}, 2000);
 </script>
 </body>
 </html>
