@@ -307,18 +307,13 @@ reasoning: the project's `ROADS-DRAFT.md`.
   crossings. Which is on top: the map's bridge/tunnel tags and layers, then
   the ground just beyond the other road (approach mounds = over, cutting =
   under), then "a motorway never meets anything level".
-- **The ground is truth, within its own error (Jim, 10 October; 0.14.6,
-  refined 0.14.9).** The survey is bare earth, so real embankments and
-  cuttings are already in it; building them again doubles them. But it is
-  truth only at its own detail (2 m; the ordinary tiles about 30 m). So
-  shapes the data can see never change; under a road's own footprint (width
-  and shoulders) the ground may settle toward the road by up to the data's
-  error (0.3 m on the survey, 1.5 m on the ordinary tiles: sliders); nothing
-  beside a road moves. A road never goes deeper into the ground than that
-  error (except in a tunnel the map marks). More than 1.5 m above the
-  settled ground, it is a bridge on piers; less, its own bed shows at its
-  edges. Higher than 4 m with nothing on the map to explain it (bridge tag,
-  water, river, a road below): flagged as worth a look.
+- **The ground is truth (Jim, 10 October, 0.14.6).** It is never raised and
+  never cut: the survey is bare earth, so real embankments and cuttings are
+  already in it. A road rides on the ground or above it, never below (except
+  in a tunnel the map marks). More than 1.5 m above the ground, it is a
+  bridge on piers; less, its own bed shows at its edges. Higher than 4 m with
+  nothing on the map to explain it (bridge tag, water, river, a road below):
+  flagged as worth a look.
 - **Only a little roadbed (Jim, 10 October, 0.14.7).** Each kind may ride
   only so far above the ground to stay smooth (`bed`: main road 1 m,
   secondary 0.5, local 0.3, lane 0.2, track and path 0.1). Past that a slow
@@ -335,9 +330,13 @@ reasoning: the project's `ROADS-DRAFT.md`.
       Famous bridges (the Golden Gate) as hand-built landmarks standing in
       for the rules' plain deck. How they fit together: later.
 - [ ] Oddities in Jim's first real look (0.14.7): where the map's road line
-      runs off the real road beside a slope, the slope covered the road's
-      edge (settling within the error, 0.14.9, may fix it: check); along a
-      ramp, tall grey roadbed walls down to the ground.
+      runs off the real road beside a slope, the slope covers the road's
+      edge; along a ramp, tall grey roadbed walls down to the ground.
+      Tried and taken back (0.14.9, undone in 0.14.10): letting the ground
+      under a road settle by the data's error. It dug a road-wide trench
+      with a step at each edge, and tangled junctions. The ground stays as
+      found. Next idea: find where the road really is from the ground (the
+      flat strip across a slope) and move the road there.
 - [ ] Old streets are steeper than modern rules allow (Campbellford's hill).
       Proposed: colour "steep because the ground is" apart from "broken by
       us". Not decided.
