@@ -1,14 +1,14 @@
 # Library hand-off: small objects and trees, for the main project
 
-10 October 2026, 02:15 EDT. From the components session (the "tweaking lab").
+10 October 2026, 08:45 EDT. From the components session (the "tweaking lab").
 For the main development session. Nothing here touches the app yet: this says
 what was built, how it works, where it is, and what the app needs to take it in.
 
 ## 1. Where it all is
 
-**On GitHub** through change file 37 (vineyard regions in the Tree Stand). This
-note comes with 38 (the vine into the library). None bump `BUILD` and none
-touch `src/`. GitHub only has what Jim has pushed; check before building on it.
+**On GitHub** through change file 38 (the vine into the library), commit
+88b1837. None bump `BUILD` and none touch `src/`. GitHub only has what Jim has
+pushed; check it again right before making each change file.
 
 **Pages** (served by the app's server):
 - `library.html`: tabs for library objects, landmarks and map tags. Each object
