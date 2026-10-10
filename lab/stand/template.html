@@ -189,7 +189,7 @@ function pack(id,ref){const m=LIB.models[id];let H=0,W=0;for(let i=0;i<m.pos.len
   return{first,count:m.idx.length,tris:m.idx.length/3,H,W,lib:id}}
 const STYLES=STYLE_INFO.map(([key,name,like,conifer],si)=>{const s={key,name,like,conifer},ids=[];for(let i=1;LIB.models[`${key}-${i}`];i++)ids.push(`${key}-${i}`);
   s.shapes=ids.map(id=>{const sh=pack(id);sh.style=si;SHAPES.push(sh);sh.id=SHAPES.length-1;return sh});
-  const rowPiece=(LIB.extra||[]).some(e=>e.key===key&&e.vineyard)||key==="vpost",f=pack(`${key}-far`,rowPiece?s.shapes[s.shapes.length-1]:null);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
+  const rowPiece=(LIB.extra||[]).some(e=>e.key===key&&(e.vineyard||e.rowOnly)),f=pack(`${key}-far`,rowPiece?s.shapes[s.shapes.length-1]:null);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
 // The far shapes also go in as ordinary shapes, so the rows can show them up close.
 STYLES.forEach((s,si)=>{const f=s.far;f.style=si;f.isFar=true;SHAPES.push(f);f.id=SHAPES.length-1});
 const NSH=SHAPES.length;
@@ -340,7 +340,8 @@ const STAGES={spire:["sapling","young","mature","old"],pine:["sapling","pole","m
 (LIB.extra||[]).forEach(e=>STAGES[e.key]=e.stages);
 // Only shapes not yet approved are shown here; approved ones live in the library page.
 const isOpen=sh=>(LIB.status[sh.lib]?.status||"")!=="approved";
-const OPEN=STYLES.map((S,si)=>si).filter(si=>[...STYLES[si].shapes,STYLES[si].far].some(isOpen));
+const ROWONLY=new Set((LIB.extra||[]).filter(e=>e.rowOnly).map(e=>e.key));
+const OPEN=STYLES.map((S,si)=>si).filter(si=>!ROWONLY.has(STYLES[si].key)&&[...STYLES[si].shapes,STYLES[si].far].some(isOpen));
 const rowZ=si=>(OPEN.indexOf(si)-(OPEN.length-1)/2)*34;
 // Each style with open shapes gets a row: its open growth stages, then its far shape if that is open too.
 function plantStyles(){
@@ -436,24 +437,30 @@ let labels=[];
 function setLabels(list){labels=(list||[]).map(l=>{const el=document.createElement("div");el.className="lbl"+(l.status&&l.status!=="approved"?" open":"");el.textContent=l.text;return{...l,el}});$("labels").replaceChildren(...labels.map(l=>l.el))}
 let plantMs=0;
 // ================= vineyard trials =================
-// One block per trial plot with a vineyard layout: 12 rows 2.6 m apart, 40 to 51 m long, along x.
+// One block per trial plot with a vineyard layout: rows 2.6 m apart, of different lengths, along x.
+//   chain: 1 m row pieces vrow<i><j> (start outline i, end outline j); each piece starts with the outline the
+//     last one ended with, picked at random, so the row joins exactly while its lines wander; a cap at each end.
 //   metre: one 1 m piece per metre (post built in). posts: 1 m vines, a post every 5 m, heavier posts at the ends.
 //   bays: one 5 m piece per 5 m (its post at the start), leftover metres filled with B's vine, heavier end posts.
 // The label gives triangles per 10 m of row, near and far (posts have no far shape).
 const BYLIB=Object.fromEntries(SHAPES.map(s=>[s.lib,s]));
 function plantVines(){
   const blocks=(LIB.extra||[]).filter(e=>e.vineyard),items=[],labels=[],r=rng(77);
-  const ROWS=12,GAP=2.6,LANE=ROWS*GAP+22;
+  const ROWS=16,GAP=2.6,LANE=ROWS*GAP+22,rowShade=[];
   blocks.forEach((b,bi)=>{const z0=(bi-(blocks.length-1)/2)*LANE-(ROWS-1)*GAP/2,lay=b.vineyard.layout;let metres=0,near=0,far=0;
     const put=(id,x,z)=>{const sh=BYLIB[id];if(!sh)return;items.push([sh,x,z]);near+=sh.tris;far+=STYLES[sh.style].farTris};
-    for(let row=0;row<ROWS;row++){const z=z0+row*GAP,L=40+row;metres+=L;
+    for(let row=0;row<ROWS;row++){const z=z0+row*GAP,L=40+row+Math.floor(r()*6);metres+=L;rowShade.push([z,118+r()*20,30+r()*20]);
+      if(lay==="chain"){const K=b.vineyard.outlines;let e=Math.floor(r()*K);put(`vcap-${e+1}`,0,z);
+        for(let i=0;i<L;i++){const n=Math.floor(r()*K);put(`vrow${e}${n}-1`,i+.5,z);e=n}put(`vcap-${e+1}`,L,z)}
       if(lay==="metre")for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);
       if(lay==="posts"){for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);for(let x=5;x<L;x+=5)put("vpost-1",x,z);put("vpost-2",0,z);put("vpost-2",L,z)}
       if(lay==="bays"){const nb=Math.floor(L/5);for(let k=0;k<nb;k++)put(`${b.key}-1`,k*5+2.5,z);for(let i=nb*5;i<L;i++)put("vineB-1",i+.5,z);
         if(nb*5<L)put("vpost-1",nb*5,z);put("vpost-2",0,z);put("vpost-2",L,z)}}
     labels.push({text:`${b.name} · ${Math.round(near/metres*10)} triangles per 10 m near, ${Math.round(far/metres*10)} far`,x:-3,y:3.5,z:z0+(ROWS-1)*GAP/2,status:"testing"})});
   const D=allocTrees(items.length);
-  items.forEach(([sh,x,z],i)=>writeTree(D,i,x,0,z,sh.H,sh.W,0,118+r()*20,30+r()*20,sh.id));
+  // One shade per row, not per piece, so neighbouring pieces never show a colour step at the join.
+  const shadeOf=z=>rowShade.find(q=>Math.abs(q[0]-z)<.01)||[128,40];
+  items.forEach(([sh,x,z],i)=>{const[,sd,wm]=shadeOf(z);writeTree(D,i,x,0,z,sh.H,sh.W,0,sd,wm,sh.id)});
   D.n=items.length;const out=bucket(D);out.labels=labels;return out;
 }
 

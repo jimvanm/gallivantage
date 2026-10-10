@@ -41,13 +41,32 @@ function rounded(m, A, B, cols, caps) {
   if (caps) for (const r of [a, b]) for (let k = 1; k < r.length - 1; k++) m.idx.push(r[0], r[k], r[k + 1]);
 }
 const out = {};
-const E1 = outline(PROFILE), E2 = outline(PROFILE);
+const E1 = outline(PROFILE), E2 = outline(PROFILE), O = [E1, E2, outline(PROFILE)];
 let m = new Mesh(); rounded(m, E1, E2, SHADES, true);
 // Far: the same, with the barn-roof bend dropped (ground, widest, ridge).
 const drop = (E) => E.filter((_, i) => i !== 2 && i !== 4);
 const far = new Mesh(); rounded(far, drop(E1), drop(E2), [SHADES[0], SHADES[1], SHADES[3]], true);
 out.vineD = { key: 'vineD', name: 'Vine D: rounded', like: 'One vine, 1 m of row', stages: ['vine'], status: 'testing',
   models: { 'vineD-1': done(m), 'vineD-far': done(far) } };
+
+out.vineD.vineyard = { layout: 'chain', outlines: O.length };
+
+// Rows: one piece for every pair of end outlines (start i, end j), without end faces, since inside a row
+// they are hidden. A row starts with outline i, and each next piece starts with the outline the last one
+// ended with, so the row joins exactly while its lines wander. Row ends get a flat cap of that outline.
+// These only appear in rows (rowOnly), not on their own in the styles scene.
+O.forEach((A, i) => O.forEach((B, j) => {
+  const near = new Mesh(); rounded(near, A, B, SHADES, false);
+  const f = new Mesh(); rounded(f, drop(A), drop(B), [SHADES[0], SHADES[1], SHADES[3]], false);
+  out[`vrow${i}${j}`] = { key: `vrow${i}${j}`, name: `Vine D row piece ${i}${j}`, like: 'Row piece', stages: ['vine'], status: 'testing', rowOnly: true,
+    models: { [`vrow${i}${j}-1`]: done(near), [`vrow${i}${j}-far`]: done(f) } };
+}));
+const caps = {};
+O.forEach((A, i) => { const m = new Mesh(); const c = [...SHADES, ...SHADES.slice(0, -1).reverse()];
+  const r = A.map(([z, y], k) => m.v(0, y, z, c[k])); for (let k = 1; k < r.length - 1; k++) m.idx.push(r[0], r[k], r[k + 1]);
+  caps[`vcap-${i + 1}`] = done(m); });
+caps['vcap-far'] = { tris: 0, pos: [], col: [], idx: [] };
+out.vcap = { key: 'vcap', name: 'Vine row end', like: 'Row end cap', stages: O.map((_, i) => `outline ${i}`), status: 'testing', rowOnly: true, models: caps };
 
 for (const [k, p] of Object.entries(out)) {
   fs.writeFileSync(path.join(plots, `vine-${k}.json`), JSON.stringify(p));
