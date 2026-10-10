@@ -8,6 +8,7 @@
 import { rgba } from './meshbuilder.js';
 import { ROAD_STYLE, RAIL_STYLE, RAIL_HEAD } from './roads.js';
 import { banking, CROWN, checkProfile } from './roadrules.js';
+import { READ_CLASSES, READ_COLOURS } from './roadread.js';
 
 const LIFT = 0.08;               // the surface sits this far above its height line
 const DECK = 1.2;                // depth of a bridge deck, metres
@@ -91,6 +92,7 @@ export function buildRoadShapes(net, mb, opt) {
       if (sc) rgb = ruleColour(Math.max(sc.vert[i], opt.curves ? sc.curve[i] : 0));
       if (opt.colour === 'moved') rgb = movedColour(raw || !c.shift ? 0 : Math.abs(c.shift[i]));
       if (opt.colour === 'where') rgb = !raw && c.jz && c.jz[i] ? WHERE_C.junction : c.urban ? WHERE_C.town : WHERE_C.country;
+      if (opt.colour === 'ground') rgb = READ_COLOURS[READ_CLASSES[c.read ? c.read.cls[i] : 3]];
       return rgba(rgb[0], rgb[1], rgb[2]);
     };
     // The surface, three vertices across each sample.
@@ -194,7 +196,7 @@ function junctionShapes(net, mb, opt) {
     let rgb = (ROAD_STYLE[L.cls] || ROAD_STYLE.minor).c;
     if (opt.colour === 'rules') rgb = ruleColour(0);
     if (opt.colour === 'where') rgb = WHERE_C.junction;
-    if (opt.colour === 'moved') rgb = [150, 150, 150];
+    if (opt.colour === 'moved' || opt.colour === 'ground') rgb = [150, 150, 150];
     const colour = rgba(rgb[0], rgb[1], rgb[2]);
     // The outline, a point every 2 m or so.
     const ring = [];
@@ -220,6 +222,34 @@ function junctionShapes(net, mb, opt) {
       mb.tri(at(r, k), at(r + 1, k + 1), at(r + 1, k));
     }
     count++;
+  }
+  return count;
+}
+
+// The edges of the road strip found in the ground (roadread.js), as thin
+// light lines lying on the ground, joined where neighbouring cross-sections
+// both found one. groundAt(x, z) for their heights.
+export function groundRoadEdges(net, mb, groundAt) {
+  const col = rgba(245, 240, 225), W = 0.15, LIFT_E = 0.12;
+  const seg = (ax, az, bx, bz) => {
+    const dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz);
+    if (L < 0.1 || L > 12) return;
+    const nx = -dz / L * W, nz = dx / L * W, b = mb.verts;
+    for (const [x, z] of [[ax + nx, az + nz], [ax - nx, az - nz], [bx - nx, bz - nz], [bx + nx, bz + nz]]) {
+      const h = groundAt(x, z);
+      mb.vert(x, (Number.isFinite(h) ? h : 0) + LIFT_E, z, col);
+    }
+    mb.tri(b, b + 1, b + 2); mb.tri(b, b + 2, b + 3);
+  };
+  let count = 0;
+  for (const c of net.chains) {
+    if (!c.read) continue;
+    const E = c.read.edges, every = Math.round(4 / c.ds);
+    for (let k = 1; k < E.length; k++) {
+      const p = E[k - 1], q = E[k];
+      if (q[0] - p[0] > every * 1.5) continue;
+      seg(p[1], p[2], q[1], q[2]); seg(p[3], p[4], q[3], q[4]); count++;
+    }
   }
   return count;
 }

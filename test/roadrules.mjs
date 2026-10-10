@@ -324,6 +324,31 @@ function world(extra, lines) {
   ok('dense streets are a town and keep town rules; lone roads are country');
 }
 
+// ---- reading the road from the ground --------------------------------------------------------------
+{
+  const { readGroundRoads } = await import('../src/roadread.js');
+  const rl = defaultRules();
+  const read = (g) => { const r = runAll([line([0, -200, 0, 200], 'local')], [], g, rl); const s = readGroundRoads(r.net, g, rl); return { s, c: r.net.chains[0] }; };
+  // A 7 m flat bench cut into a 20% hillside, its middle 2 m left of the map's line.
+  const bench = read((x, z) => x < -5.5 ? 100 + 0.2 * (-5.5 - x) : x > 1.5 ? 100 - 0.2 * (x - 1.5) : 100);
+  assert.ok(bench.s.len.fits > 300, 'the map\'s road lies on the bench');
+  const w = bench.c.read.width[100], off = bench.c.read.off[100];
+  assert.ok(w > 6 && w < 9.5 && off < -0.8 && off > -2.6, 'width and place read: ' + w + ' ' + off);
+  // Flat open ground: no strip with edges, so it cannot tell.
+  const flat = read((x, z) => 100 + 0.01 * Math.sin(x * 0.7 + z));
+  assert.ok(flat.s.len.unclear > 390, 'flat ground: can\'t tell');
+  // Gently rolling open ground: no sharp edges, so it cannot tell either.
+  const roll = read((x, z) => 100 + 4 * Math.sin(x / 60) * Math.cos(z / 80));
+  assert.ok(roll.s.len.unclear > 350, 'rolling ground: can\'t tell: ' + JSON.stringify(roll.s.len));
+  // A raised road bed, 8 m across, with banks: found, and the road lies on it.
+  const emb = read((x, z) => { const ax = Math.abs(x); return 100 + (ax < 4 ? 1 : ax < 6 ? 1 - (ax - 4) / 2 : 0); });
+  assert.ok(emb.s.len.fits > 300);
+  // The map's line 4 m off a 7 m bench: part of the road hangs off its edge.
+  const off4 = read((x, z) => x < -7.5 ? 100 + 0.2 * (-7.5 - x) : x > -0.5 ? 100 - 0.2 * (x + 0.5) : 100);
+  assert.ok(off4.s.len.hangs > 300, 'hangs off the edge: ' + JSON.stringify(off4.s.len));
+  ok('the road strip is read from the ground; the map\'s road lies on it, hangs off it, or it cannot tell');
+}
+
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

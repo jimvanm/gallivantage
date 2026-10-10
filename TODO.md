@@ -366,6 +366,18 @@ reasoning: the project's `ROADS-DRAFT.md`.
   2.7% after (today's draped roads 5.1%), no flags left.
 - **Save a spot (0.14.13):** F in the lab saves roads and ground for 600 m
   square to a file, so the rules can be rerun on exactly the same data.
+- **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
+  survey is bare earth, so the road's real bed is in it. Every 4 m across
+  each road: the widest flat, nearly level strip near the map's line, with a
+  sharp change of slope at its edge (bank or ditch). Finding (Jim's spot):
+  the flat strip is the whole street corridor, about 18 m for local roads
+  and 21 m for the secondary, close to Ontario's 66-foot (20 m) road
+  allowance, not the pavement. So it reports whether the map's road lies on
+  it, hangs off its edge, or it can't tell (flat or rolling open ground,
+  coarse ground, bridges). Jim's spot: lies on it 39%, hangs off 6%, can't
+  tell 54%. Nothing changes in the rules yet. Next idea (Jim agreed the
+  direction): where the ground's road is believable, read it and draw on it;
+  the rules judge and fill in where it is not (bridges, creeks, 30 m ground).
 - [ ] Old streets are steeper than modern rules allow (Campbellford's hill).
       Proposed: colour "steep because the ground is" apart from "broken by
       us". Not decided.

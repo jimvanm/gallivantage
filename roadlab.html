@@ -102,17 +102,19 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="row"><label for="view">Show</label>
         <select id="view"><option value="split" selected>Side by side</option><option value="raw">Today only</option><option value="eng">Engineered only</option></select></div>
       <div class="row" style="margin-top:6px"><label for="colour">Road colour</label>
-        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option></select></div>
+        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option><option value="ground">What the ground says</option></select></div>
+      <div class="key" id="keyGround" style="margin-top:6px" hidden><span><i class="sw" style="background:#40a860"></i>lies on the ground's flat street</span><span><i class="sw" style="background:#4678dc"></i>hangs off its edge</span><span><i class="sw" style="background:#deaa28"></i>street narrower than the road</span><span><i class="sw" style="background:#969696"></i>can't tell</span></div>
       <div class="key" id="keyWhere" style="margin-top:6px" hidden><span><i class="sw" style="background:#d68c3c"></i>in town</span><span><i class="sw" style="background:#50a060"></i>in the country</span><span><i class="sw" style="background:#468cc8"></i>junction and its slow zone</span></div>
       <div class="key" id="keyMoved" style="margin-top:6px" hidden><span><i class="sw" style="background:#969696"></i>on the map's line</span><span><i class="sw" style="background:#5d6ed8"></i>moved a little</span><span><i class="sw" style="background:#e632c8"></i>moved 5 m</span></div>
       <div class="key" id="keyRules" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
       <label class="check" style="margin-top:6px"><input type="checkbox" id="junctions" checked> Junctions as places of their own (one surface; roads meet its edge)</label>
       <label class="check"><input type="checkbox" id="townOn" checked> Town rules in built-up areas</label>
+      <label class="check"><input type="checkbox" id="groundEdges"> Show the edges of the road found in the ground (light lines)</label>
       <label class="check"><input type="checkbox" id="bench" checked> Move roads onto the flat strip in the ground (where the map's line is off the real road)</label>
       <label class="check"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
       <div class="row" style="margin-top:6px"><label for="roadAlpha">Roads see-through</label><output id="roadAlpha-o"></output></div>
-      <input type="range" id="roadAlpha" min="0" max="1" step="0.05" value="1" aria-describedby="roadAlpha-o">
+      <input type="range" id="roadAlpha" min="0" max="1" step="0.01" value="1" aria-describedby="roadAlpha-o">
       <p class="note">Slide left to see the ground under the roads; all the way left hides them. Keys: [ and ] step it.</p>
       <div class="row" style="margin-top:8px"><label for="sunTime">Time of day</label><output id="sunTime-o"></output></div>
       <input type="range" id="sunTime" min="6" max="20" step="0.25" value="15" aria-describedby="sunTime-o">
@@ -185,7 +187,8 @@ import { buildRoads } from './src/roads.js';
 import { MeshBuilder, rgba } from './src/meshbuilder.js';
 import { Controls } from './src/controls.js';
 import { defaultRules, KIND_ORDER, TOWN_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile, clipPolyline } from './src/roadrules.js';
-import { buildRoadShapes, roadPoint } from './src/roadshape.js';
+import { readGroundRoads, READ_CLASSES } from './src/roadread.js';
+import { buildRoadShapes, roadPoint, groundRoadEdges } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 0) => Number(v).toLocaleString('en-CA', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -367,7 +370,7 @@ async function load(lat, lon, heading, up = 62, at = null) {
 
 // ---- engineering and meshes --------------------------------------------------------
 let result = null;          // runAll's result, for the current rules
-const meshes = { natGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null };
+const meshes = { natGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null, edges: null };
 let timing = {};
 
 function waterAt(x, z) {
@@ -379,6 +382,7 @@ function rebuild() {
   if (!area) return;
   const t0 = performance.now();
   result = runAll(area.lines, area.waterways, natAt, rules, { waterAt, bench: $('bench').checked });
+  result.read = readGroundRoads(result.net, natAt, rules);
   const t1 = performance.now();
   const t2 = performance.now();
   if (!meshes.natGround) meshes.natGround = groundMesh(area.nat);
@@ -390,7 +394,8 @@ function rebuild() {
 
 function roadMeshes() {
   if (!result) return;
-  free(meshes.rawRoads); free(meshes.engRoads); free(meshes.flags);
+  free(meshes.rawRoads); free(meshes.engRoads); free(meshes.flags); free(meshes.edges); meshes.edges = null;
+  if ($('groundEdges').checked) { const eb = new MeshBuilder(); groundRoadEdges(result.net, eb, natAt); meshes.edges = upload(eb.finish()); }
   const colour = $('colour').value, curves = $('curves').checked;
   let mb = new MeshBuilder();
   buildRoadShapes(result.net, mb, { which: 'raw', colour, curves, rules });
@@ -640,7 +645,8 @@ $('saveSpot').onclick = () => {
 $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').value; };
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
-for (const id of ['colour', 'curves']) $(id).onchange = () => { for (const [k, v] of [['keyMoved', 'moved'], ['keyRules', 'rules'], ['keyWhere', 'where']]) $(k).hidden = $('colour').value !== v; roadMeshes(); };
+for (const id of ['colour', 'curves']) $(id).onchange = () => { for (const [k, v] of [['keyMoved', 'moved'], ['keyRules', 'rules'], ['keyWhere', 'where'], ['keyGround', 'ground']]) $(k).hidden = $('colour').value !== v; roadMeshes(); };
+$('groundEdges').onchange = () => roadMeshes();
 $('bench').onchange = () => { stopDriving(); rebuild(); };
 // A simple sun: rises in the east at 6:00, highest (55°) in the south at
 // 13:00, sets in the west at 20:00. Not the real sun for the date and place.
@@ -674,7 +680,10 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyF' && !e.repeat) { $('saveSpot').click(); return; }
   if (e.key !== '[' && e.key !== ']') return;
   const el = $('roadAlpha');
-  el.value = Math.max(0, Math.min(1, Number(el.value) + (e.key === ']' ? 0.25 : -0.25)));
+  // Steps of a quarter, finer near the see-through end (to 99%).
+  const v = Number(el.value), stops = [0, 0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 1];
+  const up = e.key === ']';
+  el.value = up ? (stops.find((q) => q > v + 1e-6) ?? 1) : ([...stops].reverse().find((q) => q < v - 1e-6) ?? 0);
   showAlpha();
 });
 
@@ -722,6 +731,8 @@ function showStats() {
     ['Well over its rules, today', `${fmt(bad / 1000, 2)} km (${fmt(100 * bad / Math.max(1, len))}%)`],
     ['Well over its rules, engineered', `${fmt(badEng / 1000, 2)} km (${fmt(100 * badEng / Math.max(1, len), 1)}%)`],
     ['Ground from Canada\'s survey', `${fmt(100 * area.surveyed)}% of ${area.groundTiles} tiles`],
+    ['The map\'s road and the ground\'s flat street', READ_CLASSES.map((k) => `${{ fits: 'lies on it', hangs: 'hangs off its edge', narrow: 'narrower than the road', unclear: 'can\'t tell' }[k]} ${fmt(100 * result.read.len[k] / Math.max(1, Object.values(result.read.len).reduce((a, b) => a + b, 0)))}%`).join(', ')],
+    ...Object.entries(result.read.byKind).filter(([, v]) => Number.isFinite(v.median)).map(([k, v]) => [`  ${rules.kinds[k].label}: flat street`, `${fmt(v.median, 1)} m wide (the road ${fmt(v.mapWidth, 1)} m)`]),
     ['Moved onto the flat strip', result.bench ? `${fmt(result.bench.moved / 1000, 2)} km of road, at most ${fmt(result.bench.most, 1)} m` : 'off'],
     ['Ground points', `${fmt(area.N)} × ${fmt(area.N)}, ${area.step} m apart`],
     ['Downloaded', `${fmt(downloaded / 1e6, 1)} MB in ${fmt(area.loadMs / 1000, 1)} s`],
@@ -792,8 +803,9 @@ function frame(now) {
   const relief = Number($('relief').value);
   const ground = () => { gl.uniform1f(U.uRelief, relief); draw(meshes.natGround, true); gl.uniform1f(U.uRelief, 1); };
   gl.uniform1f(U.uRelief, 1);
-  const left = () => { ground(); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
-  const right = () => { ground(); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
+  const edges = () => { if (meshes.edges) draw(meshes.edges); };
+  const left = () => { ground(); edges(); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
+  const right = () => { ground(); edges(); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
   const split = view === 'split';
   $('divider').style.display = $('tagL').style.display = $('tagR').style.display = split ? '' : 'none';
   if (split) {
