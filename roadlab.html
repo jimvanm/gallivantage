@@ -507,6 +507,13 @@ function groundMesh(h) {
 // -mercY, near the equator, where map metres are true metres (as in the tree lab).
 const cam = { mercX: 0, mercY: 0, alt: 100, yaw: 0, pitch: -0.3, fly: 1 };
 const controls = new Controls(canvas, cam);
+// Esc lets go at once: the mouse, the keyboard and full screen. (The app's
+// controls lock the keyboard, which makes the browser want Esc held down.)
+addEventListener('keydown', (e) => {
+  if (e.code !== 'Escape' || !(document.pointerLockElement || document.fullscreenElement)) return;
+  e.preventDefault();
+  controls.release();
+}, true);
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
 window.roadlab = { cam, get area() { return area; }, get result() { return result; }, natAt, engAt, load, rules: () => rules };
 
