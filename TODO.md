@@ -439,6 +439,30 @@ holes wherever tiles have not loaded.
 
 ---
 
+## Trees and vineyards: the Biome Lab (10 October, 0.14.16)
+
+`biomelab.html`: Banff, Saba and the Okanagan on real ground, trees and
+vines made on the spot. Nothing stored: each zoom-16 tile's trees come from
+its address, so they are the same every visit; tiles out of range are
+dropped. Rules in `src/biome.js`, vine rows in `src/vines.js`, climate zones
+in `src/zones.js` (Koppen map, Rubel et al. 2017, about 3 km, 380 KB in
+`data/zones/`, cut by `tools/zones/make_zones.py`).
+
+- [ ] **Jim to look** at the three places and set the rules (settings line).
+- [ ] **Small islands are missing from the zone map** (Saba, Martinique,
+      Oahu, Madeira read as sea). They fall back to the zone next door, then
+      to a rough zone from latitude. Beck et al.'s 1 km map has them, but its
+      server (figshare) could not be reached from the workspace.
+- [ ] **No tropical tree styles.** Saba's forest is maples and oaks with
+      palms; the library has nothing for rainforest, cloud forest or acacia.
+- [ ] **Vine rows break at map tile edges** (each map tile holds its own
+      piece of a parcel). Rows stay in line; a cap marks the break.
+- [ ] **Orchards and olive groves** are on the map but not planted yet.
+- [ ] **Into the app**: plant per tile in the worker, on the ground actually
+      drawn; the instanced path in `meshprogram.js` (LIBRARY.md, section 6).
+
+---
+
 ## Features discussed, not started
 
 - [ ] **Place tiles break the premise.** The app is meant to take its data
