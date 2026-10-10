@@ -320,32 +320,32 @@
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "seedling",
-     "status": "rework",
-     "notes": "No. Start again."
+     "status": "check",
+     "notes": "Leaves flattened: same outline and spiky edge, no folds, no droop."
     },
     {
      "id": "fan-2",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "young, no trunk",
-     "status": "rework",
-     "notes": "No. Start again."
+     "status": "check",
+     "notes": "Leaves flattened: same outline and spiky edge, no folds, no droop."
     },
     {
      "id": "fan-3",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "trunked",
-     "status": "rework",
-     "notes": "No. Start again."
+     "status": "check",
+     "notes": "Leaves flattened: same outline and spiky edge, no folds, no droop."
     },
     {
      "id": "fan-4",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "mature",
-     "status": "rework",
-     "notes": "No. Start again."
+     "status": "check",
+     "notes": "Leaves flattened: same outline and spiky edge, no folds, no droop."
     },
     {
      "id": "fan-far",

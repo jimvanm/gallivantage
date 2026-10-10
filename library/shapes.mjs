@@ -132,7 +132,7 @@ export function featherPalm(m,T,lean,n){
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);   // low fronds rest on the ground, never through it
 }
 export function featherSeedling(m){for(let k=0;k<4;k++)feather(m,[0,.05,0],k*1.7,1.0,1.25,.35,.06,FROND_L,FROND_D)}
-// Fan leaf (Washingtonia): a stalk, then a big pleated fan whose split tips droop. 8 triangles.
+// Fan leaf (Washingtonia): a stalk, then a big flat fan with a spiky edge. 8 triangles.
 export const FAN_L=[112,156,72],FAN_D=[70,112,52];
 export function fanLeaf(m,base,a,el,stalk,R,c0,c1){
   const d=[Math.cos(a)*Math.cos(el),Math.sin(el),Math.sin(a)*Math.cos(el)],s=norm(cross(d,[0,1,0])),n=norm(cross(s,d));
@@ -140,8 +140,10 @@ export function fanLeaf(m,base,a,el,stalk,R,c0,c1){
   const b0=m.v(base[0]+s[0]*w,base[1],base[2]+s[2]*w,c0),b1=m.v(base[0]-s[0]*w,base[1],base[2]-s[2]*w,c0),pc=m.v(...P,c0),p1=m.v(P[0]-s[0]*w,P[1],P[2]-s[2]*w,c0);
   m.idx.push(b0,b1,pc,b1,p1,pc);
   const K=6,rim=[];
-  for(let i=0;i<=K;i++){const f=-1.7+3.4*i/K,c=Math.cos(f),sn=Math.sin(f),r=R*(i%2?1:.78),pl=(i%2?.1:-.05)*R,drop=R*(.18+.32*Math.abs(sn));
-    rim.push(m.v(P[0]+r*(c*d[0]+sn*s[0])+pl*n[0],P[1]+r*(c*d[1]+sn*s[1])+pl*n[1]-drop,P[2]+r*(c*d[2]+sn*s[2])+pl*n[2],c1))}
+  // The leaf is one flat shape with the real fan's outline: its many fingers are suggested by the spiky edge,
+  // not by folds (folds read wrongly, and more of them would cost more).
+  for(let i=0;i<=K;i++){const f=-1.7+3.4*i/K,c=Math.cos(f),sn=Math.sin(f),r=R*(i%2?1:.78);
+    rim.push(m.v(P[0]+r*(c*d[0]+sn*s[0]),P[1]+r*(c*d[1]+sn*s[1]),P[2]+r*(c*d[2]+sn*s[2]),c1))}
   for(let i=0;i<K;i++)m.idx.push(pc,rim[i],rim[i+1]);
 }
 export function fanCrown(m,top,n,stalk,R,low){
