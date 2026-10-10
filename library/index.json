@@ -321,31 +321,31 @@
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "seedling",
      "status": "check",
-     "notes": "Flat finger leaves like the grown palm, held up on short stalks."
+     "notes": "Ten-finger leaves like the grown palm, held up on short stalks."
     },
     {
      "id": "fan-2",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "young, no trunk",
-     "status": "check",
-     "notes": "Flat finger leaves like the grown palm, held up on long stalks from the base, turned every which way; no trunk."
+     "status": "approved",
+     "notes": "Ten-finger leaves like the grown palm, held up on long stalks from the base, turned every which way; no trunk."
     },
     {
      "id": "fan-3",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "trunked",
-     "status": "check",
-     "notes": "Flat leaves made of a solid middle and eight fingers, wide at the base and pointed at the tip; each leaf turned at random."
+     "status": "approved",
+     "notes": "Ten flat fingers from the stalk's end, wide at the base so the middle reads solid, outer ones a little shorter, with a slight cup; each leaf turned at random. 12 triangles a leaf."
     },
     {
      "id": "fan-4",
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "mature",
-     "status": "check",
-     "notes": "Flat leaves made of a solid middle and eight fingers, wide at the base and pointed at the tip; each leaf turned at random."
+     "status": "approved",
+     "notes": "Ten flat fingers from the stalk's end, wide at the base so the middle reads solid, outer ones a little shorter, with a slight cup; each leaf turned at random. 12 triangles a leaf."
     },
     {
      "id": "fan-far",
@@ -353,7 +353,7 @@
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "far away",
      "status": "rework",
-     "notes": "Redo with the fan palm."
+     "notes": "Needs a fresh look. A try with small stalkless fans on hidden stalks was not right."
     }
    ]
   },

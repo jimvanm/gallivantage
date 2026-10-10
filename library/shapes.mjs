@@ -142,13 +142,14 @@ export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   const b0=m.v(base[0]+s[0]*w,base[1],base[2]+s[2]*w,c0),b1=m.v(base[0]-s[0]*w,base[1],base[2]-s[2]*w,c0),pc=m.v(...P,c0),p1=m.v(P[0]-s[0]*w,P[1],P[2]-s[2]*w,c0);
   m.idx.push(b0,b1,pc,b1,p1,pc);
   if(flat){
-    // Flat, like the real leaf: a solid middle (a half-size fan, 4 triangles), then fingers that grow
-    // out of its edge, each wide at its base and pointed at its tip (one triangle each), so the
-    // notches between the tips come for free. Tips a little longer or shorter.
-    const F=8,span=3.5,r0=R*.5,at=(a,rr)=>m.v(P[0]+rr*(Math.cos(a)*d[0]+Math.sin(a)*s[0]),P[1]+rr*(Math.cos(a)*d[1]+Math.sin(a)*s[1]),P[2]+rr*(Math.cos(a)*d[2]+Math.sin(a)*s[2]),c1);
-    const arc=[];for(let f=0;f<=F;f++)arc.push(at(-span/2+span*f/F,r0));
-    for(let f=0;f<F;f+=2)m.idx.push(pc,arc[f],arc[f+2]);
-    for(let f=0;f<F;f++)m.idx.push(arc[f],arc[f+1],at(-span/2+span*(f+.5)/F,R*(.92+.08*jr())));
+    // Flat, as built step by step with Jim: ten fingers, one triangle each, all from the stalk's end and
+    // spread evenly across a half-circle. Each is wide where it meets the stalk, so neighbours overlap for
+    // the first 30% of their length and the middle reads solid. Outer fingers 20% shorter than the middle.
+    // A slight cup: each finger tilts 2 degrees further out of the flat per step from the middle.
+    const F=10,th=Math.PI/(F-1),hw=R*.3*th/.7/2,cup=2*Math.PI/180,add=(p,v,k)=>m.v(p[0]+v[0]*k,p[1]+v[1]*k,p[2]+v[2]*k,c1);
+    for(let f=0;f<F;f++){const a=-Math.PI/2+f*th,k=Math.abs(a)/th,ca=Math.cos(a),sa=Math.sin(a),cc=Math.cos(cup*k),sc=Math.sin(cup*k);
+      const dd=[0,1,2].map(i=>(d[i]*ca+s[i]*sa)*cc+n[i]*sc),ss=[0,1,2].map(i=>s[i]*ca-d[i]*sa),r=R*(1-.2*Math.abs(a)/(Math.PI/2));
+      m.idx.push(add(P,ss,hw),add(P,ss,-hw),add(P,dd,r))}
     return;
   }
   const K=6,rim=[];
