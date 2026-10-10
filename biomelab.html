@@ -89,6 +89,9 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
       <h2>Show</h2>
       <label class="check"><input type="checkbox" id="show-trees" checked> Trees</label>
       <label class="check"><input type="checkbox" id="show-vines" checked> Vines</label>
+      <label class="check"><input type="checkbox" id="show-canopy" checked> Distant forest as a canopy on the ground</label>
+      <div class="row" style="margin-top:8px"><label for="fade">Canopy comes in from</label><output id="fade-o"></output></div>
+      <input type="range" id="fade" min="0.2" max="0.95" step="0.05" value="0.6">
       <div class="row" style="margin-top:8px"><label for="range">Trees drawn within</label><output id="range-o"></output></div>
       <input type="range" id="range" min="500" max="6000" step="100" value="2500">
       <div class="row"><label for="near">Detailed shape within</label><output id="near-o"></output></div>
@@ -180,10 +183,14 @@ void main(){ float h=iSize.x*0.01,w=iSize.y*0.01,a=iMisc.x*6.2831853,c=cos(a),s=
   vec3 wp=iPos+p; vRel=wp-uEye; vec3 col=aCol*(0.8+0.4*iMisc.y); vCol=mix(col,col*vec3(1.15,1.08,0.7),iMisc.z*0.6*(1.0-uShear));
   gl_Position=uVP*vec4(wp,1.0); }`, FS);
 const GP = prog(`#version 300 es
-layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; uniform mat4 uVP; uniform vec3 uEye; out vec3 vRel; out vec3 vCol;
-void main(){ vRel=aPos-uEye; vCol=aCol; gl_Position=uVP*vec4(aPos,1.0); }`, FS);
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(location=2) in vec4 aCan; layout(location=3) in float aCanH;
+uniform mat4 uVP; uniform vec3 uEye; uniform float uRange,uFade0,uCanopy; out vec3 vRel; out vec3 vCol;
+// Far away, where the rules say forest, the ground becomes the forest's canopy: it rises by the trees' height and
+// takes their colour, coming in from uFade0 of the tree range and complete at its end, where the real trees have gone.
+void main(){ float t=smoothstep(uRange*uFade0,uRange,distance(aPos.xz,uEye.xz))*aCan.a*uCanopy;
+  vec3 p=aPos; p.y+=aCanH*t; vRel=p-uEye; vCol=mix(aCol,aCan.rgb,t); gl_Position=uVP*vec4(p,1.0); }`, FS);
 const U = (n) => ({ t: gl.getUniformLocation(TP, n), g: gl.getUniformLocation(GP, n) });
-const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear'].map((n) => [n, U(n)]));
+const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear', 'uFade0', 'uCanopy'].map((n) => [n, U(n)]));
 const tvao = gl.createVertexArray(); gl.bindVertexArray(tvao);
 {
   const NV = P.length / 3, buf = new ArrayBuffer(NV * 16), f = new Float32Array(buf), b = new Uint8Array(buf);
@@ -194,11 +201,13 @@ const tvao = gl.createVertexArray(); gl.bindVertexArray(tvao);
 }
 const ibuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); for (const l of [2, 3, 4]) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
 gl.bindVertexArray(null);
-let gvao = null, gCount = 0, gColBuf = null;
-function setGround(pos, col, idx) {
+let gvao = null, gCount = 0, gColBuf = null, gCanBuf = null, gCanHBuf = null;
+function setGround(pos, { col, can, canH }, idx) {
   if (gvao) gl.deleteVertexArray(gvao); gvao = gl.createVertexArray(); gl.bindVertexArray(gvao);
   const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
   gColBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, gColBuf); gl.bufferData(gl.ARRAY_BUFFER, col, gl.STATIC_DRAW); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+  gCanBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, gCanBuf); gl.bufferData(gl.ARRAY_BUFFER, can, gl.STATIC_DRAW); gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, 0, 0);
+  gCanHBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, gCanHBuf); gl.bufferData(gl.ARRAY_BUFFER, canH, gl.STATIC_DRAW); gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 0, 0);
   const e = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, e); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW); gCount = idx.length; gl.bindVertexArray(null);
 }
 
@@ -343,8 +352,17 @@ function naturalRGB(zone) {
   if (c === 'E') return [130, 130, 102];
   return [100, 132, 68];
 }
+// Each tree style's look from afar: the average colour of its far shape, and its usual grown height.
+const KIND_FAR = TREE_KINDS.map((k, ki) => {
+  const m = LIB[`${k}-far`] || LIB[KINDS[ki].stages[KINDS[ki].stages.length - 1]], c = [0, 0, 0];
+  for (let i = 0; i < m.col.length; i += 3) for (let q = 0; q < 3; q++) c[q] += m.col[i + q];
+  const sh = KINDS[ki].shapes;
+  return { rgb: c.map((v) => v / (m.col.length / 3)), H: sh.reduce((t, s) => t + s.H, 0) / sh.length };
+});
+// Treetops are not one colour: a fixed speckle per grid point (no random numbers, so it never changes).
+const speckle = (i, j) => { let h = Math.imul(i, 374761393) + Math.imul(j, 668265263); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; };
 function colourGround() {
-  const a = area, N = a.N, col = new Uint8Array(N * N * 3);
+  const a = area, N = a.N, col = new Uint8Array(N * N * 3), can = new Uint8Array(N * N * 4), canH = new Float32Array(N * N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const k = j * N + i, x = -a.S / 2 + i * a.step, z = -a.S / 2 + j * a.step, h = a.h[k], cv = a.cover[k];
     const [lat, lon] = latLonAt(x, z), slope = Math.hypot(a.gx[k], a.gz[k]);
@@ -357,8 +375,17 @@ function colourGround() {
       c = mixc(c, [238, 242, 246], Math.min((h - s.snowline) / 120, (1.1 - slope) / 0.3)); // snow, but not on cliffs
     }
     col[k * 3] = c[0]; col[k * 3 + 1] = c[1]; col[k * 3 + 2] = c[2];
+    // the canopy: how much of the ground trees cover here, their colour and height
+    if (s.mix && s.density > 0) {
+      const rgb = [0, 0, 0]; let H = 0;
+      s.mix.forEach((m, ki) => { if (m) { for (let q = 0; q < 3; q++) rgb[q] += m * KIND_FAR[ki].rgb[q]; H += m * KIND_FAR[ki].H; } });
+      const sp = 0.72 + 0.4 * speckle(i, j);
+      for (let q = 0; q < 3; q++) can[k * 4 + q] = Math.min(255, rgb[q] * sp * 0.9);
+      can[k * 4 + 3] = Math.round(255 * Math.min(1, s.density * 0.9));
+      canH[k] = H * s.size * 0.75;
+    }
   }
-  return col;
+  return { col, can, canH };
 }
 function buildGroundMesh() {
   const a = area, N = a.N, pos = new Float32Array(N * N * 3), idx = new Uint32Array((N - 1) * (N - 1) * 6);
@@ -367,7 +394,13 @@ function buildGroundMesh() {
   for (let j = 0; j < N - 1; j++) for (let i = 0; i < N - 1; i++) { const q = j * N + i; idx[o++] = q; idx[o++] = q + N; idx[o++] = q + 1; idx[o++] = q + 1; idx[o++] = q + N; idx[o++] = q + N + 1; }
   setGround(pos, colourGround(), idx);
 }
-function recolour() { if (!area) return; gl.bindBuffer(gl.ARRAY_BUFFER, gColBuf); gl.bufferData(gl.ARRAY_BUFFER, colourGround(), gl.STATIC_DRAW); }
+function recolour() {
+  if (!area) return;
+  const { col, can, canH } = colourGround();
+  gl.bindBuffer(gl.ARRAY_BUFFER, gColBuf); gl.bufferData(gl.ARRAY_BUFFER, col, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gCanBuf); gl.bufferData(gl.ARRAY_BUFFER, can, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gCanHBuf); gl.bufferData(gl.ARRAY_BUFFER, canH, gl.STATIC_DRAW);
+}
 
 async function load(lat, lon, S, start) {
   const id = ++loadId;
@@ -403,7 +436,7 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6 };
+const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.6 };
 const live = new Map();         // key -> { cx, cz, rad, n, u8 }   (trees of one tile, or vines of one parcel)
 let queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
 function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; lastWant = null; }
@@ -547,10 +580,13 @@ $('reset').onclick = () => { rules = defaultRules(); settings.vineSpacing = 2.6;
 function showView() {
   $('range').value = settings.range; $('near').value = settings.near;
   $('range-o').textContent = `${fmt(settings.range / 1000, 1)} km`; $('near-o').textContent = settings.near ? `${fmt(settings.near)} m` : 'never';
+  $('fade').value = settings.fade; $('fade-o').textContent = `${fmt(settings.fade * 100)}% of the tree range (${fmt(settings.fade * settings.range / 1000, 1)} km)`;
 }
 $('range').oninput = (e) => { settings.range = +e.target.value; lastWant = null; showView(); };
 $('near').oninput = (e) => { settings.near = +e.target.value; showView(); };
 $('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; dirty = true; };
+$('show-canopy').onchange = (e) => { settings.canopy = e.target.checked; };
+$('fade').oninput = (e) => { settings.fade = +e.target.value; showView(); };
 $('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; dirty = true; };
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
 $('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0]}</button>`).join('');
@@ -649,6 +685,7 @@ function frame(now) {
   }
   if (!gvao) return;
   gl.useProgram(GP); gl.bindVertexArray(gvao); gl.uniformMatrix4fv(UN.uVP.g, false, vp); gl.uniform3fv(UN.uEye.g, eye); gl.uniform3fv(UN.uSun.g, SUN); gl.uniform3fv(UN.uSky.g, SKY); gl.uniform1f(UN.uFog.g, fog);
+  gl.uniform1f(UN.uRange.g, settings.range); gl.uniform1f(UN.uFade0.g, settings.fade); gl.uniform1f(UN.uCanopy.g, settings.canopy && settings.trees ? 1 : 0);
   gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 1); gl.drawElements(gl.TRIANGLES, gCount, gl.UNSIGNED_INT, 0); gl.disable(gl.POLYGON_OFFSET_FILL);
   const spd = cam.fly ? controls.cruise : controls.walkCruise;
   $('hud').textContent = `${cam.fly ? 'Flying' : 'Walking'} · ${spd < 10 ? fmt(spd, 1) : fmt(spd)} m/s · ${fmt(agl)} m above ground · ${BUILD}`;
