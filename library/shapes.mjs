@@ -132,30 +132,32 @@ export function featherPalm(m,T,lean,n){
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);   // low fronds rest on the ground, never through it
 }
 export function featherSeedling(m){for(let k=0;k<4;k++)feather(m,[0,.05,0],k*1.7,1.0,1.25,.35,.06,FROND_L,FROND_D)}
-// Fan leaf (Washingtonia): a stalk, then a big flat fan with a spiky edge. 8 triangles.
+// Fan leaf (Washingtonia): a stalk, then a big fan with a spiky edge. 8 triangles.
 export const FAN_L=[112,156,72],FAN_D=[70,112,52];
-export function fanLeaf(m,base,a,el,stalk,R,c0,c1){
-  const d=[Math.cos(a)*Math.cos(el),Math.sin(el),Math.sin(a)*Math.cos(el)],s=norm(cross(d,[0,1,0])),n=norm(cross(s,d));
+export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
+  const d=[Math.cos(a)*Math.cos(el),Math.sin(el),Math.sin(a)*Math.cos(el)];let s=norm(cross(d,[0,1,0])),n=norm(cross(s,d));
+  // A flat leaf is turned about its stalk by a random amount, so the fans face every which way.
+  if(flat){const r=1.25*2*jr(),c=Math.cos(r),q=Math.sin(r),s2=[s[0]*c+n[0]*q,s[1]*c+n[1]*q,s[2]*c+n[2]*q];n=norm(cross(s2,d));s=s2}
   const P=[base[0]+d[0]*stalk,base[1]+d[1]*stalk,base[2]+d[2]*stalk],w=.05;
   const b0=m.v(base[0]+s[0]*w,base[1],base[2]+s[2]*w,c0),b1=m.v(base[0]-s[0]*w,base[1],base[2]-s[2]*w,c0),pc=m.v(...P,c0),p1=m.v(P[0]-s[0]*w,P[1],P[2]-s[2]*w,c0);
   m.idx.push(b0,b1,pc,b1,p1,pc);
   const K=6,rim=[];
-  // The leaf is one flat shape with the real fan's outline: its many fingers are suggested by the spiky edge,
-  // not by folds (folds read wrongly, and more of them would cost more).
-  for(let i=0;i<=K;i++){const f=-1.7+3.4*i/K,c=Math.cos(f),sn=Math.sin(f),r=R*(i%2?1:.78);
-    rim.push(m.v(P[0]+r*(c*d[0]+sn*s[0]),P[1]+r*(c*d[1]+sn*s[1]),P[2]+r*(c*d[2]+sn*s[2]),c1))}
+  // Flat: one shape with the real fan's outline, its fingers suggested by the spiky edge.
+  // Not flat (the young palms, as Jim preferred them): folds and drooping tips.
+  for(let i=0;i<=K;i++){const f=-1.7+3.4*i/K,c=Math.cos(f),sn=Math.sin(f),r=R*(i%2?1:.78),pl=flat?0:(i%2?.1:-.05)*R,drop=flat?0:R*(.18+.32*Math.abs(sn));
+    rim.push(m.v(P[0]+r*(c*d[0]+sn*s[0])+pl*n[0],P[1]+r*(c*d[1]+sn*s[1])+pl*n[1]-drop,P[2]+r*(c*d[2]+sn*s[2])+pl*n[2],c1))}
   for(let i=0;i<K;i++)m.idx.push(pc,rim[i],rim[i+1]);
 }
-export function fanCrown(m,top,n,stalk,R,low){
+export function fanCrown(m,top,n,stalk,R,low,flat=false){
   for(let k=0;k<n;k++){const t=n>1?k/(n-1):0;
-    fanLeaf(m,top,k*2.399+.2*jr(),1.2-(1.2-low)*t,stalk*(1+.1*jr()),R*(1+.08*jr()),mixc(FAN_L,FAN_D,.5+.3*t),mixc(FAN_L,[96,132,60],t))}
+    fanLeaf(m,top,k*2.399+.2*jr(),1.2-(1.2-low)*t,stalk*(1+.1*jr()),R*(1+.08*jr()),mixc(FAN_L,FAN_D,.5+.3*t),mixc(FAN_L,[96,132,60],t),flat)}
 }
 // Tall slim trunk, flared at the foot; a tight skirt of dead leaves hanging right under the crown.
 export function fanPalm(m,T,skirt,n){
   if(T>0){stem(m,[[0,0,0],[0,.6,0],[0,T*.5,0],[0,T,0]],[.46,.33,.27,.22],6,FAN_BARK);
     if(skirt>0){const A=ring(m,0,T+.15,0,.8,8,0,[150,122,82],.1),B=ring(m,0,T-skirt*.55,0,.62,8,.2,SKIRT,.12),C=ring(m,0,T-skirt,0,.42,8,.4,[96,74,48],.1);
       C.forEach((id,k)=>{m.pos[id*3+1]+=(k%2?.35:-.15)});band(m,A,B);band(m,B,C)}}
-  fanCrown(m,[0,Math.max(T,.25)+.3,0],n,T>0?1.1:1.5,1.15,-.75);
+  fanCrown(m,[0,Math.max(T,.25)+.3,0],n,T>0?1.1:1.5,1.15,-.75,T>0);   // trunked palms have flat leaves
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);
 }
 
