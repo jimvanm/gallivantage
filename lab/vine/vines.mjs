@@ -17,22 +17,35 @@ const done = (m) => ({ tris: m.idx.length / 3, pos: m.pos.map((v) => Math.round(
 
 // D: one rounded vine, 1 m of row, standing on the ground. No trunk, no post.
 // Across the row it is one outline, pulled 1 m along the row: narrow at the ground, rising up and out
-// to its widest point, then a barn roof (two slopes each side) to a ridge. Both ends have the same
-// outline and no jitter, so vines set 1 m apart join into one smooth hedge.
+// to its widest point, then a barn roof (two slopes each side) to a ridge.
+// The two ends have slightly different outlines (heights a few cm apart, each side on its own), so the
+// long lines along the vine are never quite level. To make a row, each vine starts with the outline the
+// one before it ended with: keep a few end outlines and a vine for each pair, and the row joins exactly
+// while its lines wander. Costs nothing: the same triangles as a level vine.
 // Profile across the row: [half-width, height] from the ground up one side; mirrored for the other.
 const PROFILE = [[.06, 0], [.3, 1.0], [.22, 1.42], [0, 1.7]];
 const SHADES = [mixc(LEAF_D, [40, 54, 30], .5), LEAF_D, mixc(LEAF_D, LEAF_L, .6), LEAF_L];
-function rounded(m, prof, cols, caps) {
-  const pts = [...prof.map((p, i) => [-p[0], p[1], cols[i]]), ...prof.slice(0, -1).reverse().map((p, i, a) => [p[0], p[1], cols[a.length - 1 - i]])];
-  const ring = (x) => pts.map(([z, y, c]) => m.v(x, y, z, c));
-  const a = ring(-.5), b = ring(.5);
-  for (let k = 0; k < pts.length - 1; k++) m.idx.push(a[k], b[k], b[k + 1], a[k], b[k + 1], a[k + 1]);
+let js = 3; const jr = () => { js = (js * 16807) % 2147483647; return js / 2147483647 - .5; };
+// An end outline: the ground stays put; widest and knee move up to +/-4 cm up and +/-2.5 cm out, each side
+// on its own; the ridge up to +/-4 cm up and +/-2 cm sideways. Listed left side up, ridge, right side down.
+function outline(prof) {
+  const side = () => prof.slice(0, -1).map(([w, h], i) => i === 0 ? [w, h] : [w + .05 * jr(), h + .08 * jr()]);
+  const L = side(), R = side(), [rw, rh] = prof[prof.length - 1];
+  return [...L.map(([w, h]) => [-w, h]), [rw + .04 * jr(), rh + .08 * jr()], ...R.reverse().map(([w, h]) => [w, h])];
+}
+function rounded(m, A, B, cols, caps) {
+  const c = [...cols, ...cols.slice(0, -1).reverse()];
+  const ring = (x, P) => P.map(([z, y], i) => m.v(x, y, z, c[i]));
+  const a = ring(-.5, A), b = ring(.5, B);
+  for (let k = 0; k < A.length - 1; k++) m.idx.push(a[k], b[k], b[k + 1], a[k], b[k + 1], a[k + 1]);
   if (caps) for (const r of [a, b]) for (let k = 1; k < r.length - 1; k++) m.idx.push(r[0], r[k], r[k + 1]);
 }
 const out = {};
-let m = new Mesh(); rounded(m, PROFILE, SHADES, true);
-// Far: the same outline with the barn-roof knee dropped (ground, widest, ridge).
-const far = new Mesh(); rounded(far, [PROFILE[0], PROFILE[1], PROFILE[3]], [SHADES[0], SHADES[1], SHADES[3]], true);
+const E1 = outline(PROFILE), E2 = outline(PROFILE);
+let m = new Mesh(); rounded(m, E1, E2, SHADES, true);
+// Far: the same, with the barn-roof bend dropped (ground, widest, ridge).
+const drop = (E) => E.filter((_, i) => i !== 2 && i !== 4);
+const far = new Mesh(); rounded(far, drop(E1), drop(E2), [SHADES[0], SHADES[1], SHADES[3]], true);
 out.vineD = { key: 'vineD', name: 'Vine D: rounded', like: 'One vine, 1 m of row', stages: ['vine'], status: 'testing',
   models: { 'vineD-1': done(m), 'vineD-far': done(far) } };
 
