@@ -89,8 +89,13 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
       <h2>Show</h2>
       <label class="check"><input type="checkbox" id="show-trees" checked> Trees</label>
       <label class="check"><input type="checkbox" id="show-vines" checked> Vines</label>
+      <label class="check"><input type="checkbox" id="show-dots" checked> Distant trees as soft dots</label>
+      <div class="row" style="margin-top:8px"><label for="dotr">Dots drawn within</label><output id="dotr-o"></output></div>
+      <input type="range" id="dotr" min="1000" max="10000" step="250" value="5000">
+      <div class="row"><label for="dotf">Dots thin into the canopy from</label><output id="dotf-o"></output></div>
+      <input type="range" id="dotf" min="0.2" max="0.95" step="0.05" value="0.6">
       <label class="check"><input type="checkbox" id="show-canopy" checked> Distant forest as a canopy on the ground</label>
-      <div class="row" style="margin-top:8px"><label for="fade">Trees thin out into the canopy from</label><output id="fade-o"></output></div>
+      <div class="row" style="margin-top:8px"><label for="fade">Trees thin out (into dots, or the canopy) from</label><output id="fade-o"></output></div>
       <input type="range" id="fade" min="0.05" max="0.95" step="0.05" value="0.35">
       <div class="row" style="margin-top:8px"><label for="range">Trees drawn within</label><output id="range-o"></output></div>
       <input type="range" id="range" min="500" max="6000" step="100" value="2500">
@@ -190,14 +195,55 @@ void main(){ float h=iSize.x*0.01,w=iSize.y*0.01,a=iMisc.x*6.2831853,c=cos(a),s=
   gl_Position=uVP*vec4(wp,1.0); }`, FS);
 const GP = prog(`#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(location=2) in vec4 aCan; layout(location=3) in float aCanH;
-uniform mat4 uVP; uniform vec3 uEye; uniform float uRange,uFade0,uCanopy; out vec3 vRel; out vec3 vCol;
+uniform mat4 uVP; uniform vec3 uEye; uniform float uCan0,uCan1,uCanopy; out vec3 vRel; out vec3 vCol;
 // Far away, where the rules say forest, the ground becomes the forest's canopy: it rises by the trees' height and
-// takes their colour, coming in from uFade0 of the tree range and complete at its end, where the real trees have gone.
-// It rises in step with the trees thinning out (the share of trees gone at this distance), so the forest looks the same throughout.
-void main(){ float t=clamp((distance(aPos.xz,uEye.xz)/uRange-uFade0)/(1.0-uFade0),0.0,1.0)*aCan.a*uCanopy;
+// takes their colour. It rises in step with the last stage thinning out (dots, or trees when the dots are off) over the
+// band uCan0..uCan1 metres, so the share already gone is made up by the canopy and the forest looks the same throughout.
+void main(){ float t=clamp((distance(aPos.xz,uEye.xz)-uCan0)/max(1.0,uCan1-uCan0),0.0,1.0)*aCan.a*uCanopy;
   vec3 p=aPos; p.y+=aCanH*t; vRel=p-uEye; vCol=mix(aCol,aCan.rgb,t); gl_Position=uVP*vec4(p,1.0); }`, FS);
+// Soft dots: what a tree becomes past its own end distance. One round blob in the tree's own colour, shaded as
+// if it were a ball (lit side and shaded side), lumpy at the edge like a crown, and solid: the edge is softened by
+// the card's edge smoothing (alpha to coverage), not by seeing through it. Two triangles a tree.
+const NSH_MAX = 128;
+if (NSH > NSH_MAX) throw new Error('too many shapes for the dot colours');
+const DP = prog(`#version 300 es
+layout(location=0) in vec2 aCorner; layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
+uniform mat4 uVP; uniform vec3 uEye,uRight,uUp; uniform float uRange,uFade0,uDot0,uDot1; uniform vec3 uShapeCol[${NSH_MAX}];
+out vec2 vQ; out vec3 vRel; out vec3 vCol; out float vSeed;
+float spot(vec2 q){ vec3 p3=fract(vec3(q.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+void main(){ float h=iSize.x*0.01,w=iSize.y*0.01; vec2 cell=floor(iPos.xz*4.0);
+  float d=distance(iPos.xz,uEye.xz);
+  // it begins where its tree ends (the same end, worked out the same way), and ends somewhere in the dots' own band
+  float e1=uRange*(uFade0+(1.0-uFade0)*spot(cell)), e2=uDot0+(uDot1-uDot0)*spot(cell+17.0);
+  float k=clamp((d-e1+uRange*0.04)/(uRange*0.04),0.0,1.0)*clamp((e2-d)/(uDot1*0.04),0.0,1.0);
+  vec3 c=iPos+vec3(0.0,h*0.55,0.0); vec3 dir=normalize(c-uEye);
+  // seen from the side a tall tree's dot is tall; seen from above it is round, like its crown
+  float rx=0.58*w, ry=mix(rx,0.4*h,1.0-abs(dir.y));
+  vec3 wp=c+(uRight*aCorner.x*rx+uUp*aCorner.y*max(rx,ry))*k;
+  vQ=vec2(aCorner.x,aCorner.y*max(rx,ry)/max(ry,0.01)); vRel=wp-uEye; vCol=uShapeCol[int(iMisc.w*255.0+0.5)]*(0.8+0.4*iMisc.y); vSeed=spot(cell+5.0)*6.28;
+  gl_Position=uVP*vec4(wp,1.0); }`, `#version 300 es
+precision highp float; in vec2 vQ; in vec3 vRel; in vec3 vCol; in float vSeed; uniform vec3 uSun,uSky,uRight,uUp; uniform float uFog; out vec4 o;
+void main(){ float a=atan(vQ.y,vQ.x), r2=dot(vQ,vQ)*(1.0+0.13*sin(a*5.0+vSeed)+0.07*sin(a*9.0-vSeed));
+  if(r2>1.0) discard;
+  vec3 n=normalize(uRight*vQ.x+uUp*vQ.y-normalize(vRel)*sqrt(1.0-r2));
+  float lit=0.55+0.45*max(dot(n,uSun),0.0); vec3 c=floor(vCol*lit*31.0+0.5)/31.0;
+  o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),clamp((1.0-r2)*5.0,0.0,1.0)); }`);
+const UD = Object.fromEntries(['uVP', 'uEye', 'uRight', 'uUp', 'uRange', 'uFade0', 'uDot0', 'uDot1', 'uShapeCol', 'uSun', 'uSky', 'uFog'].map((n) => [n, gl.getUniformLocation(DP, n)]));
+{
+  // each shape's leaf colour, for its dot: the average of its green corners (trunks left out)
+  const cols = new Float32Array(NSH_MAX * 3);
+  SHAPES.forEach((sh, i) => {
+    const m = LIB[sh.id], c = [0, 0, 0], all = [0, 0, 0]; let n = 0;
+    for (let j = 0; j < m.col.length; j += 3) {
+      for (let q = 0; q < 3; q++) all[q] += m.col[j + q];
+      if (m.col[j + 1] > m.col[j] * 1.05) { for (let q = 0; q < 3; q++) c[q] += m.col[j + q]; n++; }
+    }
+    for (let q = 0; q < 3; q++) cols[i * 3 + q] = (n ? c[q] / n : all[q] / (m.col.length / 3)) / 255;
+  });
+  gl.useProgram(DP); gl.uniform3fv(UD.uShapeCol, cols);
+}
 const U = (n) => ({ t: gl.getUniformLocation(TP, n), g: gl.getUniformLocation(GP, n) });
-const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear', 'uFade0', 'uCanopy'].map((n) => [n, U(n)]));
+const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear', 'uFade0', 'uCanopy', 'uCan0', 'uCan1'].map((n) => [n, U(n)]));
 const tvao = gl.createVertexArray(); gl.bindVertexArray(tvao);
 {
   const NV = P.length / 3, buf = new ArrayBuffer(NV * 16), f = new Float32Array(buf), b = new Uint8Array(buf);
@@ -207,6 +253,13 @@ const tvao = gl.createVertexArray(); gl.bindVertexArray(tvao);
   const e = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, e); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(I), gl.STATIC_DRAW);
 }
 const ibuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); for (const l of [2, 3, 4]) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
+gl.bindVertexArray(null);
+const dvao = gl.createVertexArray(); gl.bindVertexArray(dvao);
+{
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); for (const l of [2, 3, 4]) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
+}
 gl.bindVertexArray(null);
 let gvao = null, gCount = 0, gColBuf = null, gCanBuf = null, gCanHBuf = null;
 function setGround(pos, { col, can, canH }, idx) {
@@ -444,7 +497,10 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35 };
+const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 5000, dotFade: 0.6 };
+// The dots' band: where they thin out into the canopy (never starting before the trees have all gone).
+const dotBand = () => { const D = Math.max(settings.dotRange, settings.range); return [Math.max(settings.range, D * settings.dotFade), D]; };
+const reach = () => settings.dots ? Math.max(settings.dotRange, settings.range) : settings.range;
 const live = new Map();         // key -> { cx, cz, rad, n, u8 }   (trees of one tile, or vines of one parcel)
 let queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
 function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; lastWant = null; }
@@ -491,9 +547,9 @@ function makeParcelVines(p, pi) {
 // What should be live around the eye; made nearest first, a few milliseconds a frame.
 let lastWant = null;
 function want(eye) {
-  if (lastWant && Math.hypot(eye[0] - lastWant[0], eye[2] - lastWant[1]) < 50 && lastWant[2] === settings.range) return;
-  lastWant = [eye[0], eye[2], settings.range];
-  const R = settings.range, keep = new Set(), todo = [];
+  if (lastWant && Math.hypot(eye[0] - lastWant[0], eye[2] - lastWant[1]) < 50 && lastWant[2] === reach()) return;
+  lastWant = [eye[0], eye[2], reach()];
+  const R = reach(), RV = settings.range, keep = new Set(), todo = [];
   if (settings.trees) {
     const t0 = mercToTile(area.cmx + (eye[0] - R) / area.k, area.cmy - (eye[2] - R) / area.k, 16), t1 = mercToTile(area.cmx + (eye[0] + R) / area.k, area.cmy - (eye[2] + R) / area.k, 16);
     const s = tileSizeMerc(16) * area.k;
@@ -508,12 +564,12 @@ function want(eye) {
   }
   if (settings.vines) area.parcels.forEach((p, pi) => {
     const d = Math.hypot(p.cx - eye[0], p.cz - eye[2]) - p.rad;
-    if (d > R) return;
+    if (d > RV) return;
     const key = `v${pi}`; keep.add(key);
     if (!live.has(key)) todo.push({ key, d, make: () => makeParcelVines(p, pi) });
   });
   // hold a little beyond range, so turning back does not make it all again
-  for (const [key, b] of live) if (!keep.has(key) && Math.hypot(b.cx - eye[0], b.cz - eye[2]) - b.rad > R + 300) { live.delete(key); dirty = true; }
+  for (const [key, b] of live) if (!keep.has(key) && Math.hypot(b.cx - eye[0], b.cz - eye[2]) - b.rad > (key[0] === 'v' ? RV : R) + 300) { live.delete(key); dirty = true; }
   queue = todo.sort((p, q) => p.d - q.d);
 }
 function makeSome(budgetMs) {
@@ -528,29 +584,46 @@ function makeSome(budgetMs) {
 }
 
 // ================= what is drawn (the Tree Lab's lists, by batch) =================
-const lists = { count: new Uint32Array(NB), start: new Uint32Array(NB) };
+const DOTS = NB;                 // the last bin: every tree that may be showing as a dot
+const lists = { count: new Uint32Array(NB + 1), start: new Uint32Array(NB + 1) };
 let inst = new Uint8Array(0), lastBuild = null, rebuildMs = 0, lastBuildT = 0;
 function rebuild(eye, yaw, hfov, pitch, now) {
-  const key = `${settings.range}|${settings.near}|${settings.trees}|${settings.vines}`;
-  const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > 20 || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
+  const key = `${settings.range}|${settings.near}|${settings.trees}|${settings.vines}|${settings.dots}|${settings.dotRange}|${settings.fade}`;
+  const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > Math.max(20, 0.15 * (eye[1] - groundAt(eye[0], eye[2]))) || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
   if (!moved && !(dirty && now - lastBuildT > 150)) return;
   const t0 = performance.now(), R = settings.range, R2 = R * R, NR2 = settings.near * settings.near, vx = Math.sin(yaw), vz = -Math.cos(yaw), cull = pitch > -0.85, half = hfov / 2 + 0.15;
+  const dots = settings.dots && settings.trees, RD = dots ? reach() : R, F2 = (settings.fade * R - R * 0.05) ** 2;
   const chosen = [];
   for (const [k, b] of live) {
     if (k[0] === 't' ? !settings.trees : !settings.vines) continue;
     const mx = b.cx - eye[0], mz = b.cz - eye[2], d = Math.hypot(mx, mz);
-    if (d - b.rad > R) continue;
+    if (d - b.rad > (k[0] === 't' ? RD : R)) continue;
     if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
-    chosen.push([b, d]);
+    chosen.push([b, d, k[0] === 't']);
   }
   chosen.sort((a, b) => a[1] - b[1]);             // nearest first, so the card skips hidden pixels
-  const cnt = new Uint32Array(NB);
+  const cnt = new Uint32Array(NB + 1);
   const bin = (u8, i, d2) => { const s = u8[i * 20 + 19]; return d2 < NR2 ? s : NSH + SHAPE_KIND[s]; };
-  for (const [b] of chosen) { const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5); for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; } }
-  const starts = new Uint32Array(NB); let tot = 0; for (let k = 0; k < NB; k++) { starts[k] = tot; tot += cnt[k]; }
+  // A tile wholly past the trees' range goes to the dots whole; otherwise tree by tree (a tree past where trees
+  // start thinning may be showing as a tree or as a dot, so it goes to both; the card decides which shows).
+  const whole = (b, d) => d - b.rad > R;
+  for (const [b, d, tree] of chosen) {
+    if (tree && dots && whole(b, d)) { cnt[DOTS] += b.n; continue; }
+    const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
+    for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; if (tree && dots && d2 > F2) cnt[DOTS]++; }
+  }
+  const starts = new Uint32Array(NB + 1); let tot = 0; for (let k = 0; k <= NB; k++) { starts[k] = tot; tot += cnt[k]; }
   if (inst.length < tot * 20) inst = new Uint8Array(Math.max(tot * 20, inst.length * 1.5 | 0, 2000));
   const w = starts.slice();
-  for (const [b] of chosen) { const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5); for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 > R2) continue; inst.set(b.u8.subarray(i * 20, i * 20 + 20), w[bin(b.u8, i, d2 + dy * dy)]++ * 20); } }
+  for (const [b, d, tree] of chosen) {
+    if (tree && dots && whole(b, d)) { inst.set(b.u8.subarray(0, b.n * 20), w[DOTS] * 20); w[DOTS] += b.n; continue; }
+    const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
+    for (let i = 0; i < b.n; i++) {
+      const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz, one = b.u8.subarray(i * 20, i * 20 + 20);
+      if (d2 <= R2) inst.set(one, w[bin(b.u8, i, d2 + dy * dy)]++ * 20);
+      if (tree && dots && d2 > F2) inst.set(one, w[DOTS]++ * 20);
+    }
+  }
   lists.count.set(cnt); lists.start.set(starts);
   gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); gl.bufferData(gl.ARRAY_BUFFER, inst.subarray(0, tot * 20), gl.DYNAMIC_DRAW);
   rebuildMs = performance.now() - t0; lastBuild = { k: key, x: eye[0], y: eye[1], z: eye[2], yaw, pitch }; lastBuildT = now; dirty = false;
@@ -588,12 +661,18 @@ $('reset').onclick = () => { rules = defaultRules(); settings.vineSpacing = 2.6;
 function showView() {
   $('range').value = settings.range; $('near').value = settings.near;
   $('range-o').textContent = `${fmt(settings.range / 1000, 1)} km`; $('near-o').textContent = settings.near ? `${fmt(settings.near)} m` : 'never';
+  const [b0, b1] = dotBand();
+  $('dotr').value = settings.dotRange; $('dotr-o').textContent = `${fmt(Math.max(settings.dotRange, settings.range) / 1000, 2)} km`;
+  $('dotf').value = settings.dotFade; $('dotf-o').textContent = `${fmt(b0 / 1000, 1)} km`;
   $('fade').value = settings.fade; $('fade-o').textContent = `${fmt(settings.fade * 100)}% of the tree range (${fmt(settings.fade * settings.range / 1000, 1)} km)`;
 }
 $('range').oninput = (e) => { settings.range = +e.target.value; lastWant = null; showView(); };
 $('near').oninput = (e) => { settings.near = +e.target.value; showView(); };
 $('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; dirty = true; };
 $('show-canopy').onchange = (e) => { settings.canopy = e.target.checked; };
+$('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; dirty = true; };
+$('dotr').oninput = (e) => { settings.dotRange = +e.target.value; lastWant = null; showView(); };
+$('dotf').oninput = (e) => { settings.dotFade = +e.target.value; showView(); };
 $('fade').oninput = (e) => { settings.fade = +e.target.value; showView(); };
 $('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; dirty = true; };
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
@@ -691,9 +770,20 @@ function frame(now) {
     gl.uniform1f(UN.uShear.t, KINDS[k < NSH ? SHAPE_KIND[k] : k - NSH].row ? 1 : 0);
     gl.drawElementsInstanced(gl.TRIANGLES, count, gl.UNSIGNED_INT, first * 4, n); calls++; tris += n * count / 3;
   }
+  if (lists.count[DOTS]) {
+    const right = norm(cross(fwd, [0, 1, 0])), up = cross(right, fwd), o = lists.start[DOTS] * 20, [d0, d1] = dotBand();
+    gl.useProgram(DP); gl.bindVertexArray(dvao); gl.bindBuffer(gl.ARRAY_BUFFER, ibuf);
+    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 20, o); gl.vertexAttribPointer(3, 2, gl.UNSIGNED_SHORT, false, 20, o + 12); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 20, o + 16);
+    gl.uniformMatrix4fv(UD.uVP, false, vp); gl.uniform3fv(UD.uEye, eye); gl.uniform3fv(UD.uRight, right); gl.uniform3fv(UD.uUp, up);
+    gl.uniform1f(UD.uRange, settings.range); gl.uniform1f(UD.uFade0, settings.fade); gl.uniform1f(UD.uDot0, d0); gl.uniform1f(UD.uDot1, d1);
+    gl.uniform3fv(UD.uSun, SUN); gl.uniform3fv(UD.uSky, SKY); gl.uniform1f(UD.uFog, fog);
+    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, lists.count[DOTS]); gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+    calls++; tris += lists.count[DOTS] * 2;
+  }
   if (!gvao) return;
   gl.useProgram(GP); gl.bindVertexArray(gvao); gl.uniformMatrix4fv(UN.uVP.g, false, vp); gl.uniform3fv(UN.uEye.g, eye); gl.uniform3fv(UN.uSun.g, SUN); gl.uniform3fv(UN.uSky.g, SKY); gl.uniform1f(UN.uFog.g, fog);
-  gl.uniform1f(UN.uRange.g, settings.range); gl.uniform1f(UN.uFade0.g, settings.fade); gl.uniform1f(UN.uCanopy.g, settings.canopy && settings.trees ? 1 : 0);
+  const [c0, c1] = settings.dots ? dotBand() : [settings.fade * settings.range, settings.range];
+  gl.uniform1f(UN.uCan0.g, c0); gl.uniform1f(UN.uCan1.g, c1); gl.uniform1f(UN.uCanopy.g, settings.canopy && settings.trees ? 1 : 0);
   gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 1); gl.drawElements(gl.TRIANGLES, gCount, gl.UNSIGNED_INT, 0); gl.disable(gl.POLYGON_OFFSET_FILL);
   const spd = cam.fly ? controls.cruise : controls.walkCruise;
   $('hud').textContent = `${cam.fly ? 'Flying' : 'Walking'} · ${spd < 10 ? fmt(spd, 1) : fmt(spd)} m/s · ${fmt(agl)} m above ground · ${BUILD}`;
@@ -711,7 +801,7 @@ function stats() {
     ['Making one tile', planted.tiles ? `${fmt(planted.ms / planted.tiles, 1)} ms` : '–'],
     ['Still to make', fmt(queue.length)],
     ['Held now', `${fmt(nLive)} trees, ${fmt(nVines)} vine pieces`],
-    ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)],
+    ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)], ['Dots, drawn or waiting their turn', fmt(lists.count[DOTS])],
     ['Draw calls', fmt(calls + 1)], ['Triangles a frame', fmt(tris)],
     ['List refresh', `${fmt(rebuildMs, 1)} ms`], ['Frame time', `${fmt(avg, 1)} ms (${fmt(1000 / avg)} fps)`],
   ];
