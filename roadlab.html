@@ -118,6 +118,12 @@ ul.finds li:hover{outline:1px solid var(--line)}
     </section>
 
     <section>
+      <h2>A spot that looks wrong</h2>
+      <div class="chips"><button class="btn" id="saveSpot">Save this spot to a file</button></div>
+      <p class="note">Saves the map's roads and the ground for 400 m round where you are, so Claude can work it out from the same data. Attach the file in the chat.</p>
+    </section>
+
+    <section>
       <h2>What the clues said</h2>
       <ul class="finds" id="decisions"></ul>
     </section>
@@ -157,7 +163,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
 </div>
 
 <script type="module">
-import { VECTOR_TILEJSON } from './src/config.js';
+import { VECTOR_TILEJSON, BUILD as BUILD_NO } from './src/config.js';
 import { decodeMVT, POLYGON } from './src/mvt.js';
 import { lonToMercX, latToMercY, mercToTile, tileToMerc, tileSizeMerc, tileCentreMerc, mercYToLat, mercXToLon } from './src/geo.js';
 import { program, perspective, viewRot, SUN_DIR, uniforms } from './src/gl.js';
@@ -165,7 +171,7 @@ import { surveyTileHeights } from './src/surveytile.js';
 import { buildRoads } from './src/roads.js';
 import { MeshBuilder, rgba } from './src/meshbuilder.js';
 import { Controls } from './src/controls.js';
-import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile } from './src/roadrules.js';
+import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile, clipPolyline } from './src/roadrules.js';
 import { buildRoadShapes, roadPoint } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
@@ -552,6 +558,42 @@ addEventListener('keydown', (e) => {
 });
 $('drive').onclick = () => startDriving();
 $('stop').onclick = stopDriving;
+
+// Saves the data round the camera: the map's lines (as the lab read them),
+// the ground and water there, and the rules, for replaying elsewhere.
+$('saveSpot').onclick = () => {
+  if (!area) return;
+  const R = 300, cx = cam.mercX, cz = -cam.mercY, st = area.step;
+  const i0 = Math.max(0, Math.round((cx - R + area.S / 2) / st)), i1 = Math.min(area.N - 1, Math.round((cx + R + area.S / 2) / st));
+  const j0 = Math.max(0, Math.round((cz - R + area.S / 2) / st)), j1 = Math.min(area.N - 1, Math.round((cz + R + area.S / 2) / st));
+  const W = i1 - i0 + 1, H = j1 - j0 + 1, ground = new Array(W * H), water = new Array(W * H);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const k = (j0 + j) * area.N + (i0 + i);
+    ground[j * W + i] = Math.round(area.nat[k] * 100) / 100;
+    water[j * W + i] = area.water[k];
+  }
+  // Lines cut to the same square as the ground.
+  const gx0 = -area.S / 2 + i0 * st, gz0 = -area.S / 2 + j0 * st, gx1 = gx0 + (W - 1) * st, gz1 = gz0 + (H - 1) * st;
+  const r2 = (a) => a.map((v) => Math.round(v * 100) / 100);
+  const cut = (list) => list.flatMap((l) => clipPolyline(l.pts, gx0, gz0, gx1, gz1).map((p) => ({ ...l, pts: r2(p) })));
+  const lat = mercYToLat(area.cmy - cz / area.k), lon = mercXToLon(area.cmx + cx / area.k);
+  const out = {
+    what: 'Road Lab spot', build: BUILD_NO, saved: new Date().toISOString(),
+    place: { lat, lon, heading: Math.round(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360), areaLat: area.lat, areaLon: area.lon, S: area.S, step: st },
+    camera: { x: cx, z: cz, alt: cam.alt, yaw: cam.yaw, pitch: cam.pitch },
+    ground: { x0: -area.S / 2 + i0 * st, z0: -area.S / 2 + j0 * st, step: st, W, H, h: ground, water, surveyed: area.surveyed },
+    lines: cut(area.lines),
+    waterways: cut(area.waterways),
+    rules, bench: $('bench').checked,
+    flags: result ? result.flags.filter((f) => Math.abs(f.x - cx) < R && Math.abs(f.z - cz) < R) : [],
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: 'application/json' }));
+  a.download = `roadspot-${lat.toFixed(5)}_${lon.toFixed(5)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  flash('Saved ' + a.download);
+};
 $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').value; };
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
