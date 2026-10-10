@@ -2,7 +2,7 @@
 // style. Every shape is in real metres. The app stretches each tree by up to
 // 10% either way, and stretches the far shape to the tree it stands in for.
 import * as S from '../shapes.mjs';
-const { Mesh, reseed, mixc, ring, band, apex, fan, cone, stem, ico, octa, lump, fronds, pad } = S;
+const { Mesh, reseed, jr, mixc, ring, band, apex, fan, cone, stem, ico, octa, lump, fronds, pad } = S;
 // Bring every helper and colour into scope, as the builders were written with them.
 const { BARK, PINEBARK, PALMBARK, BIRCH, SPRUCE_D, SPRUCE_L, NEEDLE_D, NEEDLE_L, LEAF_D, LEAF_L, POP_D, POP_L, OAK_D, OAK_L,
   FROND_D, FROND_L, DEAD, COCO_BARK, FAN_BARK, SKIRT, FAN_L, FAN_D,
@@ -34,7 +34,7 @@ export const STYLES=[
     [m=>broad(m,8,4,.11,.42,BARK,[[0,.68,0,.4,.22,.4],[.18,.58,.1,.26,.16,.26]],LEAF_L,LEAF_D,[[.18,.58,.1],[-.14,.64,-.08]])],
     [m=>broad(m,15,10,.3,.4,BARK,[[0,.68,0,.44,.3,.44],[.22,.56,.12,.27,.21,.27],[-.2,.58,-.14,.27,.21,.27]],LEAF_L,LEAF_D,[[.22,.55,.12],[-.2,.57,-.14]])],
     [m=>broad(m,20,15,.45,.36,BARK,[[0,.7,0,.4,.26,.4],[.28,.55,.1,.24,.2,.24],[-.26,.56,-.12,.24,.2,.24],[.04,.52,.3,.22,.18,.2],[-.06,.88,-.04,.24,.12,.24]],LEAF_L,LEAF_D,[[.25,.5,.1],[-.24,.52,-.1]])]],
-   far(m){stem(m,[[0,0,0],[0,.42,0]],[.05,.035],3,BARK);lump(m,.06,.62,.03,.4,.3,.38,LEAF_L,LEAF_D);lump(m,-.12,.72,-.06,.32,.24,.3,LEAF_L,LEAF_D)}},
+   far(m){stem(m,[[0,0,0],[0,.6,0]],[.05,.03],3,BARK);lump(m,.06,.62,.03,.4,.3,.38,LEAF_L,LEAF_D);lump(m,-.12,.72,-.06,.32,.24,.3,LEAF_L,LEAF_D)}},
   {key:"oval",name:"Tall oval",like:"Poplar, birch",conifer:false,stages:[
     [m=>broad(m,4,1.2,.035,.68,BIRCH,[[0,.74,0,.4,.25,.4]],POP_L,POP_D)],
     [m=>broad(m,10,3.2,.1,.52,BIRCH,[[0,.55,0,.42,.26,.42],[.04,.83,0,.3,.17,.3]],POP_L,POP_D)],
@@ -46,10 +46,10 @@ export const STYLES=[
     [m=>broad(m,6,4.5,.1,.45,BARK,[[.2,.72,.05,.32,.14,.3],[-.2,.76,-.08,.3,.13,.3]],OAK_L,OAK_D,[[.2,.68,.05],[-.2,.72,-.08]])],
     [m=>broad(m,11,12,.3,.32,BARK,[[.24,.62,.06,.3,.18,.3],[-.23,.6,-.1,.3,.18,.3],[0,.74,.1,.3,.17,.28]],OAK_L,OAK_D,[[.26,.52,.06],[-.24,.5,-.08]])],
     [m=>broad(m,15,20,.5,.28,BARK,[[.3,.58,.05,.22,.14,.22],[-.28,.56,-.1,.22,.14,.22],[.02,.66,.28,.22,.13,.2],[-.04,.68,-.28,.2,.13,.2],[0,.8,0,.28,.13,.28]],OAK_L,OAK_D,[[.3,.5,.05],[-.28,.48,-.1],[.02,.55,.28],[-.04,.56,-.28]])]],
-   far(m){stem(m,[[0,0,0],[0,.4,0]],[.07,.05],3,BARK);lump(m,.2,.62,.05,.33,.2,.3,OAK_L,OAK_D);lump(m,-.2,.6,-.08,.32,.18,.3,OAK_L,OAK_D)}},
+   far(m){stem(m,[[0,0,0],[0,.5,0]],[.07,.05],3,BARK);lump(m,.2,.56,.05,.33,.2,.3,OAK_L,OAK_D);lump(m,-.2,.54,-.08,.32,.18,.3,OAK_L,OAK_D)}},
   {key:"feather",name:"Feather palm",like:"Coconut",conifer:false,stages:[
     [m=>featherSeedling(m)],[m=>featherPalm(m,0,0,12)],[m=>featherPalm(m,3,.3,14)],[m=>featherPalm(m,14,1.6,14)]],
-   far(m){stem(m,[[0,0,0],[.04,.45,0],[.12,.85,0]],[.025,.02,.018],3,COCO_BARK[0]);fronds(m,[.12,.86,0],6,.5,.16,.08,FROND_D,FROND_L,.3,1)}},
+   far(m){stem(m,[[0,0,0],[.04,.45,0],[.12,.85,0]],[.025,.02,.018],3,COCO_BARK[0]);for(let k=0;k<6;k++)fronds(m,[.12,.86,0],1,.5*(1+.22*jr()),.16+.14*jr(),.08,FROND_D,FROND_L,k*1.05+.45*jr(),1)}},   // six fronds, each its own angle, length and droop
   {key:"fan",name:"Fan palm",like:"Washingtonia",conifer:false,stages:[
     [m=>fanCrown(m,[0,.05,0],4,.4,.35,.6)],[m=>fanPalm(m,0,0,12)],[m=>fanPalm(m,4,3.4,20)],[m=>fanPalm(m,18,4,22)]],
    far(m){stem(m,[[0,0,0],[0,.8,0]],[.03,.02],3,FAN_BARK);const A=ring(m,0,.86,0,.12,5,0,SKIRT),B=ring(m,0,.68,0,.06,5,.4,SKIRT);band(m,A,B);pad(m,0,.88,0,.5,.12,.5,FAN_L,FAN_D,0,.2)}},

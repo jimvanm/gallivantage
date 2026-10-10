@@ -48,8 +48,8 @@
      "name": "Spire (spruce, fir)",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "sapling",
-     "status": "check",
-     "notes": "Trunk now runs up through the layers, and each layer reaches into the next."
+     "status": "approved",
+     "notes": ""
     },
     {
      "id": "spire-2",
@@ -152,8 +152,8 @@
      "name": "Column (cedar, cypress)",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "far away",
-     "status": "check",
-     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
+     "status": "approved",
+     "notes": ""
     },
     {
      "id": "round-1",
@@ -193,7 +193,7 @@
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
      "status": "check",
-     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
+     "notes": "Trunk now reaches up into the foliage."
     },
     {
      "id": "oval-1",
@@ -232,8 +232,8 @@
      "name": "Tall oval (poplar, birch)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "check",
-     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
+     "status": "approved",
+     "notes": ""
     },
     {
      "id": "spread-1",
@@ -273,7 +273,7 @@
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
      "status": "check",
-     "notes": "Now uneven lumps instead of one even shape; the tree is turned at random, so neighbours differ."
+     "notes": "Trunk raised and foliage lowered to meet halfway."
     },
     {
      "id": "feather-1",
@@ -312,8 +312,8 @@
      "name": "Feather palm (coconut)",
      "osm": "natural=tree, leaf_type=palm (rare); orchard trees=coconut_palms",
      "stage": "far away",
-     "status": "new",
-     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+     "status": "check",
+     "notes": "Six fronds, each at its own angle, length and droop."
     },
     {
      "id": "fan-1",
@@ -352,8 +352,8 @@
      "name": "Fan palm (Washingtonia)",
      "osm": "natural=tree, leaf_type=palm (rare)",
      "stage": "far away",
-     "status": "new",
-     "notes": "Simple shape used beyond the detail distance, stretched to each tree."
+     "status": "rework",
+     "notes": "Redo with the fan palm."
     }
    ]
   },
