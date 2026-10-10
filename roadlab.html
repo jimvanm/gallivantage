@@ -80,7 +80,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
   </div>
   <aside class="panel" id="panel">
     <header><h1>Road Lab</h1>
-      <p class="lede">Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, rides on the ground or above it, and is a bridge where it rides well above. The ground is never changed: it is the truth.</p></header>
+      <p class="lede">Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, rides on the ground or a little above it, and is a bridge where it rides well above. The ground is truth within its own error: under a road it may settle by no more than that.</p></header>
 
     <section>
       <h2>Place</h2>
@@ -99,6 +99,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="key" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
       <label class="check" style="margin-top:6px"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
+      <label class="check"><input type="checkbox" id="settled" checked> Show where the ground settled under a road (brown: up, grey: down)</label>
     </section>
 
     <section>
@@ -135,6 +136,10 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <input type="range" id="smooth" min="0.3" max="4" step="0.1">
       <div class="row"><label for="bridgeLift">A bridge where the road is higher above the ground than</label><output id="bridgeLift-o"></output></div>
       <input type="range" id="bridgeLift" min="0.3" max="6" step="0.1">
+      <div class="row"><label for="settleFine">Ground may settle under a road, survey ground</label><output id="settleFine-o"></output></div>
+      <input type="range" id="settleFine" min="0" max="1.5" step="0.05">
+      <div class="row"><label for="settleCoarse">…ordinary height tiles</label><output id="settleCoarse-o"></output></div>
+      <input type="range" id="settleCoarse" min="0" max="5" step="0.1">
       <div class="row"><label for="clearance">One road over another, surface to surface</label><output id="clearance-o"></output></div>
       <input type="range" id="clearance" min="4" max="10" step="0.1">
       <div class="chips" style="margin-top:8px"><button class="btn" id="reset">Back to the starting rules</button></div>
@@ -159,7 +164,7 @@ import { surveyTileHeights } from './src/surveytile.js';
 import { buildRoads } from './src/roads.js';
 import { MeshBuilder, rgba } from './src/meshbuilder.js';
 import { Controls } from './src/controls.js';
-import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile } from './src/roadrules.js';
+import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, settleGround, checkProfile } from './src/roadrules.js';
 import { buildRoadShapes, roadPoint } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
@@ -173,7 +178,7 @@ const PLACES = [
 let rules = defaultRules();
 const START = defaultRules();
 const SLIDERS = { hold: (v) => `${fmt(v, 1)} m`, smooth: (v) => `× ${fmt(v, 1)}`, bridgeLift: (v) => `${fmt(v, 1)} m`,
-  clearance: (v) => `${fmt(v, 1)} m` };
+  clearance: (v) => `${fmt(v, 1)} m`, settleFine: (v) => `${fmt(v, 2)} m`, settleCoarse: (v) => `${fmt(v, 1)} m` };
 function showRules() {
   const tb = $('kinds').tBodies[0];
   tb.innerHTML = KIND_ORDER.map((k) => { const K = rules.kinds[k];
@@ -217,7 +222,16 @@ function bilinear(h, N, step, S, x, z) {
 }
 const inArea = (x, z) => area && Math.abs(x) <= area.S / 2 && Math.abs(z) <= area.S / 2;
 const natAt = (x, z) => inArea(x, z) ? bilinear(area.nat, area.N, area.step, area.S, x, z) : NaN;
-const engAt = natAt;          // one ground: never changed
+// The engineered side's ground: the same ground, settled under the roads by
+// no more than its error (area.eng); elsewhere identical.
+const engAt = (x, z) => inArea(x, z) ? bilinear(area.eng || area.nat, area.N, area.step, area.S, x, z) : NaN;
+// The data's error at a point: survey ground (where at least half the tile
+// came from Canada's survey) or the ordinary height tiles.
+function tolAt(x, z) {
+  if (!area || !area.surveyTiles) return rules.settleCoarse;
+  const t = mercToTile(area.cmx + x / area.k, area.cmy - z / area.k, 16);
+  return area.surveyTiles.has(Math.floor(t.x) + '/' + Math.floor(t.y)) ? rules.settleFine : rules.settleCoarse;
+}
 
 // Tiles of zoom z under the area.
 function tilesUnder(a, z) {
@@ -232,12 +246,14 @@ function tilesUnder(a, z) {
 async function loadGround(a, id) {
   const tiles = tilesUnder(a, 16), got = new Map();
   let done = 0, surveyed = 0, notes = new Set();
+  const surveyTiles = new Set();
   const queue = tiles.slice();
   const worker = async () => {
     while (queue.length) {
       const t = queue.shift();
       const r = await surveyTileHeights(t.z, t.x, t.y);
       got.set(t.x + '/' + t.y, r.heights);
+      if (r.surveyed >= 0.5) surveyTiles.add(t.x + '/' + t.y);
       surveyed += r.surveyed; if (r.note) notes.add(r.note);
       done++;
       if (id === loadId) busy(`Reading the ground… ${done} of ${tiles.length} tiles`);
@@ -254,7 +270,7 @@ async function loadGround(a, id) {
     h[j * N + i] = (hh[jv * 256 + iu] * (1 - fu) + hh[jv * 256 + iu + 1] * fu) * (1 - fv) + (hh[(jv + 1) * 256 + iu] * (1 - fu) + hh[(jv + 1) * 256 + iu + 1] * fu) * fv;
   }
   void s;
-  return { h, surveyed: surveyed / tiles.length, tiles: tiles.length, notes: [...notes] };
+  return { h, surveyed: surveyed / tiles.length, tiles: tiles.length, notes: [...notes], surveyTiles };
 }
 
 // The map: roads and railways, waterways, and water areas (painted on a
@@ -307,9 +323,9 @@ async function load(lat, lon, heading) {
   try { [g, m] = await Promise.all([loadGround(a, id), loadMap(a)]); }
   catch (e) { if (id === loadId) busy('Could not load this place: ' + e.message); console.error(e); return; }
   if (id !== loadId) return;
-  Object.assign(a, { nat: g.h, ...m, loadMs: performance.now() - t0, surveyed: g.surveyed, groundTiles: g.tiles, notes: g.notes });
+  Object.assign(a, { nat: g.h, ...m, loadMs: performance.now() - t0, surveyed: g.surveyed, groundTiles: g.tiles, notes: g.notes, surveyTiles: g.surveyTiles });
   area = a;
-  free(meshes.natGround); meshes.natGround = null;
+  free(meshes.natGround); meshes.natGround = null; free(meshes.engGround); meshes.engGround = null;
   busy('Building the roads…');
   await new Promise((r) => setTimeout(r, 20));
   todayRoads();
@@ -322,7 +338,7 @@ async function load(lat, lon, heading) {
 
 // ---- engineering and meshes --------------------------------------------------------
 let result = null;          // runAll's result, for the current rules
-const meshes = { natGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null };
+const meshes = { natGround: null, engGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null };
 let timing = {};
 
 function waterAt(x, z) {
@@ -333,10 +349,13 @@ function waterAt(x, z) {
 function rebuild() {
   if (!area) return;
   const t0 = performance.now();
-  result = runAll(area.lines, area.waterways, natAt, rules, { waterAt });
+  result = runAll(area.lines, area.waterways, natAt, rules, { waterAt, tolAt });
+  const st = settleGround({ N: area.N, S: area.S, step: area.step, h: area.nat }, result.net, rules, tolAt);
+  area.eng = st.h; area.settled = st;
   const t1 = performance.now();
   const t2 = performance.now();
   if (!meshes.natGround) meshes.natGround = groundMesh(area.nat);
+  free(meshes.engGround); meshes.engGround = groundMesh(area.eng, $('settled').checked ? area.nat : null);
   roadMeshes();
   timing = { engineer: t1 - t0, mesh: performance.now() - t2 };
   showFindings();
@@ -436,7 +455,7 @@ function free(m) { if (m) { gl.deleteVertexArray(m.vao); m.bufs.forEach((b) => g
 // the area's own range), the map's water blue. Both halves draw this same
 // ground: it is never changed.
 let gridIdx = null, gridIdxN = 0;
-function groundMesh(h) {
+function groundMesh(h, before) {
   const N = area.N, st = area.step;
   let lo = Infinity, hi = -Infinity;
   for (const v of area.nat) { if (v < lo) lo = v; if (v > hi) hi = v; }
@@ -447,6 +466,11 @@ function groundMesh(h) {
     const t = Math.max(0, Math.min(1, (h[k] - lo) / Math.max(10, hi - lo)));
     let c = [92 + 70 * t, 128 - 14 * t, 72 + 6 * t];
     if (area.water[k]) c = [52, 92, 140];
+    if (before) {
+      const d = h[k] - before[k];
+      if (d > 0.02) { const s = Math.min(1, 0.4 + d); c = [c[0] * (1 - s) + 168 * s, c[1] * (1 - s) + 122 * s, c[2] * (1 - s) + 74 * s]; }
+      else if (d < -0.02) { const s = Math.min(1, 0.4 - d); c = [c[0] * (1 - s) + 140 * s, c[1] * (1 - s) + 136 * s, c[2] * (1 - s) + 128 * s]; }
+    }
     u[4 * k + 3] = rgba(c[0] | 0, c[1] | 0, c[2] | 0);
   }
   if (gridIdxN !== N) {
@@ -550,6 +574,7 @@ $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').valu
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
 for (const id of ['colour', 'curves']) $(id).onchange = () => roadMeshes();
+$('settled').onchange = () => { if (!area || !area.eng) return; free(meshes.engGround); meshes.engGround = groundMesh(area.eng, $('settled').checked ? area.nat : null); };
 
 // ---- findings ---------------------------------------------------------------------------
 function goLook(x, z) {
@@ -593,6 +618,7 @@ function showStats() {
     ['Well over its rules, engineered', `${fmt(badEng / 1000, 2)} km (${fmt(100 * badEng / Math.max(1, len), 1)}%)`],
     ['Ground from Canada\'s survey', `${fmt(100 * area.surveyed)}% of ${area.groundTiles} tiles`],
     ['Ground points', `${fmt(area.N)} × ${fmt(area.N)}, ${area.step} m apart`],
+    ['Ground settled under roads', `${fmt(area.settled.moved)} points, at most ${fmt(area.settled.most, 2)} m`],
     ['Downloaded', `${fmt(downloaded / 1e6, 1)} MB in ${fmt(area.loadMs / 1000, 1)} s`],
     ['Working out the roads', `${fmt(timing.engineer)} ms`],
   ];
@@ -645,7 +671,7 @@ function frame(now) {
   };
   const plainToday = $('colour').value === 'plain';
   const left = () => { draw(meshes.natGround, true); draw(plainToday ? meshes.todayApp : meshes.rawRoads); if ($('flagsOn').checked) draw(meshes.flags); };
-  const right = () => { draw(meshes.natGround, true); draw(meshes.engRoads); if ($('flagsOn').checked) draw(meshes.flags); };
+  const right = () => { draw(meshes.engGround || meshes.natGround, true); draw(meshes.engRoads); if ($('flagsOn').checked) draw(meshes.flags); };
   const split = view === 'split';
   $('divider').style.display = $('tagL').style.display = $('tagR').style.display = split ? '' : 'none';
   if (split) {

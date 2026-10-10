@@ -176,13 +176,13 @@ function world(extra, lines) {
   const c = r.net.chains[0];
   let under = 0;
   for (let i = 0; i < c.n; i++) under = Math.max(under, c.raw[i] - c.prof[i]);
-  assert.ok(under < 0.03, 'never under the ground: ' + under.toFixed(3));
-  for (let i = 0; i < c.n; i++) assert.equal(c.under[i], c.raw[i], 'the ground under it is the ground as found');
+  assert.ok(under < rl.settleFine + 0.03, 'never deeper than the data\'s error: ' + under.toFixed(3));
+  for (let i = 0; i < c.n; i++) assert.ok(Math.abs(c.under[i] - c.raw[i]) <= rl.settleFine + 1e-9, 'the ground under it moves no more than its error');
   for (let i = 0; i < c.n; i++) {
     const lift = c.prof[i] - c.raw[i];
     if (lift > rl.bridgeLift + 0.01) assert.equal(c.struct[i], 1, 'well above the ground is a bridge');
   }
-  ok('the ground is never changed: the road rides on it or bridges over it');
+  ok('the ground moves no more than its error: the road rides on it or bridges over it');
 }
 // ---- a little roadbed, and water ----------------------------------------------------------------
 {
@@ -194,12 +194,12 @@ function world(extra, lines) {
   let hi = 0, lo = 0;
   for (let i = 0; i < c.n; i++) { hi = Math.max(hi, c.prof[i] - c.raw[i]); lo = Math.max(lo, c.raw[i] - c.prof[i]); }
   assert.ok(hi < 0.35, 'no more than its roadbed above the ground: ' + hi.toFixed(2));
-  assert.ok(lo < 0.03, 'never under it');
+  assert.ok(lo < 0.33, 'never deeper into it than its error');
   assert.ok(!r.flags.length, 'and that is not a fault: ' + r.flags.map((f) => f.text).join(' | '));
   // A motorway has no roadbed limit: it rides smooth and bridges instead.
   const m = runAll([line([0, -150, 0, 150], 'motorway')], [], bumpy, defaultRules()).net.chains[0];
-  let mh = 0; for (let i = 0; i < m.n; i++) mh = Math.max(mh, m.prof[i] - m.raw[i]);
-  assert.ok(mh > 0.4, 'a motorway rides smooth over them');
+  const mv = Math.max(...checkProfile(m, m.prof, defaultRules().kinds.motorway).vert);
+  assert.ok(mv < 1.15, 'a motorway rides smooth over them: ' + mv.toFixed(2));
   ok('a slow road follows bumps higher than its roadbed; a motorway rides over them');
 }
 {
@@ -212,6 +212,30 @@ function world(extra, lines) {
   for (let i = 0; i < c.n; i++) if (Math.abs(c.z[i]) < 60) assert.equal(c.struct[i], 1, 'over the water: a bridge at any height');
   assert.ok(!r.flags.length, 'the banks are not flagged: ' + r.flags.map((f) => f.text).join(' | '));
   ok('a road over water is a bridge, at any height, and its banks are not flagged');
+}
+
+// ---- settling ------------------------------------------------------------------------------------
+{
+  // A local road over a field with a 0.25 m hump and a 0.25 m hollow, on
+  // survey ground: the ground under the road settles to it (within 0.3 m),
+  // and nothing beside the road changes.
+  const { settleGround } = await import('../src/roadrules.js');
+  const nat = (x, z) => 100 + 0.25 * Math.exp(-(((z - 40) / 3) ** 2)) - 0.25 * Math.exp(-(((z + 40) / 3) ** 2));
+  const rl = defaultRules();
+  const r = runAll([line([0, -150, 0, 150], 'local')], [], nat, rl);
+  const S = 400, step = 2, N = S / step + 1, h = new Float32Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) h[j * N + i] = nat(-S / 2 + i * step, -S / 2 + j * step);
+  const out = settleGround({ N, S, step, h }, r.net, rl);
+  const at = (x, z) => out.h[Math.round((z + S / 2) / step) * N + Math.round((x + S / 2) / step)];
+  assert.ok(out.most <= rl.settleFine + 1e-6, 'moved no more than its error: ' + out.most.toFixed(3));
+  assert.ok(out.moved > 0);
+  assert.ok(Math.abs(at(20, 40) - nat(20, 40)) < 1e-4, 'beside the road, nothing changes');
+  const c = r.net.chains[0], i = Math.round((40 + 150) / c.ds);
+  assert.ok(Math.abs(at(0, 40) - (c.prof[i] - 0.05)) < 0.06, 'under the road, the ground meets it');
+  // On coarse ground, the error is bigger, so more may settle.
+  const coarse = settleGround({ N, S, step, h }, r.net, rl, () => rl.settleCoarse);
+  assert.ok(coarse.most <= rl.settleCoarse + 1e-6);
+  ok('under a road the ground settles to it, by no more than the data\'s error; beside it nothing moves');
 }
 
 // ---- piers -------------------------------------------------------------------------------------
@@ -229,7 +253,11 @@ function world(extra, lines) {
   assert.ok(onSec.length >= 3, 'the bridge has piers: ' + onSec.length);
   const edge = 12 / 2 + rl.kinds.motorway.sh;          // a one-way motorway half and its shoulder
   for (const [x, z] of onSec) for (const cz of [-14, 14]) assert.ok(Math.abs(z - cz) > edge, `pier at z ${z.toFixed(1)} stands on the motorway`);
-  assert.ok(cnt.piersMoved >= 1, 'a pier was moved off the motorway');
+  // A single wide motorway right where a pier would go: that pier moves along.
+  const r2 = runAll([line([-800, 0, 800, 0], 'motorway'), line([0, -400, 0, 400], 'secondary', { brunnel: 'bridge' })], [], valley, rl);
+  const cnt2 = buildRoadShapes(r2.net, new MeshBuilder(), { which: 'prof', colour: 'plain', rules: rl });
+  assert.ok(cnt2.piersMoved >= 1, 'a pier was moved off the motorway');
+  for (const [, z, id] of cnt2.pierSpots) if (r2.net.chains[id].kind === 'secondary') assert.ok(Math.abs(z) > 24 / 2 + rl.kinds.motorway.sh, 'and none stands on it');
   ok('bridge piers never stand on a road below; they move along to the side');
 }
 

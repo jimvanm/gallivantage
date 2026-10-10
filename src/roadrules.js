@@ -7,12 +7,15 @@
 // steep the road may be and how gently it must round off over a hilltop or
 // through a dip. The road's height line is drawn first, within those limits.
 //
-// One rule of our own (Jim, 10 October): the ground is truth. It is never
-// raised and never cut. Canada's survey is bare earth, so the real
-// embankments and cuttings are already in it; building them again would
-// double them. A road therefore rides on the ground or above it, never below
-// (except in a tunnel the map marks), and where it rides well above the
-// ground it is a bridge.
+// One rule of our own (Jim, 10 October): the ground is truth, within its own
+// error. Canada's survey is bare earth, so the real embankments and cuttings
+// are already in it; building them again would double them. But it is truth
+// only at its own detail (a height every 2 m; the ordinary height tiles, about
+// 30 m), and silent about anything smaller. So shapes the data can see are
+// never changed; under a road's own footprint the ground may settle by up to
+// the data's error (a few tens of centimetres on the survey, more on coarse
+// tiles); beyond that the road rides above the ground on a little roadbed, or
+// is a bridge. It never cuts deeper than the error (tunnels: later).
 //
 // This file does the same with what the map and the ground already tell us:
 //
@@ -81,7 +84,10 @@ export const KIND_ORDER = Object.keys(KINDS);
 //               less, and it sits on its own bed on the ground.
 //   clearance   from one road's surface to the other's where one passes over
 //               the other (metres): about 5 m of headroom plus the deck.
-export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5 };
+//   settleFine  how far the ground under a road may settle, up or down, where
+//               it comes from Canada's survey (metres): about its error.
+//   settleCoarse  the same on the ordinary height tiles, which know less.
+export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5, settleFine: 0.3, settleCoarse: 1.5 };
 // Higher than this above the ground, with no bridge on the map, no water and
 // no road below: worth a look (a bridge the map does not show, or bad ground).
 export const UNTOLD_BRIDGE = 4;
@@ -835,6 +841,9 @@ export function engineer(net, groundAt, rules, opt = {}) {
       for (let j = Math.max(0, i - near); j <= Math.min(c.n - 1, i + near); j++) { c.known[j] = 1; c.w[j] = Math.min(c.w[j], 0.2); }
     }
     c.prof = null;
+    // How far the ground under it may settle: the data's own error there.
+    c.tol = new Float64Array(c.n);
+    for (let i = 0; i < c.n; i++) c.tol[i] = opt.tolAt ? opt.tolAt(c.x[i], c.z[i]) : rules.settleFine;
   }
   // Rivers and creeks: the road does not dip into them. Rivers and canals are
   // bridged. Creeks and ditches would really go through a pipe under a bank
@@ -884,15 +893,16 @@ export function engineer(net, groundAt, rules, opt = {}) {
       else if (dec.guessed) flags.push({ x: x.x, z: x.z, kind: 'guess', text: `${kB.label} crossing ${rules.kinds[A.kind].label.toLowerCase()}: no tag and flat ground. Guessed ${dec.rel}.` });
     }
     const t = B.raw, w = B.w;
-    // The ground is a floor the road may not go under, except in a tunnel.
-    const floor = Float64Array.from(B.raw);
-    for (let i = 0; i < B.n; i++) if (B.struct[i] === 2) floor[i] = -Infinity;
+    // The ground, less its error, is a floor the road may not go under,
+    // except in a tunnel.
+    const floor = new Float64Array(B.n);
+    for (let i = 0; i < B.n; i++) floor[i] = B.struct[i] === 2 ? -Infinity : B.raw[i] - B.tol[i];
     // Its roadbed limit, except where the map says it leaves the ground
     // (a bridge, water, a creek, a road below).
     let ceil = null;
     if (kB.bed > 0) {
       ceil = new Float64Array(B.n);
-      for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : B.raw[i] + kB.bed;
+      for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : B.raw[i] + Math.max(kB.bed, B.tol[i]);
     }
     const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil);
     B.prof = r.p; B.ok = r.ok; B.rounds = r.rounds;
@@ -903,7 +913,9 @@ export function engineer(net, groundAt, rules, opt = {}) {
   // the map may be missing a bridge, or the ground be wrong. The ground
   // itself is never changed: what is under each road is the ground as found.
   for (const c of chains) {
-    c.under = Float64Array.from(c.raw);
+    // The ground under it after settling: up to the data's error toward the road.
+    c.under = new Float64Array(c.n);
+    for (let i = 0; i < c.n; i++) c.under[i] = c.raw[i] + Math.max(-c.tol[i], Math.min(c.tol[i], c.prof[i] - SETTLE_SURF - c.raw[i]));
     let run = null;
     const close = () => {
       if (!run) return;
@@ -913,7 +925,7 @@ export function engineer(net, groundAt, rules, opt = {}) {
       run = null;
     };
     for (let i = 0; i < c.n; i++) {
-      const lift = c.prof[i] - c.raw[i];
+      const lift = c.prof[i] - c.under[i];
       let untold = false;
       if (!c.struct[i] && lift > rules.bridgeLift) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = 'above the ground: bridge'; untold = true; }
       if (untold && run) { run.i1 = i; run.max = Math.max(run.max, lift); run.known ||= c.known[i]; }
@@ -966,6 +978,52 @@ export function checkProfile(c, p, kind) {
     curve[i] = Number.isFinite(c.R[i]) ? Rmin / Math.abs(c.R[i]) : 0;
   }
   return { vert, curve, grade, bend };
+}
+
+// ---- settling the ground under roads ------------------------------------------------
+
+// The ground sits this far under a road's surface where it has settled to it.
+const SETTLE_SURF = 0.05;
+
+// The ground with each road's footprint (its width and shoulders) settled
+// toward the road, by no more than the data's error there, tolAt(x, z).
+// Nothing outside a footprint changes, and nothing under a bridge or tunnel.
+//   grid = { N, S, step, h: Float32Array(N*N) }: N x N points, `step` metres
+//   apart, row j at z = -S/2 + j*step, column i at x = -S/2 + i*step.
+// Lower kinds first, so where footprints overlap the higher road decides.
+// Returns { h: new heights, moved: points changed, most: largest change }.
+export function settleGround(grid, net, rules, tolAt = () => rules.settleFine) {
+  const { N, S, step } = grid, nat = grid.h, h = Float32Array.from(nat);
+  const x0 = -S / 2;
+  const order = net.chains.slice().sort((p, q) => rules.kinds[p.kind].rank - rules.kinds[q.kind].rank);
+  const touched = new Uint8Array(N * N);
+  for (const c of order) {
+    if (!c.prof) continue;
+    const edge = c.width / 2 + (rules.kinds[c.kind].sh || 0);
+    for (let i = 0; i + 1 < c.n; i++) {
+      if (c.struct[i] && c.struct[i + 1]) continue;
+      const ax = c.x[i], az = c.z[i], bx = c.x[i + 1], bz = c.z[i + 1];
+      const gi0 = Math.max(0, Math.floor((Math.min(ax, bx) - edge - x0) / step)), gi1 = Math.min(N - 1, Math.ceil((Math.max(ax, bx) + edge - x0) / step));
+      const gj0 = Math.max(0, Math.floor((Math.min(az, bz) - edge - x0) / step)), gj1 = Math.min(N - 1, Math.ceil((Math.max(az, bz) + edge - x0) / step));
+      for (let gj = gj0; gj <= gj1; gj++) {
+        const z = x0 + gj * step;
+        for (let gi = gi0; gi <= gi1; gi++) {
+          const x = x0 + gi * step;
+          const r = segDist(x, z, ax, az, bx, bz);
+          if (r.d > edge) continue;
+          const q = r.t < 0.5 ? i : i + 1;
+          if (c.struct[q]) continue;
+          const idx = gj * N + gi, g0 = nat[idx], tol = tolAt(x, z);
+          const want = c.prof[i] + (c.prof[i + 1] - c.prof[i]) * r.t - SETTLE_SURF;
+          h[idx] = Math.max(g0 - tol, Math.min(g0 + tol, want));
+          touched[idx] = 1;
+        }
+      }
+    }
+  }
+  let moved = 0, most = 0;
+  for (let k = 0; k < h.length; k++) if (touched[k]) { const d = Math.abs(h[k] - nat[k]); if (d > 0.02) moved++; if (d > most) most = d; }
+  return { h, moved, most };
 }
 
 // Everything in one go, for a lab or a test.
