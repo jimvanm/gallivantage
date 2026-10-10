@@ -80,7 +80,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
   </div>
   <aside class="panel" id="panel">
     <header><h1>Road Lab</h1>
-      <p class="lede">Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, the ground is cut and filled to meet it, and bridges go where they are needed.</p></header>
+      <p class="lede">Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, rides on the ground or above it, and is a bridge where it rides well above. The ground is never changed: it is the truth.</p></header>
 
     <section>
       <h2>Place</h2>
@@ -98,7 +98,6 @@ ul.finds li:hover{outline:1px solid var(--line)}
         <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option></select></div>
       <div class="key" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
       <label class="check" style="margin-top:6px"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
-      <label class="check"><input type="checkbox" id="earth" checked> Show cut and fill (brown: built up; grey: cut away)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
     </section>
 
@@ -134,14 +133,10 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <input type="range" id="hold" min="0.2" max="4" step="0.1">
       <div class="row"><label for="smooth">Smoothing</label><output id="smooth-o"></output></div>
       <input type="range" id="smooth" min="0.3" max="4" step="0.1">
-      <div class="row"><label for="bridgeFill">Bridge instead of more earth than</label><output id="bridgeFill-o"></output></div>
-      <input type="range" id="bridgeFill" min="3" max="25" step="0.5">
-      <div class="row"><label for="tunnelCut">Tunnel instead of a cutting deeper than</label><output id="tunnelCut-o"></output></div>
-      <input type="range" id="tunnelCut" min="5" max="40" step="1">
+      <div class="row"><label for="bridgeLift">A bridge where the road is higher above the ground than</label><output id="bridgeLift-o"></output></div>
+      <input type="range" id="bridgeLift" min="0.3" max="6" step="0.1">
       <div class="row"><label for="clearance">One road over another, surface to surface</label><output id="clearance-o"></output></div>
       <input type="range" id="clearance" min="4" max="10" step="0.1">
-      <div class="row"><label for="sideSlope">Cutting and embankment sides</label><output id="sideSlope-o"></output></div>
-      <input type="range" id="sideSlope" min="0.2" max="1.5" step="0.05">
       <div class="chips" style="margin-top:8px"><button class="btn" id="reset">Back to the starting rules</button></div>
       <p class="note" style="margin-top:8px">Settings line (what the app would use):</p>
       <div class="settings" id="settings"></div>
@@ -164,7 +159,7 @@ import { surveyTileHeights } from './src/surveytile.js';
 import { buildRoads } from './src/roads.js';
 import { MeshBuilder, rgba } from './src/meshbuilder.js';
 import { Controls } from './src/controls.js';
-import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, shapeGround, checkProfile } from './src/roadrules.js';
+import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile } from './src/roadrules.js';
 import { buildRoadShapes, roadPoint } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
@@ -177,8 +172,8 @@ const PLACES = [
 // ---- rules and their controls ------------------------------------------------------
 let rules = defaultRules();
 const START = defaultRules();
-const SLIDERS = { hold: (v) => `${fmt(v, 1)} m`, smooth: (v) => `× ${fmt(v, 1)}`, bridgeFill: (v) => `${fmt(v, 1)} m`,
-  tunnelCut: (v) => `${fmt(v)} m`, clearance: (v) => `${fmt(v, 1)} m`, sideSlope: (v) => `1 in ${fmt(1 / v, 1)}` };
+const SLIDERS = { hold: (v) => `${fmt(v, 1)} m`, smooth: (v) => `× ${fmt(v, 1)}`, bridgeLift: (v) => `${fmt(v, 1)} m`,
+  clearance: (v) => `${fmt(v, 1)} m` };
 function showRules() {
   const tb = $('kinds').tBodies[0];
   tb.innerHTML = KIND_ORDER.map((k) => { const K = rules.kinds[k];
@@ -222,7 +217,7 @@ function bilinear(h, N, step, S, x, z) {
 }
 const inArea = (x, z) => area && Math.abs(x) <= area.S / 2 && Math.abs(z) <= area.S / 2;
 const natAt = (x, z) => inArea(x, z) ? bilinear(area.nat, area.N, area.step, area.S, x, z) : NaN;
-const engAt = (x, z) => inArea(x, z) ? bilinear(area.eng || area.nat, area.N, area.step, area.S, x, z) : NaN;
+const engAt = natAt;          // one ground: never changed
 
 // Tiles of zoom z under the area.
 function tilesUnder(a, z) {
@@ -314,6 +309,7 @@ async function load(lat, lon, heading) {
   if (id !== loadId) return;
   Object.assign(a, { nat: g.h, ...m, loadMs: performance.now() - t0, surveyed: g.surveyed, groundTiles: g.tiles, notes: g.notes });
   area = a;
+  free(meshes.natGround); meshes.natGround = null;
   busy('Building the roads…');
   await new Promise((r) => setTimeout(r, 20));
   todayRoads();
@@ -326,7 +322,7 @@ async function load(lat, lon, heading) {
 
 // ---- engineering and meshes --------------------------------------------------------
 let result = null;          // runAll's result, for the current rules
-const meshes = { natGround: null, engGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null };
+const meshes = { natGround: null, rawRoads: null, engRoads: null, todayApp: null, flags: null };
 let timing = {};
 
 function waterAt(x, z) {
@@ -339,13 +335,10 @@ function rebuild() {
   const t0 = performance.now();
   result = runAll(area.lines, area.waterways, natAt, rules, { waterAt });
   const t1 = performance.now();
-  area.eng = shapeGround({ N: area.N, S: area.S, step: area.step, h: area.nat }, result.net, rules);
   const t2 = performance.now();
-  free(meshes.natGround); free(meshes.engGround);
-  meshes.natGround = groundMesh(area.nat, null);
-  meshes.engGround = groundMesh(area.eng, $('earth').checked ? area.nat : null);
+  if (!meshes.natGround) meshes.natGround = groundMesh(area.nat);
   roadMeshes();
-  timing = { engineer: t1 - t0, shape: t2 - t1, mesh: performance.now() - t2 };
+  timing = { engineer: t1 - t0, mesh: performance.now() - t2 };
   showFindings();
   showStats();
 }
@@ -440,10 +433,10 @@ function upload(m) {
 function free(m) { if (m) { gl.deleteVertexArray(m.vao); m.bufs.forEach((b) => gl.deleteBuffer(b)); } }
 
 // The ground as one mesh, coloured by height (greens low, browns high, within
-// the area's own range), the map's water blue, and where `before` is given,
-// what was built up (brown) or cut away (grey).
+// the area's own range), the map's water blue. Both halves draw this same
+// ground: it is never changed.
 let gridIdx = null, gridIdxN = 0;
-function groundMesh(h, before) {
+function groundMesh(h) {
   const N = area.N, st = area.step;
   let lo = Infinity, hi = -Infinity;
   for (const v of area.nat) { if (v < lo) lo = v; if (v > hi) hi = v; }
@@ -454,11 +447,6 @@ function groundMesh(h, before) {
     const t = Math.max(0, Math.min(1, (h[k] - lo) / Math.max(10, hi - lo)));
     let c = [92 + 70 * t, 128 - 14 * t, 72 + 6 * t];
     if (area.water[k]) c = [52, 92, 140];
-    if (before) {
-      const d = h[k] - before[k];
-      if (d > 0.3) { const s = Math.min(1, d / 6); c = [c[0] * (1 - s) + 168 * s, c[1] * (1 - s) + 122 * s, c[2] * (1 - s) + 74 * s]; }
-      else if (d < -0.3) { const s = Math.min(1, -d / 6); c = [c[0] * (1 - s) + 140 * s, c[1] * (1 - s) + 136 * s, c[2] * (1 - s) + 128 * s]; }
-    }
     u[4 * k + 3] = rgba(c[0] | 0, c[1] | 0, c[2] | 0);
   }
   if (gridIdxN !== N) {
@@ -562,7 +550,6 @@ $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').valu
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
 for (const id of ['colour', 'curves']) $(id).onchange = () => roadMeshes();
-$('earth').onchange = () => { if (!area) return; free(meshes.engGround); meshes.engGround = groundMesh(area.eng, $('earth').checked ? area.nat : null); };
 
 // ---- findings ---------------------------------------------------------------------------
 function goLook(x, z) {
@@ -608,7 +595,6 @@ function showStats() {
     ['Ground points', `${fmt(area.N)} × ${fmt(area.N)}, ${area.step} m apart`],
     ['Downloaded', `${fmt(downloaded / 1e6, 1)} MB in ${fmt(area.loadMs / 1000, 1)} s`],
     ['Working out the roads', `${fmt(timing.engineer)} ms`],
-    ['Cutting and filling', `${fmt(timing.shape)} ms`],
   ];
   if (area.notes.length) rows.push(['Survey note', area.notes.join('; ')]);
   $('stats').innerHTML = rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
@@ -659,7 +645,7 @@ function frame(now) {
   };
   const plainToday = $('colour').value === 'plain';
   const left = () => { draw(meshes.natGround, true); draw(plainToday ? meshes.todayApp : meshes.rawRoads); if ($('flagsOn').checked) draw(meshes.flags); };
-  const right = () => { draw(meshes.engGround, true); draw(meshes.engRoads); if ($('flagsOn').checked) draw(meshes.flags); };
+  const right = () => { draw(meshes.natGround, true); draw(meshes.engRoads); if ($('flagsOn').checked) draw(meshes.flags); };
   const split = view === 'split';
   $('divider').style.display = $('tagL').style.display = $('tagR').style.display = split ? '' : 'none';
   if (split) {

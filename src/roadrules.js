@@ -5,9 +5,14 @@
 // to a bridge and dips into every creek. Engineers work the other way round.
 // They choose a design speed for each kind of road, and that speed sets how
 // steep the road may be and how gently it must round off over a hilltop or
-// through a dip. The road's height line is drawn first, within those limits;
-// the ground is then cut down or built up to meet it, and where that would
-// take too much earth, a bridge or a tunnel is built instead.
+// through a dip. The road's height line is drawn first, within those limits.
+//
+// One rule of our own (Jim, 10 October): the ground is truth. It is never
+// raised and never cut. Canada's survey is bare earth, so the real
+// embankments and cuttings are already in it; building them again would
+// double them. A road therefore rides on the ground or above it, never below
+// (except in a tunnel the map marks), and where it rides well above the
+// ground it is a bridge.
 //
 // This file does the same with what the map and the ground already tell us:
 //
@@ -20,9 +25,8 @@
 //   3. Each road gets a smooth height line that follows the ground as closely
 //      as its rules allow, highest kind of road first, so lower roads give
 //      way at junctions and crossings (engineer).
-//   4. Where the road runs far above the ground it becomes a bridge, far
-//      below it a tunnel; elsewhere the ground is cut and filled to meet it
-//      (structures, shapeGround).
+//   4. Where the road runs well above the ground it is a bridge on piers
+//      (markStructures). The ground itself is left exactly as it is.
 //   5. Every stretch is checked against its rules, so a picture can show
 //      where a road (today's draped one, or this one) breaks them (checkProfile).
 //
@@ -70,14 +74,14 @@ export const KIND_ORDER = Object.keys(KINDS);
 //   hold        how closely a road follows the ground, metres: bumps smaller
 //               than about this are smoothed over, bigger ones followed.
 //   smooth      how hard the line is smoothed before the limits step in (x).
-//   bridgeFill  more earth than this under a road (metres) and a bridge is
-//               built instead.
-//   tunnelCut   a cutting deeper than this (metres) and a tunnel is built.
+//   bridgeLift  a road more than this above the ground (metres) is a bridge;
+//               less, and it sits on its own bed on the ground.
 //   clearance   from one road's surface to the other's where one passes over
 //               the other (metres): about 5 m of headroom plus the deck.
-//   sideSlope   cuttings and embankments: metres down per metre across
-//               (0.5 is the usual 1 in 2).
-export const SETTINGS = { hold: 1.0, smooth: 1, bridgeFill: 10, tunnelCut: 18, clearance: 6.5, sideSlope: 0.5 };
+export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5 };
+// Higher than this above the ground, with no bridge on the map, no water and
+// no road below: worth a look (a bridge the map does not show, or bad ground).
+export const UNTOLD_BRIDGE = 4;
 
 // Fresh copy of every rule, to change freely (the lab's sliders).
 export function defaultRules() {
@@ -624,8 +628,12 @@ function solveBand(d0, d1, d2, b) {
 // kind allows, it is stiffened there; wherever it is still steeper than the
 // kind allows, it is held to that grade; wherever it breaks a must, that
 // point is pinned. Until nothing breaks, or 60 rounds of that.
+// floor (optional, per sample): the ground, which the line may not go under
+// (-Infinity where it may: a tunnel). Where it would, it is held up there,
+// harder each round, so it rides smoothly over what it cannot follow.
 // Returns { p, ok, rounds }.
-export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map()) {
+const FLOOR_GAP = 0.03, FLOOR_SLACK = 0.02;
+export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map(), floor = null) {
   const n = t.length;
   if (n < 3) {
     const p = Float64Array.from(t);
@@ -640,6 +648,7 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
   const lam0 = Math.pow(Math.max(1, ell / ds), 4);
   const lam = new Float64Array(n).fill(lam0);
   const gam = new Float64Array(n - 1), gs = new Int8Array(n - 1);
+  const fw = new Float64Array(n);          // how hard each point is held up off the ground (0 = not yet)
   const pin = new Map(fixed);
   let w = Float64Array.from(w0);
   // With no trusted ground at all, keep a whisper of it so the line is defined.
@@ -647,9 +656,13 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
   if (!any) w.fill(1e-6);
   let p = null, ok = false, round = 0;
   const ROBUST_ROUNDS = 8;
-  for (; round < 60 + ROBUST_ROUNDS; round++) {
+  for (; round < 120 + ROBUST_ROUNDS; round++) {
     const d0 = new Float64Array(n), d1 = new Float64Array(n), d2 = new Float64Array(n), b = new Float64Array(n);
     for (let i = 0; i < n; i++) { d0[i] += w[i]; b[i] += w[i] * t[i]; }
+    for (let i = 0; i < n; i++) {              // held up to the ground
+      if (!fw[i]) continue;
+      d0[i] += fw[i]; b[i] += fw[i] * (floor[i] + FLOOR_GAP);
+    }
     for (let i = 1; i < n - 1; i++) {          // bending at i: p[i-1] - 2 p[i] + p[i+1]
       const L = lam[i];
       d0[i - 1] += L; d0[i] += 4 * L; d0[i + 1] += L;
@@ -681,14 +694,16 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
     // altogether: stiffened, it moves away, trusts the ground less, moves
     // further.)
     if (round < ROBUST_ROUNDS) {
-      for (let i = 0; i < n; i++) { const r = (p[i] - t[i]) / sig; w[i] = w0[i] / (1 + r * r); }
+      // Only ground below the line is doubted (a creek bed, a ditch): ground
+      // above it is a floor the line may not go under anyway.
+      for (let i = 0; i < n; i++) { const r = floor ? Math.max(0, p[i] - t[i]) / sig : (p[i] - t[i]) / sig; w[i] = w0[i] / (1 + r * r); }
       if (!any) w.fill(1e-6);
       continue;
     }
     for (let i = 1; i < n - 1; i++) {
       const k = (p[i - 1] - 2 * p[i] + p[i + 1]) / (ds * ds);
       if (k < -kc * 1.05 || k > ks * 1.05) {
-        for (let j = Math.max(1, i - 2); j <= Math.min(n - 2, i + 2); j++) lam[j] = Math.min(lam[j] * 2.5, lam0 * 1e7);
+        lam[i] = Math.min(lam[i] * 1.6, lam0 * 1e7);
         broke = true;
       }
     }
@@ -697,6 +712,13 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
       if (Math.abs(g) > G * 1.02) {
         if (!gam[i] || gs[i] !== Math.sign(g)) { gam[i] = 1e3 * lam0; gs[i] = Math.sign(g); }
         else gam[i] = Math.min(gam[i] * 4, lam0 * 1e9);
+        broke = true;
+      }
+    }
+    if (floor) {
+      for (let i = 0; i < n; i++) {
+        if (p[i] >= floor[i] - FLOOR_SLACK || pin.has(i)) continue;
+        fw[i] = fw[i] ? Math.min(fw[i] * 4, lam0 * 1e9) : 100;
         broke = true;
       }
     }
@@ -770,23 +792,27 @@ export function engineer(net, groundAt, rules, opt = {}) {
     c.w = new Float64Array(c.n).fill(1);
     c.struct = new Uint8Array(c.n);
     c.why = new Array(c.n).fill(null);
+    c.known = new Uint8Array(c.n);         // the map gives a reason to be off the ground here
     for (let i = 0; i < c.n; i++) {
       if (c.br[i] === 1) { c.w[i] = 0; c.struct[i] = 1; c.why[i] = 'map: bridge'; }
       else if (c.br[i] === 2) { c.w[i] = 0; c.struct[i] = 2; c.why[i] = 'map: tunnel'; }
       else if (opt.waterAt && opt.waterAt(c.x[i], c.z[i])) { c.w[i] = 0; c.struct[i] = 1; c.why[i] = 'over the map\'s water'; }
+      if (c.struct[i]) c.known[i] = 1;
     }
     c.prof = null;
   }
   // Rivers and creeks: the road does not dip into them. Rivers and canals are
-  // bridged; creeks and ditches go through a pipe under a bank (a culvert).
+  // bridged. Creeks and ditches would really go through a pipe under a bank
+  // (a culvert), but the ground is never built up here, so where the road
+  // rides high enough over one it is a small bridge.
   for (const wc of water) {
     const c = chains[wc.chain], big = wc.cls === 'river' || wc.cls === 'canal';
-    const reach = (big ? 15 : 6) / c.ds;
+    const reach = (big ? 15 : 8) / c.ds;
     for (let i = Math.max(0, Math.floor(wc.i - reach)); i <= Math.min(c.n - 1, Math.ceil(wc.i + reach)); i++) {
-      c.w[i] = 0;
-      if (big && !c.struct[i]) { c.struct[i] = 1; c.why[i] = 'map: crosses a ' + wc.cls; }
+      c.w[i] = 0; c.known[i] = 1;
+      if (big && !c.struct[i]) c.struct[i] = 1;
+      if (!c.why[i]) c.why[i] = 'map: crosses a ' + wc.cls;
     }
-    if (!big) (c.culverts || (c.culverts = [])).push(wc.i);
   }
 
   const order = chains.slice().sort((p, q) => rules.kinds[q.kind].rank - rules.kinds[p.kind].rank || q.length - p.length);
@@ -823,29 +849,33 @@ export function engineer(net, groundAt, rules, opt = {}) {
       else if (dec.guessed) flags.push({ x: x.x, z: x.z, kind: 'guess', text: `${kB.label} crossing ${rules.kinds[A.kind].label.toLowerCase()}: no tag and flat ground. Guessed ${dec.rel}.` });
     }
     const t = B.raw, w = B.w;
-    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper);
+    // The ground is a floor the road may not go under, except in a tunnel.
+    const floor = Float64Array.from(B.raw);
+    for (let i = 0; i < B.n; i++) if (B.struct[i] === 2) floor[i] = -Infinity;
+    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor);
     B.prof = r.p; B.ok = r.ok; B.rounds = r.rounds;
     for (const [id, s] of B.at) if (!nodeH.has(id)) nodeH.set(id, lerpAt(B.prof, s / B.ds));
   }
 
-  // Too much earth: a bridge; too deep a cutting: a tunnel. Untagged ones are
-  // worth a look: the map may be missing a bridge, or the ground be wrong.
+  // Well above the ground: a bridge. Untagged ones high up are worth a look:
+  // the map may be missing a bridge, or the ground be wrong. The ground
+  // itself is never changed: what is under each road is the ground as found.
   for (const c of chains) {
+    c.under = Float64Array.from(c.raw);
     let run = null;
     const close = () => {
       if (!run) return;
       const i = (run.i0 + run.i1) >> 1;
-      if (run.i1 - run.i0 >= 2) flags.push({ x: c.x[i], z: c.z[i], kind: run.type === 1 ? 'bridge' : 'tunnel',
-        text: `${rules.kinds[c.kind].label}: ${run.type === 1 ? 'needs a bridge' : 'needs a tunnel'} the map does not show (${run.max.toFixed(0)} m ${run.type === 1 ? 'above' : 'below'} the ground, ${((run.i1 - run.i0) * c.ds).toFixed(0)} m long).` });
+      if (run.max > UNTOLD_BRIDGE && run.i1 - run.i0 >= 2 && !run.known) flags.push({ x: c.x[i], z: c.z[i], kind: 'bridge',
+        text: `${rules.kinds[c.kind].label}: rides ${run.max.toFixed(0)} m above the ground for ${((run.i1 - run.i0) * c.ds).toFixed(0)} m, with no bridge on the map. A missing bridge, or wrong ground?` });
       run = null;
     };
     for (let i = 0; i < c.n; i++) {
-      const fill = c.prof[i] - c.raw[i];
-      let type = 0;
-      if (!c.struct[i] && fill > rules.bridgeFill) { c.struct[i] = 1; c.why[i] = 'too much earth: bridge'; type = 1; }
-      else if (!c.struct[i] && -fill > rules.tunnelCut) { c.struct[i] = 2; c.why[i] = 'too deep a cutting: tunnel'; type = 2; }
-      if (type && run && run.type === type) { run.i1 = i; run.max = Math.max(run.max, Math.abs(fill)); }
-      else { close(); if (type) run = { type, i0: i, i1: i, max: Math.abs(fill) }; }
+      const lift = c.prof[i] - c.raw[i];
+      let untold = false;
+      if (!c.struct[i] && lift > rules.bridgeLift) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = 'above the ground: bridge'; untold = true; }
+      if (untold && run) { run.i1 = i; run.max = Math.max(run.max, lift); run.known ||= c.known[i]; }
+      else { close(); if (untold) run = { i0: i, i1: i, max: lift, known: c.known[i] }; }
     }
     close();
     if (!c.ok) {
@@ -865,7 +895,7 @@ function markDeck(c, f, half, why) {
   const r = half / c.ds;
   for (let i = Math.max(0, Math.floor(f - r)); i <= Math.min(c.n - 1, Math.ceil(f + r)); i++) {
     if (c.struct[i] !== 2) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = why; }
-    c.w[i] = 0;
+    c.w[i] = 0; c.known[i] = 1;
   }
 }
 
@@ -894,72 +924,6 @@ export function checkProfile(c, p, kind) {
     curve[i] = Number.isFinite(c.R[i]) ? Rmin / Math.abs(c.R[i]) : 0;
   }
   return { vert, curve, grade, bend };
-}
-
-// ---- the ground gives way -----------------------------------------------------------
-
-// Cuts and fills a grid of ground heights so every road sits on it.
-//   grid = { N, S, step, h: Float32Array(N*N) }: N x N points, `step` metres
-//   apart, row j at z = -S/2 + j*step, column i at x = -S/2 + i*step.
-// Lower kinds first, so higher ones cut through their embankments (that is
-// what leaves the gap under a bridge). Bridges and tunnels leave the ground
-// alone. Returns a new height array; marks road samples left standing in the
-// air as bridge decks and ones left under the ground as tunnels.
-export function shapeGround(grid, net, rules) {
-  const { N, S, step } = grid;
-  const h = Float32Array.from(grid.h), nat = grid.h;
-  const s = rules.sideSlope;
-  const order = net.chains.slice().sort((p, q) => rules.kinds[p.kind].rank - rules.kinds[q.kind].rank);
-  const x0 = -S / 2;
-  const SURF = 0.25;                 // the ground sits this far under the road surface
-  for (const c of order) {
-    const k = rules.kinds[c.kind];
-    const edge = c.width / 2 + k.sh;
-    const st = Math.max(1, Math.round(4 / c.ds));      // every 4 m or so
-    for (let i0 = 0; i0 < c.n - 1; i0 += st) {
-      const i1 = Math.min(c.n - 1, i0 + st);
-      if (c.struct[i0] && c.struct[i1]) continue;
-      let dev = 0;
-      for (let q = i0; q <= i1; q++) dev = Math.max(dev, Math.abs(c.prof[q] - c.raw[q]));
-      const reach = edge + Math.min(40, (dev + 2) / s);
-      const ax = c.x[i0], az = c.z[i0], bx = c.x[i1], bz = c.z[i1];
-      const gi0 = Math.max(0, Math.floor((Math.min(ax, bx) - reach - x0) / step)), gi1 = Math.min(N - 1, Math.ceil((Math.max(ax, bx) + reach - x0) / step));
-      const gj0 = Math.max(0, Math.floor((Math.min(az, bz) - reach - x0) / step)), gj1 = Math.min(N - 1, Math.ceil((Math.max(az, bz) + reach - x0) / step));
-      for (let gj = gj0; gj <= gj1; gj++) {
-        const z = x0 + gj * step;
-        for (let gi = gi0; gi <= gi1; gi++) {
-          const x = x0 + gi * step;
-          const r = segDist(x, z, ax, az, bx, bz);
-          if (r.d > reach) continue;
-          const f = i0 + r.t * (i1 - i0), q = Math.round(f);
-          if (c.struct[q]) continue;
-          const rh = lerpAt(c.prof, f) - SURF;
-          const idx = gj * N + gi;
-          if (r.d <= edge) { h[idx] = rh; continue; }
-          const e = r.d - edge;
-          const hi = rh + e * s, lo = rh - e * s;
-          if (h[idx] > hi) h[idx] = hi; else if (h[idx] < lo) h[idx] = lo;
-        }
-      }
-    }
-  }
-  // Roads left in the air become decks; roads left under the ground, tunnels.
-  const at = (x, z) => {
-    const u = (x - x0) / step, v = (z - x0) / step;
-    if (u < 0 || v < 0 || u > N - 1 || v > N - 1) return NaN;
-    const i = Math.min(N - 2, Math.floor(u)), j = Math.min(N - 2, Math.floor(v)), fu = u - i, fv = v - j;
-    return (h[j * N + i] * (1 - fu) + h[j * N + i + 1] * fu) * (1 - fv) + (h[(j + 1) * N + i] * (1 - fu) + h[(j + 1) * N + i + 1] * fu) * fv;
-  };
-  for (const c of net.chains) {
-    c.under = new Float32Array(c.n);
-    for (let i = 0; i < c.n; i++) {
-      const g = at(c.x[i], c.z[i]);
-      c.under[i] = Number.isFinite(g) ? g : c.raw[i];
-      if (!c.struct[i] && c.prof[i] - c.under[i] > 1.0) { c.struct[i] = 1; c.why[i] = 'left in the air: deck'; }
-    }
-  }
-  void nat;
-  return h;
 }
 
 // Everything in one go, for a lab or a test.

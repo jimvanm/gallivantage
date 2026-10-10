@@ -3,7 +3,7 @@
 // the ground cut and filled to meet them. All on made-up ground.
 import assert from 'node:assert/strict';
 import {
-  clipPolyline, buildNetwork, sampleChains, findCrossings, fitProfile, engineer, shapeGround,
+  clipPolyline, buildNetwork, sampleChains, findCrossings, fitProfile, engineer,
   checkProfile, defaultRules, kindOf, runAll, minRadius, banking, KINDS,
 } from '../src/roadrules.js';
 
@@ -73,26 +73,29 @@ ok('kinds from the map\'s classes, curves and banking');
 // ---- the height line ------------------------------------------------------------------
 const rules = defaultRules();
 {
-  // A motorway across bumpy ground: two 7 m mounds (another road's bridge
-  // approaches) and a 6 m deep creek gully.
+  // A motorway along a 6 m deep creek gully and over a 0.8 m bump, both on
+  // its own line. The ground is truth: it may ride over, never through.
   const ds = 2, N = 1001, t = new Float64Array(N), w = new Float64Array(N).fill(1);
   for (let i = 0; i < N; i++) {
     const s = i * ds;
     t[i] = 100 + 0.005 * s + 0.05 * Math.sin(i * 1.7)
-      + 7 * Math.exp(-(((s - 700) / 12) ** 2)) + 7 * Math.exp(-(((s - 760) / 12) ** 2))
-      - 6 * Math.exp(-(((s - 1400) / 8) ** 2));
+      + 0.8 * Math.exp(-(((s - 700) / 6) ** 2)) - 6 * Math.exp(-(((s - 1400) / 8) ** 2));
   }
-  const r = fitProfile(t, w, ds, rules.kinds.motorway, rules);
+  w.fill(0, 690, 711);                       // the creek: not followed down (as engineer() does)
+  const r = fitProfile(t, w, ds, rules.kinds.motorway, rules, new Map(), new Map(), new Map(), t);
   assert.ok(r.ok, 'kept to the rules in ' + r.rounds + ' rounds');
+  let under = 0;
+  for (let i = 0; i < N; i++) under = Math.max(under, t[i] - r.p[i]);
+  assert.ok(under < 0.03, 'never under the ground: ' + under.toFixed(3));
   const base = (s) => 100 + 0.005 * s;
-  assert.ok(Math.abs(r.p[350] - base(700)) < 1.0, 'does not ride up the mound: ' + (r.p[350] - base(700)).toFixed(2));
+  assert.ok(r.p[350] >= t[350] - 0.03 && r.p[350] - base(700) < 1.2, 'rides over the bump');
   assert.ok(Math.abs(r.p[700] - base(1400)) < 1.0, 'does not dip into the creek: ' + (r.p[700] - base(1400)).toFixed(2));
   assert.ok(maxGrade(r.p, ds) <= 0.04 * 1.03);
   const fake = { n: N, ds, R: new Float64Array(N).fill(Infinity) };
   const raw = checkProfile(fake, t, rules.kinds.motorway), eng = checkProfile(fake, r.p, rules.kinds.motorway);
   assert.ok(Math.max(...raw.vert) > 3, 'draped on the ground it breaks the rules badly');
   assert.ok(Math.max(...eng.vert) < 1.15, 'the fitted line keeps to them: ' + Math.max(...eng.vert).toFixed(2));
-  ok('a motorway rides level past mounds and over a creek, within its rules');
+  ok('a motorway rides smoothly over a bump and across a creek, never under the ground');
 }
 {
   // A 15% hill: the motorway may not climb faster than 4%.
@@ -163,28 +166,24 @@ function world(extra, lines) {
   ok('when the map and the ground disagree, the map wins and the spot is flagged');
 }
 
-// ---- the ground gives way -----------------------------------------------------------------
+// ---- the ground is truth ------------------------------------------------------------------------
 {
-  // A secondary road across a 5 m deep valley and over a 5 m ridge.
-  const S = 400, step = 2, N = S / step + 1, h = new Float32Array(N * N);
+  // A secondary road across a 5 m deep valley and over a 5 m ridge. The road
+  // may not go into the ridge, so it climbs over it; it bridges the valley.
   const nat = (x, z) => 100 - 5 * Math.exp(-(((z + 80) / 25) ** 2)) + 5 * Math.exp(-(((z - 80) / 25) ** 2));
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) h[j * N + i] = nat(-S / 2 + i * step, -S / 2 + j * step);
-  const groundAt = (x, z) => nat(x, z);
   const rl = defaultRules();
-  rl.kinds.secondary.G = 1;                                   // force a level road for the test
-  rl.kinds.secondary.Kc = rl.kinds.secondary.Ks = 2000;
-  const r = runAll([line([0, -190, 0, 190], 'secondary')], [], groundAt, rl);
+  const r = runAll([line([0, -190, 0, 190], 'secondary')], [], nat, rl);
   const c = r.net.chains[0];
-  const out = shapeGround({ N, S, step, h }, r.net, rl);
-  const at = (x, z) => out[Math.round((z + S / 2) / step) * N + Math.round((x + S / 2) / step)];
-  const ci = (z) => Math.round((z + 190) / c.ds);
-  assert.ok(Math.abs(at(0, -80) - (c.prof[ci(-80)] - 0.25)) < 0.05, 'the valley is filled up to the road');
-  assert.ok(Math.abs(at(0, 80) - (c.prof[ci(80)] - 0.25)) < 0.05, 'the ridge is cut down to the road');
-  assert.ok(at(10, -80) > nat(10, -80) + 0.5 && at(10, -80) < at(0, -80) - 1, "the embankment slopes away to the side: " + at(10, -80).toFixed(2) + " vs " + nat(10, -80).toFixed(2));
-  assert.ok(Math.abs(at(150, 80) - nat(150, 80)) < 1e-4, 'ground well away is untouched');
-  ok('cuttings and embankments meet the road and slope back to the ground');
+  let under = 0;
+  for (let i = 0; i < c.n; i++) under = Math.max(under, c.raw[i] - c.prof[i]);
+  assert.ok(under < 0.03, 'never under the ground: ' + under.toFixed(3));
+  for (let i = 0; i < c.n; i++) assert.equal(c.under[i], c.raw[i], 'the ground under it is the ground as found');
+  for (let i = 0; i < c.n; i++) {
+    const lift = c.prof[i] - c.raw[i];
+    if (lift > rl.bridgeLift + 0.01) assert.equal(c.struct[i], 1, 'well above the ground is a bridge');
+  }
+  ok('the ground is never changed: the road rides on it or bridges over it');
 }
-
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

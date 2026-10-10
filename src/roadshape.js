@@ -14,6 +14,7 @@ const DECK = 1.2;                // depth of a bridge deck, metres
 const PIER_EVERY = 30;           // metres between piers
 const DECK_SIDE = [150, 148, 142], PIER_C = [128, 126, 120], DECK_UNDER = [96, 95, 92];
 const BED_C = [58, 56, 54], RAIL_C = [150, 148, 144];
+const SIDE_C = [112, 108, 102];        // the road's own bed, where it stands a little above the ground
 
 // Colour for how hard a stretch pushes its rules (1 = at the limit).
 export function ruleColour(r) {
@@ -92,6 +93,23 @@ export function buildRoadShapes(net, mb, opt) {
       }
     }
     if (!struct) continue;
+    // Where the road stands a little above the ground (less than a bridge),
+    // its own bed shows at the edges, down to the ground. The ground itself
+    // is not touched.
+    const bed = rgba(SIDE_C[0], SIDE_C[1], SIDE_C[2]);
+    for (let i = 1; i < n; i++) {
+      const a = i - 1;
+      if (struct[a] || struct[i] || !c.under) continue;
+      if (p[a] - c.under[a] < 0.15 && p[i] - c.under[i] < 0.15) continue;
+      for (const sd of [1, -1]) {
+        const P = [c.x[a] + sd * lx[a] * hw, edgeH(a, sd) + LIFT, c.z[a] + sd * lz[a] * hw];
+        const Q = [c.x[i] + sd * lx[i] * hw, edgeH(i, sd) + LIFT, c.z[i] + sd * lz[i] * hw];
+        const b = mb.verts;
+        mb.vert(P[0], P[1], P[2], bed); mb.vert(Q[0], Q[1], Q[2], bed);
+        mb.vert(Q[0], c.under[i] - 0.3, Q[2], bed); mb.vert(P[0], c.under[a] - 0.3, P[2], bed);
+        mb.tri(b, b + 1, b + 2); mb.tri(b, b + 2, b + 3);
+      }
+    }
     // Bridge decks: sides and underside, then piers down to the ground.
     const side = rgba(DECK_SIDE[0], DECK_SIDE[1], DECK_SIDE[2]), under = rgba(DECK_UNDER[0], DECK_UNDER[1], DECK_UNDER[2]);
     const pier = rgba(PIER_C[0], PIER_C[1], PIER_C[2]);

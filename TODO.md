@@ -307,11 +307,17 @@ reasoning: the project's `ROADS-DRAFT.md`.
   crossings. Which is on top: the map's bridge/tunnel tags and layers, then
   the ground just beyond the other road (approach mounds = over, cutting =
   under), then "a motorway never meets anything level".
-- More than 10 m of earth: a bridge; a cutting deeper than 18 m: a tunnel.
-  Elsewhere the ground is cut and filled (sides 1 in 2). Roads left in the
-  air become decks with piers.
-- Creeks: the road does not dip into them (culvert); rivers, canals and the
-  map's water are bridged.
+- **The ground is truth (Jim, 10 October, 0.14.6).** It is never raised and
+  never cut: the survey is bare earth, so real embankments and cuttings are
+  already in it. A road rides on the ground or above it, never below (except
+  in a tunnel the map marks). More than 1.5 m above the ground, it is a
+  bridge on piers; less, its own bed shows at its edges. Higher than 4 m with
+  nothing on the map to explain it (bridge tag, water, river, a road below):
+  flagged as worth a look.
+- Creeks: the road does not dip into them; it bridges them where it rides
+  high enough. Rivers, canals and the map's water are bridged.
+- [ ] Tunnels: test somewhere tunnel-rich (the Welland Canal has one in
+      Ontario). Cutting into the ground is not allowed until then.
 - [ ] Jim to look at the 407 at Brock Road and Campbellford with real data.
 - [ ] Roads are joined across tiles only within the lab's area. In the app,
       a road's height line must agree at tile edges (the same road, worked
