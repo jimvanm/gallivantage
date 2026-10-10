@@ -233,6 +233,29 @@ function world(extra, lines) {
   ok('bridge piers never stand on a road below; they move along to the side');
 }
 
+// ---- where the road really is -------------------------------------------------------------------
+{
+  // A local road (6 m wide) mapped 3 m off the real road, which runs on an
+  // 8 m flat bench cut into a 30% hillside. The road moves onto the bench.
+  const { findBenches } = await import('../src/roadrules.js');
+  const hill = (x, z) => x > 7 ? 100 + 0.3 * (x - 7) : x < -1 ? 100 - 0.3 * (-1 - x) : 100;
+  const r = runAll([line([0, -300, 0, 300], 'local')], [], hill, defaultRules(), { bench: true });
+  const c = r.net.chains[0];
+  const mid = c.shift.slice(20, c.n - 20);
+  assert.ok(Math.min(...mid) >= 1.9 && Math.max(...mid) <= 4.1, 'moved onto the bench (2 to 4 m puts all 6 m of it there): ' + Math.min(...mid).toFixed(1) + ' to ' + Math.max(...mid).toFixed(1));
+  assert.ok(c.x[Math.round(c.n / 2)] >= 1.9, 'and now runs along it');
+  assert.ok(c.x0 && Math.abs(c.x0[Math.round(c.n / 2)]) < 1e-9, 'the map\'s line is kept for today\'s view');
+  // On flat ground it stays on the map's line.
+  const flat = runAll([line([0, -300, 0, 300], 'local')], [], (x, z) => 100 + 0.02 * Math.sin(x + z), defaultRules(), { bench: true });
+  assert.ok(Math.max(...flat.net.chains[0].shift.map(Math.abs)) < 0.01, 'flat ground: not moved');
+  // At a junction it eases back to the map's line, so joined roads stay joined.
+  const j = runAll([line([0, -300, 0, 300], 'local'), line([0, 0, -200, 0], 'local')], [], hill, defaultRules(), { bench: true });
+  const through = j.net.chains.find((q) => q.length > 500);
+  assert.ok(Math.abs(through.shift[Math.round(300 / through.ds)]) < 0.01, 'at the junction: on the map\'s line');
+  assert.ok(Math.abs(through.shift[Math.round(100 / through.ds)]) > 1.5, 'away from it: on the bench');
+  ok('a road mapped off its real place moves onto the flat strip in the ground; not on flat ground; not at junctions');
+}
+
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

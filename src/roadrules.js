@@ -600,6 +600,135 @@ export function findWaterCrossings(net, waterways) {
   return out;
 }
 
+// ---- where the road really is ----------------------------------------------------------
+//
+// The map's road line can be a few metres off the real road. Where the road
+// runs across a slope, the ground shows where it really is: a strip as wide as
+// the road that is flat and nearly level across (the bench cut into the
+// hillside, or the top of an embankment). Every 10 m along a road, each
+// sideways position within BENCH_REACH metres is scored by how far the ground
+// across the road's width there is from flat and level; then the gentlest path
+// through the best positions is chosen (a road cannot zigzag), easing back to
+// the map's line at junctions so joined roads stay joined. On flat ground every
+// position scores alike and the road stays on the map's line. The ground is
+// not changed; only where the road is drawn and measured.
+export const BENCH_REACH = 5;        // metres either side of the map's line
+const BENCH_STEP = 0.5;              // metres between sideways positions tried
+const BENCH_EVERY = 10;              // metres between cross-sections
+const BENCH_TURN = 1;                // most sideways change between cross-sections, metres
+const BENCH_CHANGE = 0.04;           // cost of each metre of sideways change
+const BENCH_STRAY = 0.01;            // cost of each metre away from the map's line
+const BENCH_GAIN = 0.08;             // the best spot must beat the map's line by this (metres) to count
+
+// How far the ground across a road of half-width hw at (x, z) is from flat
+// and level, in metres (lx, lz: unit vector to the road's left).
+function benchBadness(groundAt, x, z, lx, lz, hw) {
+  const k = Math.max(2, Math.round(hw));          // points either side, about a metre apart
+  let n = 0, su = 0, sh = 0, suu = 0, suh = 0;
+  const us = [], hs = [];
+  for (let q = -k; q <= k; q++) {
+    const u = q * hw / k, h = groundAt(x + lx * u, z + lz * u);
+    if (!Number.isFinite(h)) return Infinity;
+    us.push(u); hs.push(h); n++; su += u; sh += h; suu += u * u; suh += u * h;
+  }
+  const slope = (n * suh - su * sh) / (n * suu - su * su), mean = sh / n;
+  let rr = 0;
+  for (let q = 0; q < n; q++) { const r = hs[q] - (mean + slope * (us[q] - su / n)); rr += r * r; }
+  // Flatness, plus any cross slope beyond a road's own (about 4%).
+  return Math.sqrt(rr / n) + Math.max(0, Math.abs(slope) - 0.04) * hw;
+}
+
+// Moves each sampled road (sampleChains) onto the flat strip nearby. Keeps
+// the map's line as x0, z0 and the ground under it as raw0; shift is how far
+// each sample moved (+ = to its left). opt.waterAt: skip over water.
+export function findBenches(net, groundAt, rules, opt = {}) {
+  const M = Math.round(BENCH_REACH / BENCH_STEP), W = 2 * M + 1;
+  let moved = 0, most = 0;
+  for (const c of net.chains) {
+    const n = c.n;
+    c.x0 = Float64Array.from(c.x); c.z0 = Float64Array.from(c.z);
+    c.raw0 = new Float64Array(n);
+    for (let i = 0; i < n; i++) c.raw0[i] = groundAt(c.x[i], c.z[i]);
+    c.shift = new Float64Array(n);
+    // Left of the way it runs, at each sample.
+    const lx = new Float64Array(n), lz = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const a = Math.max(0, i - 2), b = Math.min(n - 1, i + 2);
+      const dx = c.x[b] - c.x[a], dz = c.z[b] - c.z[a], L = Math.hypot(dx, dz) || 1;
+      lx[i] = dz / L; lz[i] = -dx / L;
+    }
+    // Cross-sections.
+    const every = Math.max(1, Math.round(BENCH_EVERY / c.ds));
+    const st = [];
+    for (let i = 0; i < n; i += every) st.push(i);
+    if (st[st.length - 1] !== n - 1) st.push(n - 1);
+    if (st.length < 3) continue;
+    // Pinned to the map's line: at junctions with other roads.
+    const pinned = new Uint8Array(st.length);
+    for (const [id, sAt] of c.at) {
+      const nd = net.nodes[id];
+      if (!nd || nd.chains.length < 2) continue;
+      const i = Math.round(sAt / c.ds);
+      let best = 0;
+      for (let k = 1; k < st.length; k++) if (Math.abs(st[k] - i) < Math.abs(st[best] - i)) best = k;
+      pinned[best] = 1;
+    }
+    const hw = c.width / 2;
+    const bad = new Float64Array(st.length * W);
+    for (let k = 0; k < st.length; k++) {
+      const i = st[k];
+      const skip = c.br[i] || (opt.waterAt && opt.waterAt(c.x[i], c.z[i]));
+      let best = Infinity, here = 0;
+      for (let m = 0; m < W; m++) {
+        const o = (m - M) * BENCH_STEP;
+        const b = skip ? 0 : benchBadness(groundAt, c.x[i] + lx[i] * o, c.z[i] + lz[i] * o, lx[i], lz[i], hw);
+        bad[k * W + m] = b;
+        if (b < best) best = b;
+        if (m === M) here = b;
+      }
+      // Nothing clearly better than the map's line: no opinion here.
+      if (!(here - best >= BENCH_GAIN)) for (let m = 0; m < W; m++) bad[k * W + m] = Number.isFinite(bad[k * W + m]) ? 0 : Infinity;
+    }
+    // The gentlest path through the cross-sections (dynamic programming).
+    const turn = Math.round(BENCH_TURN / BENCH_STEP);
+    const cost = new Float64Array(st.length * W).fill(Infinity), from = new Int16Array(st.length * W);
+    for (let m = 0; m < W; m++) if (!pinned[0] || m === M) cost[m] = bad[m] + BENCH_STRAY * Math.abs(m - M) * BENCH_STEP;
+    for (let k = 1; k < st.length; k++) {
+      for (let m = 0; m < W; m++) {
+        if (pinned[k] && m !== M) continue;
+        const own = bad[k * W + m] + BENCH_STRAY * Math.abs(m - M) * BENCH_STEP;
+        if (!Number.isFinite(own)) continue;
+        let bc = Infinity, bf = M;
+        for (let q = Math.max(0, m - turn); q <= Math.min(W - 1, m + turn); q++) {
+          const v = cost[(k - 1) * W + q] + BENCH_CHANGE * Math.abs(q - m) * BENCH_STEP;
+          if (v < bc) { bc = v; bf = q; }
+        }
+        cost[k * W + m] = own + bc; from[k * W + m] = bf;
+      }
+    }
+    let m = M, bc = Infinity;
+    const last = st.length - 1;
+    for (let q = 0; q < W; q++) if (cost[last * W + q] < bc) { bc = cost[last * W + q]; m = q; }
+    if (!Number.isFinite(bc)) continue;           // no way through: leave it on the map's line
+    const off = new Float64Array(st.length);
+    for (let k = last; k >= 0; k--) { off[k] = (m - M) * BENCH_STEP; m = from[k * W + m]; }
+    // Between cross-sections, smoothly; then move.
+    for (let k = 0; k < last; k++) {
+      for (let i = st[k]; i <= st[k + 1]; i++) {
+        const t = (i - st[k]) / (st[k + 1] - st[k] || 1), u = t * t * (3 - 2 * t);
+        c.shift[i] = off[k] + (off[k + 1] - off[k]) * u;
+      }
+    }
+    for (let i = 0; i < n; i++) {
+      c.x[i] += lx[i] * c.shift[i]; c.z[i] += lz[i] * c.shift[i];
+      const a = Math.abs(c.shift[i]);
+      if (a > 0.25) moved += c.ds;
+      if (a > most) most = a;
+    }
+  }
+  return { moved, most };
+}
+
 // ---- the height line --------------------------------------------------------------
 
 // Solves A p = b for a symmetric matrix with two diagonals either side of the
@@ -969,10 +1098,12 @@ export function checkProfile(c, p, kind) {
 }
 
 // Everything in one go, for a lab or a test.
+// opt.bench: first move each road onto the flat strip nearby (findBenches).
 export function runAll(lines, waterways, groundAt, rules, opt = {}) {
   const net = sampleChains(buildNetwork(lines));
+  const bench = opt.bench ? findBenches(net, groundAt, rules, opt) : null;
   net.crossings = findCrossings(net);
   const waterCrossings = findWaterCrossings(net, waterways || []);
   const r = engineer(net, groundAt, rules, { ...opt, waterCrossings });
-  return { net, ...r, waterCrossings };
+  return { net, ...r, waterCrossings, bench };
 }

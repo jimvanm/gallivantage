@@ -95,9 +95,11 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="row"><label for="view">Show</label>
         <select id="view"><option value="split" selected>Side by side</option><option value="raw">Today only</option><option value="eng">Engineered only</option></select></div>
       <div class="row" style="margin-top:6px"><label for="colour">Road colour</label>
-        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option></select></div>
-      <div class="key" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
-      <label class="check" style="margin-top:6px"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
+        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option></select></div>
+      <div class="key" id="keyMoved" style="margin-top:6px" hidden><span><i class="sw" style="background:#969696"></i>on the map's line</span><span><i class="sw" style="background:#5d6ed8"></i>moved a little</span><span><i class="sw" style="background:#e632c8"></i>moved 5 m</span></div>
+      <div class="key" id="keyRules" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="bench" checked> Move roads onto the flat strip in the ground (where the map's line is off the real road)</label>
+      <label class="check"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
     </section>
 
@@ -333,7 +335,7 @@ function waterAt(x, z) {
 function rebuild() {
   if (!area) return;
   const t0 = performance.now();
-  result = runAll(area.lines, area.waterways, natAt, rules, { waterAt });
+  result = runAll(area.lines, area.waterways, natAt, rules, { waterAt, bench: $('bench').checked });
   const t1 = performance.now();
   const t2 = performance.now();
   if (!meshes.natGround) meshes.natGround = groundMesh(area.nat);
@@ -531,7 +533,7 @@ function driveStep(dt) {
   if (Math.hypot(dx, dz) > 1) cam.yaw = Math.atan2(dx, -dz);
   cam.pitch = Math.atan2(dy, Math.hypot(dx, dz) || 1);
   drive.roll += (Math.atan(p.bank) - drive.roll) * Math.min(1, dt * 4);
-  const sc = checkProfile(c, drive.which === 'raw' ? c.raw : c.prof, K);
+  const sc = checkProfile(c, drive.which === 'raw' ? (c.raw0 || c.raw) : c.prof, K);
   const i = Math.round(drive.f);
   drive.info = { label: K.label, V: K.V, grade: sc.grade[i] * drive.dir * 100, push: sc.vert[i], struct: drive.which === 'prof' ? c.struct[i] : 0, why: c.why[i] };
 }
@@ -549,7 +551,8 @@ $('stop').onclick = stopDriving;
 $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').value; };
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
-for (const id of ['colour', 'curves']) $(id).onchange = () => roadMeshes();
+for (const id of ['colour', 'curves']) $(id).onchange = () => { $('keyMoved').hidden = $('colour').value !== 'moved'; $('keyRules').hidden = $('colour').value !== 'rules'; roadMeshes(); };
+$('bench').onchange = () => { stopDriving(); rebuild(); };
 
 // ---- findings ---------------------------------------------------------------------------
 function goLook(x, z) {
@@ -582,7 +585,7 @@ function showStats() {
   for (const c of net.chains) {
     kinds[c.kind] = (kinds[c.kind] || 0) + c.length; len += c.length;
     const K = rules.kinds[c.kind];
-    const r = checkProfile(c, c.raw, K), e = checkProfile(c, c.prof, K);
+    const r = checkProfile(c, c.raw0 || c.raw, K), e = checkProfile(c, c.prof, K);
     for (let i = 0; i < c.n; i++) { if (r.vert[i] > 1.5) bad += c.ds; if (e.vert[i] > 1.5) badEng += c.ds; }
   }
   const rows = [
@@ -592,6 +595,7 @@ function showStats() {
     ['Well over its rules, today', `${fmt(bad / 1000, 2)} km (${fmt(100 * bad / Math.max(1, len))}%)`],
     ['Well over its rules, engineered', `${fmt(badEng / 1000, 2)} km (${fmt(100 * badEng / Math.max(1, len), 1)}%)`],
     ['Ground from Canada\'s survey', `${fmt(100 * area.surveyed)}% of ${area.groundTiles} tiles`],
+    ['Moved onto the flat strip', result.bench ? `${fmt(result.bench.moved / 1000, 2)} km of road, at most ${fmt(result.bench.most, 1)} m` : 'off'],
     ['Ground points', `${fmt(area.N)} × ${fmt(area.N)}, ${area.step} m apart`],
     ['Downloaded', `${fmt(downloaded / 1e6, 1)} MB in ${fmt(area.loadMs / 1000, 1)} s`],
     ['Working out the roads', `${fmt(timing.engineer)} ms`],

@@ -23,9 +23,17 @@ export function ruleColour(r) {
   return [208, 58, 46];                                 // well over
 }
 
+// How far a road was moved onto the flat strip: grey on the map's line,
+// through blue to magenta at 5 m.
+export function movedColour(d) {
+  const t = Math.min(1, d / 5);
+  if (d < 0.25) return [150, 150, 150];
+  return [Math.round(60 + 170 * t), Math.round(120 - 70 * t), Math.round(220 - 20 * t)];
+}
+
 // opt:
 //   which    'prof' (the engineered line) or 'raw' (draped on the ground, as today)
-//   colour   'plain' or 'rules'
+//   colour   'plain', 'rules', or 'moved' (how far it was moved onto the flat strip)
 //   curves   in rules colour, count the plan's bends too
 //   rules    the rules (for the kinds' speeds and limits)
 export function buildRoadShapes(net, mb, opt) {
@@ -35,8 +43,11 @@ export function buildRoadShapes(net, mb, opt) {
   const onRoad = raw ? null : drivableAt(net, rules);
   for (const c of net.chains) {
     const kind = rules.kinds[c.kind];
-    const p = raw ? c.raw : c.prof;
+    // Today's road is on the map's own line (x0, z0 when the road was moved
+    // onto the flat strip), draped on the ground there.
+    const p = raw ? (c.raw0 || c.raw) : c.prof;
     if (!p) continue;
+    const X = raw && c.x0 ? c.x0 : c.x, Z = raw && c.z0 ? c.z0 : c.z;
     const struct = raw ? null : c.struct;
     const sc = opt.colour === 'rules' ? checkProfile(c, p, kind) : null;
     const rail = c.kind === 'rail' || c.kind === 'railMinor';
@@ -48,7 +59,7 @@ export function buildRoadShapes(net, mb, opt) {
     const lx = new Float64Array(n), lz = new Float64Array(n);
     for (let i = 0; i < n; i++) {
       const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
-      const dx = c.x[b] - c.x[a], dz = c.z[b] - c.z[a], L = Math.hypot(dx, dz) || 1;
+      const dx = X[b] - X[a], dz = Z[b] - Z[a], L = Math.hypot(dx, dz) || 1;
       lx[i] = dz / L; lz[i] = -dx / L;              // left of the way it runs (z is south)
     }
     // Cross-section heights at the left edge, middle and right edge.
@@ -61,6 +72,7 @@ export function buildRoadShapes(net, mb, opt) {
     const col = (i) => {
       let rgb = plain;
       if (sc) rgb = ruleColour(Math.max(sc.vert[i], opt.curves ? sc.curve[i] : 0));
+      if (opt.colour === 'moved') rgb = movedColour(raw || !c.shift ? 0 : Math.abs(c.shift[i]));
       return rgba(rgb[0], rgb[1], rgb[2]);
     };
     // The surface, three vertices across each sample.
@@ -68,9 +80,9 @@ export function buildRoadShapes(net, mb, opt) {
     for (let i = 0; i < n; i++) {
       if (struct && struct[i] === 2 && (i === 0 || struct[i - 1] === 2)) { prev = -1; counts.tunnels++; continue; }
       const k = col(i);
-      const base = mb.vert(c.x[i] + lx[i] * hw, edgeH(i, 1) + LIFT, c.z[i] + lz[i] * hw, k);
-      mb.vert(c.x[i], p[i] + LIFT, c.z[i], k);
-      mb.vert(c.x[i] - lx[i] * hw, edgeH(i, -1) + LIFT, c.z[i] - lz[i] * hw, k);
+      const base = mb.vert(X[i] + lx[i] * hw, edgeH(i, 1) + LIFT, Z[i] + lz[i] * hw, k);
+      mb.vert(X[i], p[i] + LIFT, Z[i], k);
+      mb.vert(X[i] - lx[i] * hw, edgeH(i, -1) + LIFT, Z[i] - lz[i] * hw, k);
       if (prev >= 0) {
         mb.tri(prev, base, prev + 1); mb.tri(prev + 1, base, base + 1);
         mb.tri(prev + 1, base + 1, prev + 2); mb.tri(prev + 2, base + 1, base + 2);
@@ -86,8 +98,8 @@ export function buildRoadShapes(net, mb, opt) {
         for (let i = 0; i < n; i++) {
           if (struct && struct[i] === 2) { pv = -1; continue; }
           const y = p[i] + LIFT + 0.17;
-          const a = mb.vert(c.x[i] + lx[i] * o1, y, c.z[i] + lz[i] * o1, steel);
-          mb.vert(c.x[i] + lx[i] * o2, y, c.z[i] + lz[i] * o2, steel);
+          const a = mb.vert(X[i] + lx[i] * o1, y, Z[i] + lz[i] * o1, steel);
+          mb.vert(X[i] + lx[i] * o2, y, Z[i] + lz[i] * o2, steel);
           if (pv >= 0) { mb.tri(pv, a, pv + 1); mb.tri(pv + 1, a, a + 1); }
           pv = a;
         }
@@ -103,8 +115,8 @@ export function buildRoadShapes(net, mb, opt) {
       if (struct[a] || struct[i] || !c.under) continue;
       if (p[a] - c.under[a] < 0.15 && p[i] - c.under[i] < 0.15) continue;
       for (const sd of [1, -1]) {
-        const P = [c.x[a] + sd * lx[a] * hw, edgeH(a, sd) + LIFT, c.z[a] + sd * lz[a] * hw];
-        const Q = [c.x[i] + sd * lx[i] * hw, edgeH(i, sd) + LIFT, c.z[i] + sd * lz[i] * hw];
+        const P = [X[a] + sd * lx[a] * hw, edgeH(a, sd) + LIFT, Z[a] + sd * lz[a] * hw];
+        const Q = [X[i] + sd * lx[i] * hw, edgeH(i, sd) + LIFT, Z[i] + sd * lz[i] * hw];
         const b = mb.verts;
         mb.vert(P[0], P[1], P[2], bed); mb.vert(Q[0], Q[1], Q[2], bed);
         mb.vert(Q[0], c.under[i] - 0.3, Q[2], bed); mb.vert(P[0], c.under[a] - 0.3, P[2], bed);
@@ -121,8 +133,8 @@ export function buildRoadShapes(net, mb, opt) {
       if (!on) { run = -1; continue; }
       if (i > run) {
         const a = i - 1;
-        const L1 = [c.x[a] + lx[a] * hw, edgeH(a, 1) + LIFT, c.z[a] + lz[a] * hw], L2 = [c.x[i] + lx[i] * hw, edgeH(i, 1) + LIFT, c.z[i] + lz[i] * hw];
-        const R1 = [c.x[a] - lx[a] * hw, edgeH(a, -1) + LIFT, c.z[a] - lz[a] * hw], R2 = [c.x[i] - lx[i] * hw, edgeH(i, -1) + LIFT, c.z[i] - lz[i] * hw];
+        const L1 = [X[a] + lx[a] * hw, edgeH(a, 1) + LIFT, Z[a] + lz[a] * hw], L2 = [X[i] + lx[i] * hw, edgeH(i, 1) + LIFT, Z[i] + lz[i] * hw];
+        const R1 = [X[a] - lx[a] * hw, edgeH(a, -1) + LIFT, Z[a] - lz[a] * hw], R2 = [X[i] - lx[i] * hw, edgeH(i, -1) + LIFT, Z[i] - lz[i] * hw];
         const quad = (P, Q, colr) => {
           const b = mb.verts;
           mb.vert(P[0], P[1], P[2], colr); mb.vert(Q[0], Q[1], Q[2], colr);
@@ -140,10 +152,10 @@ export function buildRoadShapes(net, mb, opt) {
       if (sinceP >= PIER_EVERY && p[i] - DECK - ground > 2.5) {
         // Never on a road, railway or path below: wait until clear of it
         // (the next clear spot along the deck), so the span reaches across.
-        if (onRoad && onRoad(c.id, c.x[i], c.z[i], Math.max(hw * 0.55, 0.6) + 0.5, p[i] - DECK)) { if (!c._moved) { counts.piersMoved++; c._moved = true; } continue; }
+        if (onRoad && onRoad(c.id, X[i], Z[i], Math.max(hw * 0.55, 0.6) + 0.5, p[i] - DECK)) { if (!c._moved) { counts.piersMoved++; c._moved = true; } continue; }
         c._moved = false;
-        sinceP = 0; counts.piers++; counts.pierSpots.push([c.x[i], c.z[i], c.id]);
-        box(mb, c.x[i], c.z[i], lx[i], lz[i], hw * 0.55, 0.6, ground - 0.5, p[i] - DECK, pier);
+        sinceP = 0; counts.piers++; counts.pierSpots.push([X[i], Z[i], c.id]);
+        box(mb, X[i], Z[i], lx[i], lz[i], hw * 0.55, 0.6, ground - 0.5, p[i] - DECK, pier);
       }
     }
   }
@@ -196,10 +208,12 @@ function box(mb, x, z, lx, lz, halfAcross, halfAlong, y0, y1, colour) {
 // lane (Canada drives on the right; a one-way road is driven in its middle).
 // Returns { x, y (road surface), z, fx, fz (forward), bank (cross slope, + = down to the left) }.
 export function roadPoint(c, f, dir, which, rules) {
-  const p = which === 'raw' ? c.raw : c.prof;
+  const raw = which === 'raw';
+  const p = raw ? (c.raw0 || c.raw) : c.prof;
+  const X = raw && c.x0 ? c.x0 : c.x, Z = raw && c.z0 ? c.z0 : c.z;
   const n = c.n, i = Math.max(0, Math.min(n - 2, Math.floor(f))), u = Math.max(0, Math.min(1, f - i));
-  const x = c.x[i] + (c.x[i + 1] - c.x[i]) * u, z = c.z[i] + (c.z[i + 1] - c.z[i]) * u;
-  let fx = (c.x[i + 1] - c.x[i]) * dir, fz = (c.z[i + 1] - c.z[i]) * dir;
+  const x = X[i] + (X[i + 1] - X[i]) * u, z = Z[i] + (Z[i + 1] - Z[i]) * u;
+  let fx = (X[i + 1] - X[i]) * dir, fz = (Z[i + 1] - Z[i]) * dir;
   const L = Math.hypot(fx, fz) || 1; fx /= L; fz /= L;
   const lx = fz, lz = -fx;                               // left of the way you drive
   const off = c.oneway ? 0 : -c.width / 4;               // right-hand lane

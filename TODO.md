@@ -335,8 +335,16 @@ reasoning: the project's `ROADS-DRAFT.md`.
       Tried and taken back (0.14.9, undone in 0.14.10): letting the ground
       under a road settle by the data's error. It dug a road-wide trench
       with a step at each edge, and tangled junctions. The ground stays as
-      found. Next idea: find where the road really is from the ground (the
-      flat strip across a slope) and move the road there.
+      found. Instead (0.14.11): **the flat strip.** Every 10 m along a road,
+      each sideways spot within 5 m of the map's line is scored by how flat
+      and level the ground is across the road's width there; the gentlest
+      path through the best spots is chosen (at most 1 m sideways per 10 m),
+      easing back to the map's line at junctions. On flat ground, or where
+      no spot clearly beats the map's line, the road stays put. The ground
+      is not touched. About 50 ms per 100 km of road. Lab: on/off switch,
+      and a colour for how far each road moved. Jim to judge on real ground.
+- [ ] A junction where the joining roads do not meet cleanly, Campbellford,
+      44.30795, -77.79373, heading 124 (Jim's screenshot, 0.14.10).
 - [ ] Old streets are steeper than modern rules allow (Campbellford's hill).
       Proposed: colour "steep because the ground is" apart from "broken by
       us". Not decided.
