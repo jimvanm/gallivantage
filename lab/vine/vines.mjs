@@ -68,6 +68,30 @@ O.forEach((A, i) => { const m = new Mesh(); const c = [...SHADES, ...SHADES.slic
 caps['vcap-far'] = { tris: 0, pos: [], col: [], idx: [] };
 out.vcap = { key: 'vcap', name: 'Vine row end', like: 'Row end cap', stages: O.map((_, i) => `outline ${i}`), status: 'testing', rowOnly: true, models: caps };
 
+// Longer row pieces, for big vineyards: 10 m and 3 m, made of 1 m steps with a fresh random outline at every
+// inner step (so the lines wander along the whole piece), starting and ending on the shared outlines like the
+// 1 m pieces. Same 12 triangles a metre; a tenth as many pieces to place. Far: just the two end outlines with
+// the barn-roof bend dropped (8 triangles however long). A row uses 10s, then 3s, then 1s for what is left.
+function longPiece(m, A, B, len, cols) {
+  const c = [...cols, ...cols.slice(0, -1).reverse()];
+  const secs = [A]; for (let k = 1; k < len; k++) secs.push(outline(PROFILE)); secs.push(B);
+  const rings = secs.map((P, k) => P.map(([z, y], i) => m.v(k - len / 2, y, z, c[i])));
+  for (let k = 0; k < len; k++) { const a = rings[k], b = rings[k + 1];
+    for (let i = 0; i < A.length - 1; i++) m.idx.push(a[i], b[i], b[i + 1], a[i], b[i + 1], a[i + 1]); }
+}
+function longFar(m, A, B, len) {
+  const cols = [SHADES[0], SHADES[1], SHADES[3]], c = [...cols, ...cols.slice(0, -1).reverse()];
+  const a = drop(A).map(([z, y], i) => m.v(-len / 2, y, z, c[i])), b = drop(B).map(([z, y], i) => m.v(len / 2, y, z, c[i]));
+  for (let i = 0; i < a.length - 1; i++) m.idx.push(a[i], b[i], b[i + 1], a[i], b[i + 1], a[i + 1]);
+}
+for (const len of [10, 3]) O.forEach((A, i) => O.forEach((B, j) => {
+  const near = new Mesh(); longPiece(near, A, B, len, SHADES);
+  const f = new Mesh(); longFar(f, A, B, len);
+  const key = `vl${len}x${i}${j}`;
+  out[key] = { key, name: `Vine D ${len} m piece ${i}${j}`, like: 'Row piece', stages: ['vine'], status: 'testing', rowOnly: true,
+    models: { [`${key}-1`]: done(near), [`${key}-far`]: done(f) } };
+}));
+
 for (const [k, p] of Object.entries(out)) {
   fs.writeFileSync(path.join(plots, `vine-${k}.json`), JSON.stringify(p));
   console.log(k.padEnd(6), Object.entries(p.models).map(([id, x]) => `${id} ${x.tris}`).join(', '));

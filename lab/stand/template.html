@@ -92,6 +92,8 @@ ul.how{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
         <button id="s-styles" aria-pressed="true">The styles</button>
         <button id="s-mtn" aria-pressed="false">The mountain</button>
         <button id="s-vines" aria-pressed="false">Vineyard</button>
+        <button id="s-champ" aria-pressed="false">Champagne</button>
+        <button id="s-niag" aria-pressed="false">Niagara</button>
       </div>
     </section>
 
@@ -211,18 +213,21 @@ const SHADE=`
 const TREE_VS=`#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol;
 layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
-uniform mat4 uVP; uniform vec3 uEye; uniform float uRange;
+uniform mat4 uVP; uniform vec3 uEye; uniform float uRange; uniform float uShear;
 out vec3 vRel; out vec3 vCol;
 void main(){
   float h=iSize.x*0.01, w=iSize.y*0.01, a=iMisc.x*6.2831853, c=cos(a), s=sin(a);
   vec3 p=aPos*vec3(w,h,w);
+  // Row pieces (uShear 1): the third byte is the ground's slope along the piece (-1..1), not warmth.
+  // Sheared, not turned, so the vines still stand upright on a slope.
+  p.y+=p.x*(iMisc.z*2.0-1.0)*uShear;
   p=vec3(p.x*c-p.z*s, p.y, p.x*s+p.z*c);
   float d=distance(iPos.xz,uEye.xz);
   p*=clamp((uRange-d)/(uRange*0.08),0.0,1.0);
   vec3 wpos=iPos+p;
   vRel=wpos-uEye;
   vec3 col=aCol*(0.8+0.4*iMisc.y);
-  vCol=mix(col, col*vec3(1.15,1.08,0.7), iMisc.z*0.6);
+  vCol=mix(col, col*vec3(1.15,1.08,0.7), iMisc.z*0.6*(1.0-uShear));
   gl_Position=uVP*vec4(wpos,1.0);
 }`;
 const FS=`#version 300 es
@@ -235,7 +240,7 @@ uniform mat4 uVP; uniform vec3 uEye; out vec3 vRel; out vec3 vCol;
 void main(){ vRel=aPos-uEye; vCol=aCol; gl_Position=uVP*vec4(aPos,1.0); }`;
 const TP=prog(TREE_VS,FS),GP=prog(GROUND_VS,FS);
 const UT={},UG={};
-for(const n of["uVP","uEye","uRange","uSun","uSky","uFog"])UT[n]=gl.getUniformLocation(TP,n);
+for(const n of["uVP","uEye","uRange","uSun","uSky","uFog","uShear"])UT[n]=gl.getUniformLocation(TP,n);
 for(const n of["uVP","uEye","uSun","uSky","uFog"])UG[n]=gl.getUniformLocation(GP,n);
 const tvao=gl.createVertexArray();gl.bindVertexArray(tvao);
 {const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,VBUF,gl.STATIC_DRAW);
@@ -270,7 +275,9 @@ function heightAt(x,z){
   const ridge=1-Math.abs(fbm(x/800,z/800,4)*2-1);
   return 260+1750*Math.exp(-r1)+520*Math.exp(-r2)+360*Math.exp(-r3)+320*ridge*Math.exp(-r1*.5)+70*fbm(x/250,z/250,4);
 }
-function buildGrids(){
+const mixc=(a,b,t)=>a.map((x,i)=>Math.round(x+(b[i]-x)*t));
+let GRIDS_FOR=null;
+function buildGrids(heightAt=window.heightAt,key="mountain"){if(GRIDS_FOR===key)return;GRIDS_FOR=key;
   HGT=new Float32Array(GN*GN);SLOPE=new Float32Array(GN*GN);PATCH=new Float32Array(GN*GN);
   for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const x=-HALF+i*GS,z=-HALF+j*GS;HGT[j*GN+i]=heightAt(x,z);PATCH[j*GN+i]=fbm(x/650+20,z/650+20,4)}
   for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const i0=Math.max(0,i-1),i1=Math.min(GN-1,i+1),j0=Math.max(0,j-1),j1=Math.min(GN-1,j+1);
@@ -356,6 +363,7 @@ function plantStyles(){
 // ================= per-move refresh of what is drawn =================
 const NS=STYLES.length,NB=NSH+NS;   // bins: one per detailed shape, then one simple shape per style
 const SHAPE_STYLE=new Uint8Array(SHAPES.map(s=>s.style));
+const ROWBIN=new Float32Array(NB).map((_,k)=>ROWONLY.has(STYLES[k<NSH?SHAPES[k].style:k-NSH].key)?1:0);
 const lists={count:new Uint32Array(NB),start:new Uint32Array(NB)};
 let inst=new Uint8Array(0),instUsed=0,lastBuild=null,rebuildMs=0,skipped=0;
 const settings={range:2500,near:200,cull:true};
@@ -425,6 +433,10 @@ $("count").onchange=e=>{persist("count",e.target.value);plant()};
 // Find a spot on the way up the mountain at about height h, and look up the slope from there.
 function spotAt(h,dir){let best=null;for(let r=300;r<2900;r+=20){const x=PEAK[0]+Math.cos(dir)*r,z=PEAK[1]+Math.sin(dir)*r;if(Math.abs(x)>HALF-50||Math.abs(z)>HALF-50)break;const g=sample(HGT,x,z);if(!best||Math.abs(g-h)<Math.abs(best.g-h))best={x,z,g}}return best}
 function setView(v){
+  if(T&&T.eye&&(scene==="champagne"||scene==="niagara")){
+    if(v==="eye")Object.assign(cam,{tx:T.eye.x,tz:T.eye.z,yaw:T.eye.yaw,pitch:.06,dist:6});
+    if(v==="hill")Object.assign(cam,T.hill);if(v==="above"){Object.assign(cam,T.over);settings.range=8000;$("range").value=8000;showRange()}
+    else if(settings.range>3000){settings.range=2500;$("range").value=2500;showRange()}return}
   const dir=2.3,awayYaw=Math.atan2(Math.cos(dir),Math.sin(dir));
   if(v==="eye"){const s=spotAt(800,dir);Object.assign(cam,{tx:s.x,tz:s.z,yaw:awayYaw+.4,pitch:.08,dist:9})}
   if(v==="hill"){const s=spotAt(330,dir);Object.assign(cam,{tx:s.x,tz:s.z,yaw:awayYaw,pitch:.12,dist:260})}
@@ -464,6 +476,100 @@ function plantVines(){
   D.n=items.length;const out=bucket(D);out.labels=labels;return out;
 }
 
+// ================= vineyard regions: Champagne and Niagara =================
+// The stress test for vines, like the mountain for trees. Rows are chains of 10 m, 3 m and 1 m row pieces
+// (lab/vine/vines.mjs), each starting on the outline the last one ended with, so a row joins exactly.
+// Each piece sits on the ground at its middle and is sheared to the ground's slope along it.
+const PIECE_LENS=[10,3,1],PIECE_KEY={10:"vl10x",3:"vl3x",1:"vrow"};
+const pieceId=(len,i,j)=>BYLIB[len===1?`vrow${i}${j}-1`:`${PIECE_KEY[len]}${i}${j}-1`];
+const smooth=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
+// A growable list of instances: x y z h w yaw shade warm id.
+function List(){return{a:new Float32Array(1<<16),n:0,push(...v){if((this.n+1)*9>this.a.length){const b=new Float32Array(this.a.length*2);b.set(this.a);this.a=b}this.a.set(v,this.n*9);this.n++}}}
+// One row from (x0,z0) along angle byte yb (rows are snapped to the 256 facings, so pieces line up exactly).
+function plantRow(Lst,x0,z0,yb,L,r,shade){
+  const a=yb/256*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a),nx=-dz,nz=dx,K=3,cap=BYLIB["vcap-1"].style;
+  let e=Math.floor(r()*K),t=0;
+  // Sink the whole row by one amount (from the cross slope at its middle), so neighbouring pieces never step.
+  const mx=x0+dx*L/2,mz=z0+dz*L/2,sink=.03+.3*Math.abs(groundAt(mx+nx*.3,mz+nz*.3)-groundAt(mx-nx*.3,mz-nz*.3))/.6;
+  const capAt=(tt,o)=>{const sh=BYLIB[`vcap-${o+1}`],x=x0+dx*tt,z=z0+dz*tt;Lst.push(x,groundAt(x,z)-.04,z,sh.H,sh.W,yb,shade,128,sh.id)};
+  capAt(0,e);
+  while(L-t>=1){const len=PIECE_LENS.find(l=>l<=L-t),nxt=Math.floor(r()*K),sh=pieceId(len,e,nxt),c=t+len/2,x=x0+dx*c,z=z0+dz*c;
+    const h0=groundAt(x-dx*len/2,z-dz*len/2),h1=groundAt(x+dx*len/2,z+dz*len/2),slope=Math.max(-1,Math.min(1,(h1-h0)/len));
+    Lst.push(x,(h0+h1)/2-sink,z,sh.H,sh.W,yb,shade,Math.round((slope+1)/2*255),sh.id);t+=len;e=nxt}
+  capAt(t,e);return t}
+// Fill a box (x0..x1, z0..z1) with rows along angle byte yb, gap metres apart, clipped to the box.
+function fillBlock(Lst,x0,x1,z0,z1,yb,gap,r,stat){
+  const a=yb/256*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a),nx=-dz,nz=dx,cx=(x0+x1)/2,cz=(z0+z1)/2,R=Math.hypot(x1-x0,z1-z0)/2;
+  for(let o=-R+gap/2;o<R;o+=gap){const px=cx+nx*o,pz=cz+nz*o;let lo=-1e9,hi=1e9;
+    for(const[p,d,mn,mx]of[[px,dx,x0,x1],[pz,dz,z0,z1]]){if(Math.abs(d)<1e-9){if(p<mn||p>mx){lo=1;hi=0}continue}
+      let ta=(mn-p)/d,tb=(mx-p)/d;if(ta>tb)[ta,tb]=[tb,ta];lo=Math.max(lo,ta);hi=Math.min(hi,tb)}
+    if(hi-lo<4)continue;const L=Math.floor(hi-lo);
+    if(!stat.firstRow||Math.abs(o)<Math.abs(stat.firstRow.o))stat.firstRow={x:px+dx*lo,z:pz+dz*lo,dx,dz,nx,nz,gap,L,o};
+    stat.metres+=plantRow(Lst,px+dx*lo,pz+dz*lo,yb,L,r,110+r()*36);stat.rows++}}
+// Stand between the middle two rows of the block just planted, 12 m in, looking along them.
+function eyeIn(stat){const f=stat.lastBlock;if(!f)return null;const t=Math.min(12,f.L/2);
+  return{x:f.x+f.nx*f.gap/2+f.dx*t,z:f.z+f.nz*f.gap/2+f.dz*t,yaw:Math.atan2(-f.dx,-f.dz)}}
+function block(Lst,x0,x1,z0,z1,yb,gap,r,stat){stat.firstRow=null;fillBlock(Lst,x0,x1,z0,z1,yb,gap,r,stat);stat.lastBlock=stat.firstRow}
+// Woods and orchards from the library's trees (approved shapes only, mature for woods, young for orchards).
+const styleBy=k=>STYLES.find(S=>S.key===k);
+function tree(Lst,x,z,key,stage,r){const S=styleBy(key),sh=S.shapes[Math.min(S.shapes.length-1,stage)];
+  Lst.push(x,groundAt(x,z)-.3,z,sh.H*(.9+.2*r()),sh.W*(.9+.2*r()),r()*255,r()*255,r()*60,sh.id)}
+function finish(Lst){const D=allocTrees(Lst.n),A=Lst.a;
+  for(let i=0;i<Lst.n;i++){const q=i*9;writeTree(D,i,A[q],A[q+1],A[q+2],A[q+3],A[q+4],A[q+5],A[q+6],A[q+7],A[q+8])}D.n=Lst.n;return bucket(D)}
+// Ground: a 401 x 401 grid over the whole 6 km square, coloured by the scene.
+function sceneGround(colourAt){
+  const N=401,step=HALF*2/(N-1),pos=new Float32Array(N*N*3),col=new Uint8Array(N*N*3),idx=new Uint32Array((N-1)*(N-1)*6);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+i*step,z=-HALF+j*step,k=j*N+i;pos[k*3]=x;pos[k*3+1]=groundAt(x,z);pos[k*3+2]=z;col.set(colourAt(x,z),k*3)}
+  let o=0;for(let j=0;j<N-1;j++)for(let i=0;i<N-1;i++){const a=j*N+i;idx[o++]=a;idx[o++]=a+N;idx[o++]=a+1;idx[o++]=a+1;idx[o++]=a+N;idx[o++]=a+N+1}
+  setGround(pos,col,idx)}
+const GRASS=[108,138,74],WOOD=[48,72,42],CHALK=[158,146,118],FIELD=[168,156,98],VSOIL=[120,126,82];
+
+// Champagne: a long slope facing south, rising 150 m to a wooded crest, cut by a few shallow side valleys.
+// Small parcels (about 90 x 110 m) packed edge to edge with 4 m grass paths, rows 1.2 m apart running
+// down the slope; a village and a few woods break it up. 2 km across.
+const CH={W:1000};
+function champHeight(x,z){return 95+150*smooth(900,-850,z)+9*Math.sin(x/260+fbm(x/700,z/700,2)*3)*smooth(950,-400,z)+12*fbm(x/300+9,z/300+9,4)}
+const champWood=(x,z)=>z<-780+60*fbm(x/300,3)||(fbm(x/420+50,z/420+50,3)>.68&&z<500);
+const champVillage=(x,z)=>Math.hypot(x+380,z-620)<170;
+function plantChampagne(){
+  buildGrids(champHeight,"champagne");groundAt=(x,z)=>sample(HGT,x,z);
+  const r=rng(51),Lst=List(),stat={rows:0,metres:0},PW=90,PL=110,PATH=4;let eye=null;
+  for(let z=-760;z<CH.W-PL;z+=PL)for(let x=-CH.W;x<CH.W-PW;x+=PW){
+    const cx=x+PW/2,cz=z+PL/2;if(champWood(cx,cz)||champVillage(cx,cz))continue;
+    const gx=sample(HGT,cx+5,cz)-sample(HGT,cx-5,cz),gz=sample(HGT,cx,cz+5)-sample(HGT,cx,cz-5);
+    // Down the slope, snapped to the parcel's long side (rows run the length of the parcel), give or take 4 degrees.
+    let a=Math.round(Math.atan2(-gz,-gx)/(Math.PI/2))*(Math.PI/2)+(r()-.5)*.14;
+    const yb=((Math.round(a/(Math.PI*2)*256)%256)+256)%256;
+    block(Lst,x+PATH/2,x+PW-PATH/2,z+PATH/2,z+PL-PATH/2,yb,1.2,r,stat);
+    if(!eye&&Math.abs(cx)<120&&Math.abs(cz-300)<80)eye=eyeIn(stat)}
+  const vines=Lst.n;
+  for(let i=0;i<60000;i++){const x=(r()*2-1)*CH.W*1.4,z=(r()*2-1)*CH.W*1.4;if(champWood(x,z)&&Math.abs(x)<HALF-50&&Math.abs(z)<HALF-50)tree(Lst,x,z,["round","oval","spread"][Math.floor(r()*3)],3,r)}
+  sceneGround((x,z)=>{const inV=Math.abs(x)<CH.W&&z>-760&&z<CH.W;let c=GRASS;
+    if(inV&&!champVillage(x,z))c=CHALK;if(champVillage(x,z))c=[150,128,112];if(champWood(x,z))c=WOOD;return c});
+  const T=finish(Lst);T.vines=vines;T.stat=stat;T.eye=eye;T.over={tx:0,tz:100,yaw:0,pitch:.32,dist:2600};T.hill={tx:0,tz:400,yaw:0,pitch:.1,dist:450};return T}
+
+// Niagara: the flat bench below the escarpment, sloping gently to the lake. Square concession roads every
+// 1 km, farms in long strips, each strip vines (rows 2.7 m apart, mostly north-south), orchard, field or
+// woodlot, with farm lanes between. 3 km across.
+const NI={W:1500};
+function niagHeight(x,z){return 90+18*smooth(1600,-1600,z)+3*fbm(x/400,z/400,3)}
+function plantNiagara(){
+  buildGrids(niagHeight,"niagara");groundAt=(x,z)=>sample(HGT,x,z);
+  const r=rng(905),Lst=List(),stat={rows:0,metres:0},use=new Map();let eye=null;
+  const ROAD=10,LANE=6,SW=120,SL=480;
+  for(let gz=-NI.W;gz<NI.W;gz+=SL)for(let gx=-NI.W;gx<NI.W;gx+=SW){
+    const q=r(),kind=q<.6?"vines":q<.75?"orchard":q<.92?"field":"wood",x0=gx+LANE/2,x1=gx+SW-LANE/2,z0=gz+ROAD/2,z1=gz+SL-ROAD/2;
+    use.set(`${gx},${gz}`,kind);
+    if(kind==="vines"){const yb=r()<.8?64:0;block(Lst,x0,x1,z0,z1,yb,2.7,r,stat);
+      if(!eye&&Math.abs(gx)<400&&Math.abs(gz)<500)eye=eyeIn(stat)}
+    else if(kind==="orchard"){for(let x=x0+3;x<x1;x+=6)for(let z=z0+3;z<z1;z+=5)tree(Lst,x,z,"round",1,r)}
+    else if(kind==="wood"){for(let i=0;i<(x1-x0)*(z1-z0)/40;i++)tree(Lst,x0+r()*(x1-x0),z0+r()*(z1-z0),["round","oval","spread","spire"][Math.floor(r()*4)],3,r)}}
+  const vines=stat.rows&&Lst.n;
+  sceneGround((x,z)=>{if(Math.abs(x)>NI.W||Math.abs(z)>NI.W)return GRASS;
+    const gx=Math.floor((x+NI.W)/SW)*SW-NI.W,gz=Math.floor((z+NI.W)/SL)*SL-NI.W,k=use.get(`${gx},${gz}`);
+    return k==="vines"?VSOIL:k==="field"?FIELD:k==="wood"?WOOD:GRASS});
+  const T=finish(Lst);T.stat=stat;T.eye=eye;T.over={tx:0,tz:0,yaw:3.6,pitch:.4,dist:3600};T.hill={tx:0,tz:0,yaw:3.6,pitch:.14,dist:600};return T}
+
 // Look at whatever is in the rows, close enough to judge it.
 function frameRows(){const L=T.labels;if(!L.length)return;const xs=L.map(l=>l.x),zs=L.map(l=>l.z),hs=L.map(l=>l.y);
   const w=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs),Math.max(...hs));
@@ -473,15 +579,16 @@ function plant(resetView){
   setTimeout(()=>{const t0=performance.now();
     if(scene==="styles"){groundAt=()=>0;flatGround();T=plantStyles();setLabels(T.labels);frameRows()}
     else if(scene==="vines"){groundAt=()=>0;flatGround();T=plantVines();setLabels(T.labels);frameRows()}
-    else{if(!HGT)buildGrids();groundAt=(x,z)=>sample(HGT,x,z);mountainGround();T=plantMountain(+$("count").value);setLabels([]);if(resetView)setView("hill")}
+    else if(scene==="champagne"||scene==="niagara"){T=scene==="champagne"?plantChampagne():plantNiagara();setLabels([]);setView("eye")}
+    else{buildGrids(heightAt,"mountain");groundAt=(x,z)=>sample(HGT,x,z);mountainGround();T=plantMountain(+$("count").value);setLabels([]);if(resetView)setView("hill")}
     plantMs=performance.now()-t0;lastBuild=null;$("busy").hidden=true},30);
 }
-function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s==="styles"));$("s-mtn").setAttribute("aria-pressed",String(s==="mountain"));$("s-vines").setAttribute("aria-pressed",String(s==="vines"));$("mtn-ctrls").hidden=s!=="mountain";$("rows").hidden=s!=="styles";
+function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s==="styles"));$("s-mtn").setAttribute("aria-pressed",String(s==="mountain"));$("s-vines").setAttribute("aria-pressed",String(s==="vines"));$("s-champ").setAttribute("aria-pressed",String(s==="champagne"));$("s-niag").setAttribute("aria-pressed",String(s==="niagara"));$("mtn-ctrls").hidden=!["mountain","champagne","niagara"].includes(s);$("count").closest(".row").hidden=s!=="mountain";$("rows").hidden=s!=="styles";
   if(s==="styles"){Object.assign(cam,{tx:-15,tz:0,yaw:.75,pitch:.3,dist:170});settings.range=2500;settings.near=1000}
-  else if(s==="vines"){settings.range=2500;settings.near=150}
+  else if(s==="vines"||s==="champagne"||s==="niagara"){settings.range=2500;settings.near=150}
   else{settings.range=2500;settings.near=200}
   $("range").value=settings.range;$("near").value=settings.near;showRange();plant(true)}
-$("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");$("s-vines").onclick=()=>setScene("vines");
+$("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");$("s-vines").onclick=()=>setScene("vines");$("s-champ").onclick=()=>setScene("champagne");$("s-niag").onclick=()=>setScene("niagara");
 $("s-vines").hidden=!(LIB.extra||[]).some(e=>e.vineyard);   // only when there is a vineyard trial to plant
 
 // ================= frame =================
@@ -518,6 +625,7 @@ function frame(now){
   for(let k=0;k<NB;k++){const n=lists.count[k];if(!n)continue;const o=lists.start[k]*20;
     gl.vertexAttribPointer(2,3,gl.FLOAT,false,20,o);gl.vertexAttribPointer(3,2,gl.UNSIGNED_SHORT,false,20,o+12);gl.vertexAttribPointer(4,4,gl.UNSIGNED_BYTE,true,20,o+16);
     const first=k<NSH?SHAPES[k].first:STYLES[k-NSH].farFirst,count=k<NSH?SHAPES[k].count:STYLES[k-NSH].farCount;
+    gl.uniform1f(UT.uShear,ROWBIN[k]);
     gl.drawElementsInstanced(gl.TRIANGLES,count,gl.UNSIGNED_INT,first*4,n);calls++;tris+=n*count/3}
   if(timing)gl.endQuery(timer.TIME_ELAPSED_EXT);
   if(query&&!timing){const ok=gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE),dis=gl.getParameter(timer.GPU_DISJOINT_EXT);
