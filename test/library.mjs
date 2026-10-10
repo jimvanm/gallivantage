@@ -42,3 +42,23 @@ for (const set of index.sets) {
   }
 }
 console.log('library ok:', seen.size, 'objects');
+
+// ---- the map-tag list: every tag seen or on OpenStreetMap's symbol list, with how it would be handled ----
+const tags = read('tags.json');
+const HOW = ['object', 'line', 'area', 'building', 'none'];
+const TAG_STATUS = [...STATUS, 'n/a'];
+const tagSeen = new Set();
+for (const t of tags) {
+  assert.match(t.tag, /^[^=]+=.+$/, 'a tag looks like key=value: ' + t.tag);
+  assert.ok(!tagSeen.has(t.tag), t.tag + ' listed once'); tagSeen.add(t.tag);
+  assert.ok(HOW.includes(t.how), t.tag + ': how is one of ' + HOW.join(', '));
+  assert.ok(TAG_STATUS.includes(t.status), t.tag + ': status is one of ' + TAG_STATUS.join(', '));
+  assert.ok(t.status !== 'n/a' || t.notes, t.tag + ': n/a needs a reason in the notes');
+  if (t.object) {
+    const [set, id] = t.object.split('/');
+    const e = index.sets.find((s) => s.id === set)?.models.find((m) => m.id === id);
+    assert.ok(e, t.tag + ': its object ' + t.object + ' is in the library');
+    assert.equal(t.status, e.status, t.tag + ': status follows its object ' + t.object);
+  }
+}
+console.log('tags ok:', tags.length);

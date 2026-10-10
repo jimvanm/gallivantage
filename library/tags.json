@@ -1,0 +1,7306 @@
+[
+{
+"tag": "building=yes",
+"name": "Building, unspecified",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 7096,
+"where": [
+"Efteling",
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "highway=footway",
+"name": "Footway (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 1069,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "building=apartments",
+"name": "Apartments (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 723,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "natural=tree",
+"name": "Tree",
+"how": "object",
+"status": "approved",
+"notes": "A single tree: style from leaf type and species.",
+"seen": 723,
+"where": [
+"Efteling",
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page",
+"object": "trees/round-3"
+},
+{
+"tag": "entrance=main",
+"name": "Main (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 507,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "barrier=wall",
+"name": "Wall (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A wall along the line, height from the map when given.",
+"seen": 485,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "historic=building",
+"name": "Building (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "Already a building; heritage could pick an older look.",
+"seen": 474,
+"where": [
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "highway=residential",
+"name": "Residential (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 343,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "amenity=restaurant",
+"name": "Restaurant",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 321,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "highway=service",
+"name": "Service (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 310,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "tunnel=yes",
+"name": "Tunnel, unspecified",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 284,
+"where": [
+"Efteling",
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "amenity=bench",
+"name": "Bench",
+"how": "object",
+"status": "pending",
+"notes": "A bench; backrest and material when tagged.",
+"seen": 258,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "barrier=fence",
+"name": "Fence (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A fence along the line.",
+"seen": 232,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "leisure=garden",
+"name": "Garden (leisure)",
+"how": "area",
+"status": "pending",
+"notes": "Lawn, flowerbeds, a few trees.",
+"seen": 229,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "entrance=yes",
+"name": "Entrance, unspecified",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 222,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "highway=living_street",
+"name": "Living street (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 217,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "highway=steps",
+"name": "Steps (highway)",
+"how": "line",
+"status": "pending",
+"notes": "Stairs along the line.",
+"seen": 208,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "barrier=gate",
+"name": "Gate",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 176,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=cafe",
+"name": "Cafe",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 174,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building:part=yes",
+"name": "Building part, unspecified",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 145,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "highway=street_lamp",
+"name": "Street lamp (highway)",
+"how": "object",
+"status": "pending",
+"notes": "A street lamp; style by region.",
+"seen": 141,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=waste_basket",
+"name": "Waste basket",
+"how": "object",
+"status": "pending",
+"notes": "A bin.",
+"seen": 130,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "entrance=home",
+"name": "Home (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 123,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=house",
+"name": "House (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 121,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "entrance=garage",
+"name": "Garage (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 117,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=fast_food",
+"name": "Fast food",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 115,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "entrance=shop",
+"name": "Shop (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 110,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=crossing",
+"name": "Crossing (highway)",
+"how": "object",
+"status": "pending",
+"notes": "Painted stripes across the road, later.",
+"seen": 108,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "amenity=parking",
+"name": "Car park",
+"how": "area",
+"status": "pending",
+"notes": "Parked cars or motorbikes, later.",
+"seen": 99,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building=hotel",
+"name": "Hotel (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 98,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+]
+},
+{
+"tag": "tourism=attraction",
+"name": "Attraction (tourism)",
+"how": "none",
+"status": "n/a",
+"notes": "Too varied: depends what it is (rides, fairy-tale scenes).",
+"seen": 95,
+"where": [
+"Efteling",
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "building=retail",
+"name": "Retail (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 94,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "barrier=city_wall",
+"name": "City wall (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A town wall with a walkway (Rothenburg maps heights).",
+"seen": 87,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "barrier=hedge",
+"name": "Hedge (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A hedge along the line.",
+"seen": 86,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=shed",
+"name": "Shed (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 85,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "emergency=fire_hydrant",
+"name": "Fire hydrant (emergency)",
+"how": "object",
+"status": "pending",
+"notes": "A fire hydrant (Toronto and Rothenburg map them with colours).",
+"seen": 82,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "shop=clothes",
+"name": "Clothes",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 77,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "highway=secondary",
+"name": "Secondary (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 76,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "tourism=hotel",
+"name": "Hotel",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 76,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building=detached",
+"name": "Detached (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 65,
+"where": [
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "man_made=planter",
+"name": "Planter (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A planter box with plants.",
+"seen": 65,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "tunnel=building_passage",
+"name": "Building passage (tunnel)",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 65,
+"where": [
+"Efteling",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "landuse=grass",
+"name": "Grass (landuse)",
+"how": "area",
+"status": "pending",
+"notes": "Grass colour.",
+"seen": 64,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "tourism=information",
+"name": "Information (tourism)",
+"how": "object",
+"status": "pending",
+"notes": "information=* picks the kind.",
+"seen": 64,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "railway=rail",
+"name": "Rail (railway)",
+"how": "line",
+"status": "pending",
+"notes": "Rails and sleepers; overhead wires when electrified.",
+"seen": 62,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "building=garage",
+"name": "Garage (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 61,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "landuse=residential",
+"name": "Residential (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 60,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "barrier=retaining_wall",
+"name": "Retaining wall (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A wall holding back a slope.",
+"seen": 59,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "shop=gift",
+"name": "Gifts",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 58,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "building=garages",
+"name": "Garages (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 54,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "barrier=bollard",
+"name": "Bollard",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 49,
+"where": [
+"Campbellford",
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "highway=stop",
+"name": "Stop (highway)",
+"how": "object",
+"status": "pending",
+"notes": "A stop sign.",
+"seen": 49,
+"where": [
+"Campbellford",
+"Swakopmund",
+"Toronto"
+]
+},
+{
+"tag": "amenity=atm",
+"name": "Cash machine",
+"how": "object",
+"status": "pending",
+"notes": "A cash machine, often in a wall.",
+"seen": 47,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "craft=tailor",
+"name": "Tailor (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 46,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "highway=pedestrian",
+"name": "Pedestrian (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 45,
+"where": [
+"Efteling",
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "amenity=vending_machine",
+"name": "Vending machine",
+"how": "object",
+"status": "pending",
+"notes": "A machine; vending=* picks the kind.",
+"seen": 44,
+"where": [
+"Efteling",
+"Rothenburg",
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "highway=path",
+"name": "Path (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 43,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "building=office",
+"name": "Office (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 40,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "bridge=yes",
+"name": "Bridge, unspecified",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 39,
+"where": [
+"Efteling",
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "building=roof",
+"name": "Roof (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 39,
+"where": [
+"Efteling",
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+]
+},
+{
+"tag": "highway=tertiary",
+"name": "Tertiary (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 39,
+"where": [
+"Campbellford",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "man_made=tower",
+"name": "Tower",
+"how": "object",
+"status": "pending",
+"notes": "A tower; tower:type picks the look (Rothenburg has 32 defensive ones).",
+"seen": 39,
+"where": [
+"Efteling",
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "amenity=bicycle_parking",
+"name": "Bicycle parking",
+"how": "object",
+"status": "pending",
+"notes": "A bike rack.",
+"seen": 38,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building:part=column",
+"name": "Column (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 38,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "tourism=artwork",
+"name": "Artwork",
+"how": "object",
+"status": "pending",
+"notes": "artwork_type picks the kind.",
+"seen": 38,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "historic=citywalls",
+"name": "Citywalls (historic)",
+"how": "line",
+"status": "pending",
+"notes": "Town walls, with heights where mapped.",
+"seen": 36,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "tourism=guest_house",
+"name": "Guest house",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 36,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "barrier=entrance",
+"name": "Entrance (barrier)",
+"how": "object",
+"status": "pending",
+"notes": "A gap in a wall or fence.",
+"seen": 35,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=yes",
+"name": "Historic, unspecified",
+"how": "none",
+"status": "n/a",
+"notes": "Says only \"historic\".",
+"seen": 35,
+"where": [
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "leisure=park",
+"name": "Park (leisure)",
+"how": "area",
+"status": "n/a",
+"notes": "A park: ground colour and trees.",
+"seen": 35,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "public_transport=platform",
+"name": "Platform (public transport)",
+"how": "object",
+"status": "pending",
+"notes": "A platform or bus stop: kerb, sign, shelter if mapped.",
+"seen": 34,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "tower:type=defensive",
+"name": "Defensive tower",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 32,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "highway=elevator",
+"name": "Elevator",
+"how": "object",
+"status": "pending",
+"notes": "A lift tower or doorway.",
+"seen": 31,
+"where": [
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=place_of_worship",
+"name": "Place of worship",
+"how": "building",
+"status": "pending",
+"notes": "religion=* picks the look.",
+"seen": 29,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "historic=memorial",
+"name": "Memorial",
+"how": "object",
+"status": "pending",
+"notes": "A memorial; memorial=* picks the kind.",
+"seen": 28,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "information=board",
+"name": "Information board",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 28,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=bar",
+"name": "Bar",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 27,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=toilets",
+"name": "Public toilets",
+"how": "object",
+"status": "pending",
+"notes": "A small toilet building.",
+"seen": 27,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "historic=barn",
+"name": "Barn (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 27,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=wall",
+"name": "Wall (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 25,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=wall",
+"name": "Wall (historic)",
+"how": "line",
+"status": "pending",
+"notes": "An old wall.",
+"seen": 24,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=manhole",
+"name": "Manhole (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "Flat in the road: too small.",
+"seen": 24,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "public_transport=stop_position",
+"name": "Stop position (public transport)",
+"how": "none",
+"status": "n/a",
+"notes": "A grouping or routing point, not a thing.",
+"seen": 24,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "amenity=fountain",
+"name": "Fountain",
+"how": "object",
+"status": "pending",
+"notes": "A fountain; outline when mapped.",
+"seen": 23,
+"where": [
+"Efteling",
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "tourism=museum",
+"name": "Museum",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 23,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "vending=parking_tickets",
+"name": "Parking ticket machine",
+"how": "object",
+"status": "pending",
+"notes": "A machine on a post or against a wall.",
+"seen": 23,
+"where": [
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "information=map",
+"name": "Map board",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 22,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "landuse=flowerbed",
+"name": "Flowerbed (landuse)",
+"how": "area",
+"status": "pending",
+"notes": "Low colourful plants.",
+"seen": 22,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "railway=construction",
+"name": "Construction (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "Being built.",
+"seen": 22,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "landuse=retail",
+"name": "Retail (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 21,
+"where": [
+"Campbellford",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "power=generator",
+"name": "Power generator",
+"how": "object",
+"status": "pending",
+"notes": "Rooftop solar panels or a wind turbine, by source.",
+"seen": 21,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "highway=traffic_signals",
+"name": "Traffic lights",
+"how": "object",
+"status": "pending",
+"notes": "Traffic lights on poles at the crossing.",
+"seen": 20,
+"where": [
+"Campbellford",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=convenience",
+"name": "Convenience store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 20,
+"where": [
+"Campbellford",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=bank",
+"name": "Bank",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 19,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "historic=tower",
+"name": "Tower (historic)",
+"how": "object",
+"status": "pending",
+"notes": "An old tower.",
+"seen": 19,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "entrance=service",
+"name": "Service (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 18,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=bus_stop",
+"name": "Bus stop",
+"how": "object",
+"status": "pending",
+"notes": "Bus stop: pole and sign, shelter, bench and bin when tagged.",
+"seen": 18,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "railway=platform",
+"name": "Platform (railway)",
+"how": "line",
+"status": "pending",
+"notes": "A raised platform along the track.",
+"seen": 18,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=art",
+"name": "Art shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 18,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=bakery",
+"name": "Bakery",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 18,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "man_made=surveillance",
+"name": "Surveillance (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "A camera on a wall: too small.",
+"seen": 17,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "railway=stop",
+"name": "Stop (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "A point on the track where trains stop; the platform is drawn instead.",
+"seen": 17,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "railway=train_station_entrance",
+"name": "Train station entrance (railway)",
+"how": "object",
+"status": "pending",
+"notes": "A doorway with a sign.",
+"seen": 17,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "amenity=bicycle_rental",
+"name": "Bike share or rental",
+"how": "object",
+"status": "pending",
+"notes": "A bike-share dock with bikes.",
+"seen": 16,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=grit_bin",
+"name": "Grit bin (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A grit box (Rothenburg has 16).",
+"seen": 16,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=post_box",
+"name": "Post box",
+"how": "object",
+"status": "pending",
+"notes": "A post box; Canada Post red in Canada, by region elsewhere.",
+"seen": 16,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=hairdresser",
+"name": "Hairdresser",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 16,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=jewelry",
+"name": "Jeweller",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 16,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "building:part=apartments",
+"name": "Apartments (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 15,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=unclassified",
+"name": "Unclassified (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 15,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "natural=scrub",
+"name": "Scrub (natural)",
+"how": "area",
+"status": "pending",
+"notes": "Low bushes scattered.",
+"seen": 15,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=pharmacy",
+"name": "Pharmacy",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 14,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building=hut",
+"name": "Hut (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 14,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=residential",
+"name": "Residential (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 14,
+"where": [
+"Campbellford",
+"Hội An"
+]
+},
+{
+"tag": "building=warehouse",
+"name": "Warehouse (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 14,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=corridor",
+"name": "Corridor (highway)",
+"how": "none",
+"status": "n/a",
+"notes": "Indoors.",
+"seen": 14,
+"where": [
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "historic=fountain",
+"name": "Fountain (historic)",
+"how": "object",
+"status": "pending",
+"notes": "An old fountain (Rothenburg has 21).",
+"seen": 14,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "leisure=pitch",
+"name": "Pitch (leisure)",
+"how": "area",
+"status": "pending",
+"notes": "Line markings and goals by sport.",
+"seen": 14,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "man_made=street_cabinet",
+"name": "Street cabinet (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "A grey box; adds clutter, little else.",
+"seen": 14,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "natural=water",
+"name": "Water",
+"how": "area",
+"status": "n/a",
+"notes": "The app already colours this ground.",
+"seen": 14,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "office=company",
+"name": "Company (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 14,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "shop=shoes",
+"name": "Shoes",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 14,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "amenity=doctors",
+"name": "Doctor",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 13,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "artwork_type=sculpture",
+"name": "Sculpture (artwork type)",
+"how": "object",
+"status": "pending",
+"notes": "A generic figure or sculpture on a plinth.",
+"seen": 13,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "emergency=defibrillator",
+"name": "Defibrillator (emergency)",
+"how": "object",
+"status": "n/a",
+"notes": "A small box on a wall.",
+"seen": 13,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "natural=stone",
+"name": "Stone (natural)",
+"how": "object",
+"status": "pending",
+"notes": "A boulder.",
+"seen": 13,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=books",
+"name": "Bookshop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 13,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=supermarket",
+"name": "Supermarket",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 13,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=school",
+"name": "School (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 12,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "building=church",
+"name": "Church (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 12,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "building=school",
+"name": "School (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 12,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "healthcare=doctor",
+"name": "Doctor (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 12,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "healthcare=pharmacy",
+"name": "Pharmacy (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 12,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "historic=city_gate",
+"name": "City gate",
+"how": "object",
+"status": "pending",
+"notes": "A gate tower over the road.",
+"seen": 12,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "landuse=commercial",
+"name": "Commercial (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 12,
+"where": [
+"Campbellford",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "memorial=plaque",
+"name": "Memorial plaque",
+"how": "object",
+"status": "n/a",
+"notes": "A plaque on a wall: too small to matter beyond a few metres.",
+"seen": 12,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "railway=switch",
+"name": "Switch (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "A point in the track; too small.",
+"seen": 12,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=department_store",
+"name": "Department store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 12,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "amenity=pub",
+"name": "Pub",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 11,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "highway=primary",
+"name": "Primary (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 11,
+"where": [
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "shop=ticket",
+"name": "Tickets",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 11,
+"where": [
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=travel_agency",
+"name": "Travel agent",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 11,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "tourism=viewpoint",
+"name": "Viewpoint",
+"how": "object",
+"status": "n/a",
+"notes": "A spot, often with nothing built; a bench or railing at most.",
+"seen": 11,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=parking_entrance",
+"name": "Parking entrance (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A ramp into a garage.",
+"seen": 10,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "artwork_type=statue",
+"name": "Statue (artwork type)",
+"how": "object",
+"status": "pending",
+"notes": "A generic figure or sculpture on a plinth.",
+"seen": 10,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "memorial=stolperstein",
+"name": "Stolperstein (memorial)",
+"how": "object",
+"status": "n/a",
+"notes": "A 10 cm brass square set flush in the pavement: too small to see.",
+"seen": 10,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "tourism=apartment",
+"name": "Holiday apartment",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 10,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "waterway=stream",
+"name": "Stream (waterway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app already draws water.",
+"seen": 10,
+"where": [
+"Campbellford",
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=ice_cream",
+"name": "Ice cream shop",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 9,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building=government",
+"name": "Government (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 9,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "natural=tree_row",
+"name": "Tree row (natural)",
+"how": "line",
+"status": "approved",
+"notes": "Trees along the line.",
+"seen": 9,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"object": "trees/round-3"
+},
+{
+"tag": "office=government",
+"name": "Government (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 9,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "playground=structure",
+"name": "Structure (playground)",
+"how": "object",
+"status": "pending",
+"notes": "A playground piece.",
+"seen": 9,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "railway=subway",
+"name": "Subway (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "Underground.",
+"seen": 9,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=vacant",
+"name": "Vacant (shop)",
+"how": "building",
+"status": "n/a",
+"notes": "An empty shop: nothing to show beyond a plain or shuttered front.",
+"seen": 9,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "tourism=hostel",
+"name": "Hostel",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 9,
+"where": [
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=biergarten",
+"name": "Beer garden",
+"how": "area",
+"status": "pending",
+"notes": "Long tables and benches under trees.",
+"seen": 8,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=dentist",
+"name": "Dentist",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 8,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "building:part=roof",
+"name": "Roof (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 8,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "building=commercial",
+"name": "Commercial (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 8,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "craft=handicraft",
+"name": "Handicraft (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 8,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "healthcare=dentist",
+"name": "Dentist (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 8,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "highway=track",
+"name": "Track (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 8,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "landuse=meadow",
+"name": "Meadow (landuse)",
+"how": "area",
+"status": "pending",
+"notes": "Long grass colour.",
+"seen": 8,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=water_well",
+"name": "Water well (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A well head.",
+"seen": 8,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "natural=shrub",
+"name": "Shrub (natural)",
+"how": "object",
+"status": "pending",
+"notes": "A bush.",
+"seen": 8,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=beauty",
+"name": "Beauty salon",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 8,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "tourism=gallery",
+"name": "Art gallery",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 8,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "vending=public_transport_tickets",
+"name": "Transit ticket machine",
+"how": "object",
+"status": "pending",
+"notes": "A machine on a post or against a wall.",
+"seen": 8,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=recycling",
+"name": "Recycling",
+"how": "object",
+"status": "pending",
+"notes": "Recycling bins.",
+"seen": 7,
+"where": [
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=social_facility",
+"name": "Social facility",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 7,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "railway=subway_entrance",
+"name": "Subway entrance",
+"how": "object",
+"status": "pending",
+"notes": "Stairs going down, a railing and a sign.",
+"seen": 7,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "shop=antiques",
+"name": "Antiques (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 7,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "shop=massage",
+"name": "Massage",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 7,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=optician",
+"name": "Optician",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 7,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "water=basin",
+"name": "Basin (water)",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 7,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=post_office",
+"name": "Post office",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 6,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "barrier=kerb",
+"name": "Kerb (barrier)",
+"how": "line",
+"status": "pending",
+"notes": "A kerb edge; mostly already part of the road.",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "building=service",
+"name": "Service (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "landuse=religious",
+"name": "Religious (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 6,
+"where": [
+"Campbellford",
+"Hội An"
+]
+},
+{
+"tag": "leisure=swimming_pool",
+"name": "Swimming pool (leisure)",
+"how": "area",
+"status": "pending",
+"notes": "Blue water in a pool edge.",
+"seen": 6,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "office=travel_agent",
+"name": "Travel agent (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "railway=tram",
+"name": "Tram (railway)",
+"how": "line",
+"status": "pending",
+"notes": "Tram rails in the road, overhead wire.",
+"seen": 6,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=leather",
+"name": "Leather (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "shop=mobile_phone",
+"name": "Mobile phones",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 6,
+"where": [
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "shop=sports",
+"name": "Sporting goods",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "shop=toys",
+"name": "Toys",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 6,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "sport=tennis",
+"name": "Tennis (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 6,
+"where": [
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "waterway=river",
+"name": "River (waterway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app already draws water.",
+"seen": 6,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "amenity=car_rental",
+"name": "Car rental",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 5,
+"where": [
+"Swakopmund",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=clock",
+"name": "Clock (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A clock on a post.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "amenity=food_court",
+"name": "Food court",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 5,
+"where": [
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=fuel",
+"name": "Fuel station",
+"how": "object",
+"status": "pending",
+"notes": "A fuel station kit: canopy, pumps, sign.",
+"seen": 5,
+"where": [
+"Campbellford",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=marketplace",
+"name": "Marketplace",
+"how": "area",
+"status": "pending",
+"notes": "Market stalls with awnings.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=taxi",
+"name": "Taxi rank",
+"how": "object",
+"status": "pending",
+"notes": "A taxi sign, parked taxis.",
+"seen": 5,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "healthcare=physiotherapist",
+"name": "Physiotherapist (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "highway=primary_link",
+"name": "Primary link (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 5,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "highway=secondary_link",
+"name": "Secondary link (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 5,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "highway=trunk",
+"name": "Trunk (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 5,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "historic=church",
+"name": "Church (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 5,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=gate",
+"name": "Gate (historic)",
+"how": "object",
+"status": "pending",
+"notes": "An old gate.",
+"seen": 5,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=school",
+"name": "School (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 5,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "information=office",
+"name": "Tourist information office",
+"how": "building",
+"status": "pending",
+"notes": "A tourist office: an \"i\" sign on the building.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "leisure=fitness_centre",
+"name": "Fitness centre",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building.",
+"seen": 5,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "man_made=bridge",
+"name": "Bridge (man made)",
+"how": "none",
+"status": "n/a",
+"notes": "The app's roads draw bridges.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "natural=wood",
+"name": "Wood (natural)",
+"how": "area",
+"status": "approved",
+"notes": "Trees planted per tile.",
+"seen": 5,
+"where": [
+"Campbellford",
+"Toronto",
+"Hội An"
+],
+"object": "trees/spire-3"
+},
+{
+"tag": "office=insurance",
+"name": "Insurance (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 5,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund",
+"Toronto"
+]
+},
+{
+"tag": "public_transport=stop_area",
+"name": "Stop area (public transport)",
+"how": "none",
+"status": "n/a",
+"notes": "A grouping or routing point, not a thing.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "railway=tram_level_crossing",
+"name": "Tram level crossing (railway)",
+"how": "object",
+"status": "pending",
+"notes": "Signs at a road crossing.",
+"seen": 5,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=cosmetics",
+"name": "Cosmetics (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "shop=florist",
+"name": "Florist",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 5,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=tailor",
+"name": "Tailor (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 5,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "tunnel=no",
+"name": "No (tunnel)",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 5,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "vending=cigarettes",
+"name": "Cigarettes (vending)",
+"how": "object",
+"status": "pending",
+"notes": "A machine on a post or against a wall.",
+"seen": 5,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "vending=excrement_bags",
+"name": "Dog-bag dispenser",
+"how": "object",
+"status": "pending",
+"notes": "A machine on a post or against a wall.",
+"seen": 5,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=charging_station",
+"name": "Charging station",
+"how": "object",
+"status": "pending",
+"notes": "A charging post.",
+"seen": 4,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=community_centre",
+"name": "Community centre",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 4,
+"where": [
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=drinking_water",
+"name": "Drinking water",
+"how": "object",
+"status": "pending",
+"notes": "A drinking fountain.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "attraction=carousel",
+"name": "Carousel (attraction)",
+"how": "object",
+"status": "pending",
+"notes": "A ride with a recognisable shape (carousel, swing ride, teacups).",
+"seen": 4,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "attraction=roller_coaster",
+"name": "Roller coaster (attraction)",
+"how": "line",
+"status": "pending",
+"notes": "Track along the mapped path, with invented heights from the ride's known height (see Efteling notes).",
+"seen": 4,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "barrier=bar",
+"name": "Bar (barrier)",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 4,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "barrier=lift_gate",
+"name": "Boom barrier",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 4,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "building=allotment_house",
+"name": "Allotment house (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=cabin",
+"name": "Cabin (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=public",
+"name": "Public (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 4,
+"where": [
+"Campbellford",
+"Toronto"
+]
+},
+{
+"tag": "entrance=emergency",
+"name": "Emergency (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "entrance=hotel",
+"name": "Hotel (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=fence",
+"name": "Fence (historic)",
+"how": "line",
+"status": "pending",
+"notes": "An old fence.",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=water_well",
+"name": "Water well (historic)",
+"how": "object",
+"status": "pending",
+"notes": "A well.",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "leisure=outdoor_seating",
+"name": "Outdoor seating",
+"how": "area",
+"status": "pending",
+"notes": "Café tables and chairs, umbrellas.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "leisure=picnic_table",
+"name": "Picnic table",
+"how": "object",
+"status": "pending",
+"notes": "A picnic table.",
+"seen": 4,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "leisure=playground",
+"name": "Playground",
+"how": "area",
+"status": "approved",
+"notes": "Pieces from the playground set; scatter standard ones where none are mapped.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page",
+"object": "playground/swing"
+},
+{
+"tag": "office=architect",
+"name": "Architect (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 4,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=lawyer",
+"name": "Lawyer (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "shop=alcohol",
+"name": "Liquor store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 4,
+"where": [
+"Campbellford",
+"Swakopmund",
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "shop=chocolate",
+"name": "Chocolate (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "shop=confectionery",
+"name": "Sweets",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=fabric",
+"name": "Fabric",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 4,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=variety_store",
+"name": "Variety store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 4,
+"where": [
+"Campbellford",
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "advertising=billboard",
+"name": "Billboard (advertising)",
+"how": "object",
+"status": "pending",
+"notes": "A billboard, board or advertising column.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "amenity=bicycle_repair_station",
+"name": "Bicycle repair station",
+"how": "object",
+"status": "pending",
+"notes": "A tool post with a pump.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=bureau_de_change",
+"name": "Currency exchange",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 3,
+"where": [
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=kindergarten",
+"name": "Kindergarten (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Swakopmund",
+"Hội An"
+]
+},
+{
+"tag": "amenity=library",
+"name": "Library",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=lounger",
+"name": "Lounger (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A lounge chair.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=shelter",
+"name": "Shelter",
+"how": "object",
+"status": "pending",
+"notes": "A shelter.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=theatre",
+"name": "Theatre",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "building:part=office",
+"name": "Office (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "building=bridge",
+"name": "Bridge (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 3,
+"where": [
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "building=kindergarten",
+"name": "Kindergarten (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "craft=pottery",
+"name": "Pottery (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "entrance=restaurant",
+"name": "Restaurant (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "entrance=secondary",
+"name": "Secondary (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=give_way",
+"name": "Give way (highway)",
+"how": "object",
+"status": "pending",
+"notes": "A yield sign.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=turning_circle",
+"name": "Turning circle",
+"how": "none",
+"status": "n/a",
+"notes": "The road widening is already drawn.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "historic=basin",
+"name": "Basin (historic)",
+"how": "object",
+"status": "pending",
+"notes": "A stone basin.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=bridge",
+"name": "Bridge (historic)",
+"how": "none",
+"status": "n/a",
+"notes": "Drawn by the roads.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=monument",
+"name": "Monument",
+"how": "object",
+"status": "pending",
+"notes": "A monument; famous ones are landmarks.",
+"seen": 3,
+"where": [
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "historic=wayside_cross",
+"name": "Wayside cross",
+"how": "object",
+"status": "pending",
+"notes": "A cross by the road.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "landuse=village_green",
+"name": "Village green (landuse)",
+"how": "area",
+"status": "pending",
+"notes": "Grass colour.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "leisure=fitness_station",
+"name": "Fitness station",
+"how": "object",
+"status": "pending",
+"notes": "Outdoor exercise bars.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "memorial=stele",
+"name": "Stele (memorial)",
+"how": "object",
+"status": "pending",
+"notes": "A memorial: stone, stele, statue or monument.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "memorial=war_memorial",
+"name": "War memorial (memorial)",
+"how": "object",
+"status": "pending",
+"notes": "A memorial: stone, stele, statue or monument.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "office=association",
+"name": "Association (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=estate_agent",
+"name": "Estate agent (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg"
+]
+},
+{
+"tag": "playground=basketswing",
+"name": "Basketswing (playground)",
+"how": "object",
+"status": "pending",
+"notes": "A playground piece.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "playground=slide",
+"name": "Slide (playground)",
+"how": "object",
+"status": "approved",
+"notes": "A playground piece.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"object": "playground/slide"
+},
+{
+"tag": "playground=springy",
+"name": "Springy (playground)",
+"how": "object",
+"status": "pending",
+"notes": "A playground piece.",
+"seen": 3,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "playground=swing",
+"name": "Swing (playground)",
+"how": "object",
+"status": "approved",
+"notes": "A playground piece.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"object": "playground/swing"
+},
+{
+"tag": "public_transport=station",
+"name": "Station (public transport)",
+"how": "building",
+"status": "pending",
+"notes": "A station building.",
+"seen": 3,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "railway=tram_crossing",
+"name": "Tram crossing (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "Rails crossing; already drawn.",
+"seen": 3,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "railway=tram_stop",
+"name": "Tram stop",
+"how": "object",
+"status": "pending",
+"notes": "A tram stop: sign and shelter.",
+"seen": 3,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "shop=bag",
+"name": "Bags",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=furniture",
+"name": "Furniture",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=stationery",
+"name": "Stationery",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "shop=watches",
+"name": "Watches (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "shop=wine",
+"name": "Wine shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "sport=basketball",
+"name": "Basketball (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Toronto",
+"Hội An"
+]
+},
+{
+"tag": "sport=fitness",
+"name": "Fitness (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 3,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "sport=soccer",
+"name": "Soccer (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Rothenburg"
+]
+},
+{
+"tag": "tower:type=bell_tower",
+"name": "Bell tower",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 3,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "water=river",
+"name": "River (water)",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 3,
+"where": [
+"Campbellford",
+"Hội An"
+]
+},
+{
+"tag": "advertising=board",
+"name": "Board (advertising)",
+"how": "object",
+"status": "pending",
+"notes": "A billboard, board or advertising column.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=car_wash",
+"name": "Car wash",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Campbellford",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=childcare",
+"name": "Childcare (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Campbellford",
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=cinema",
+"name": "Cinema",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Campbellford",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=clinic",
+"name": "Clinic",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Toronto",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=courthouse",
+"name": "Courthouse",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=fire_station",
+"name": "Fire station",
+"how": "building",
+"status": "pending",
+"notes": "Red doors on the building (the app already does this).",
+"seen": 2,
+"where": [
+"Campbellford"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=kneipp_water_cure",
+"name": "Kneipp water cure (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A shallow wading basin.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=motorcycle_parking",
+"name": "Motorcycle parking",
+"how": "area",
+"status": "pending",
+"notes": "Parked cars or motorbikes, later.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=telephone",
+"name": "Public telephone",
+"how": "object",
+"status": "pending",
+"notes": "A phone booth or pole.",
+"seen": 2,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=townhall",
+"name": "Town hall",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 2,
+"where": [
+"Campbellford",
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "attraction=amusement_ride",
+"name": "Amusement ride (attraction)",
+"how": "object",
+"status": "pending",
+"notes": "A ride with a recognisable shape (carousel, swing ride, teacups).",
+"seen": 2,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "attraction=dark_ride",
+"name": "Dark ride (attraction)",
+"how": "building",
+"status": "n/a",
+"notes": "An indoor ride: only the building shows.",
+"seen": 2,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "attraction=swing_carousel",
+"name": "Swing carousel (attraction)",
+"how": "object",
+"status": "pending",
+"notes": "A ride with a recognisable shape (carousel, swing ride, teacups).",
+"seen": 2,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "building:part=bell_tower",
+"name": "Bell tower (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=shed",
+"name": "Shed (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=tower",
+"name": "Tower (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=farm_auxiliary",
+"name": "Farm auxiliary (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=greenhouse",
+"name": "Greenhouse (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=temple",
+"name": "Temple (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 2,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "building=toilets",
+"name": "Toilets (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=train_station",
+"name": "Train station (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 2,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "emergency=assembly_point",
+"name": "Assembly point (emergency)",
+"how": "object",
+"status": "pending",
+"notes": "A green sign on a post.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "entrance=elevator",
+"name": "Elevator (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=park",
+"name": "Park (historic)",
+"how": "area",
+"status": "n/a",
+"notes": "A park.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=wayside_shrine",
+"name": "Wayside shrine",
+"how": "object",
+"status": "pending",
+"notes": "A small roadside shrine.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "landuse=forest",
+"name": "Forest (landuse)",
+"how": "area",
+"status": "approved",
+"notes": "Trees planted per tile (the tree lab rules).",
+"seen": 2,
+"where": [
+"Rothenburg"
+],
+"object": "trees/spire-3"
+},
+{
+"tag": "landuse=railway",
+"name": "Railway (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 2,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "landuse=vineyard",
+"name": "Vineyard (landuse)",
+"how": "area",
+"status": "new",
+"notes": "Rows of vines planted in the area.",
+"seen": 2,
+"where": [
+"Rothenburg"
+],
+"object": "farm/vine"
+},
+{
+"tag": "leisure=sports_centre",
+"name": "Sports centre (leisure)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Swakopmund"
+]
+},
+{
+"tag": "man_made=watermill",
+"name": "Watermill (man made)",
+"how": "building",
+"status": "pending",
+"notes": "A mill with a wheel.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "natural=beach",
+"name": "Beach (natural)",
+"how": "area",
+"status": "n/a",
+"notes": "The app already colours this ground.",
+"seen": 2,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "playground=climbingframe",
+"name": "Climbingframe (playground)",
+"how": "object",
+"status": "approved",
+"notes": "A playground piece.",
+"seen": 2,
+"where": [
+"Rothenburg"
+],
+"object": "playground/climbingframe"
+},
+{
+"tag": "railway=abandoned",
+"name": "Abandoned (railway)",
+"how": "line",
+"status": "n/a",
+"notes": "Old track bed, usually gone.",
+"seen": 2,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "railway=facility",
+"name": "Facility (railway)",
+"how": "none",
+"status": "n/a",
+"notes": "A grouping, not a thing.",
+"seen": 2,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "railway=signal",
+"name": "Signal (railway)",
+"how": "object",
+"status": "pending",
+"notes": "A signal on a post.",
+"seen": 2,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "railway=station",
+"name": "Railway station",
+"how": "building",
+"status": "pending",
+"notes": "A station building.",
+"seen": 2,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "shop=beverages",
+"name": "Drinks",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=car_repair",
+"name": "Car repair",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Swakopmund",
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=coffee",
+"name": "Coffee",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=copyshop",
+"name": "Copy shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "shop=dry_cleaning",
+"name": "Dry cleaner",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Toronto"
+],
+"carto": "known"
+},
+{
+"tag": "shop=electronics",
+"name": "Electronics",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Toronto",
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=kiosk",
+"name": "Kiosk",
+"how": "object",
+"status": "pending",
+"notes": "A small stand-alone kiosk.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "shop=musical_instrument",
+"name": "Musical instruments",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=newsagent",
+"name": "Newsagent",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "shop=sewing",
+"name": "Sewing (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Hội An"
+]
+},
+{
+"tag": "shop=tattoo",
+"name": "Tattoo (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=telecommunication",
+"name": "Telecommunication (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 2,
+"where": [
+"Rothenburg",
+"Toronto"
+]
+},
+{
+"tag": "sport=multi",
+"name": "Multi (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 2,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "tourism=camp_site",
+"name": "Campsite",
+"how": "area",
+"status": "pending",
+"notes": "Tents scattered.",
+"seen": 2,
+"where": [
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "water=pond",
+"name": "Pond (water)",
+"how": "none",
+"status": "n/a",
+"notes": "Describes water, a bridge or a tunnel the app already draws.",
+"seen": 2,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "advertising=column",
+"name": "Column (advertising)",
+"how": "object",
+"status": "pending",
+"notes": "A billboard, board or advertising column.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "amenity=arts_centre",
+"name": "Arts centre",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=bus_station",
+"name": "Bus station",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=fixme",
+"name": "Fixme (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=hospital",
+"name": "Hospital",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=lost_property_office",
+"name": "Lost property office (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=luggage_locker",
+"name": "Luggage locker (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "A bank of lockers.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "amenity=motorcycle_rental",
+"name": "Motorcycle rental (amenity)",
+"how": "object",
+"status": "pending",
+"notes": "",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "amenity=music_school",
+"name": "Music school (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "amenity=nursing_home",
+"name": "Nursing home (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "amenity=police",
+"name": "Police station",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "amenity=private_club",
+"name": "Private club (amenity)",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "amenity=veterinary",
+"name": "Vet",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "artwork_type=bust",
+"name": "Bust (artwork type)",
+"how": "object",
+"status": "pending",
+"notes": "A generic figure or sculpture on a plinth.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "artwork_type=installation",
+"name": "Installation (artwork type)",
+"how": "object",
+"status": "pending",
+"notes": "A generic figure or sculpture on a plinth.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "artwork_type=painting",
+"name": "Painting (artwork type)",
+"how": "building",
+"status": "n/a",
+"notes": "A mural on a wall; needs pictures.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "attraction=river_rafting",
+"name": "River rafting (attraction)",
+"how": "area",
+"status": "pending",
+"notes": "A channel of water with boats.",
+"seen": 1,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "attraction=teacup",
+"name": "Teacup (attraction)",
+"how": "object",
+"status": "pending",
+"notes": "A ride with a recognisable shape (carousel, swing ride, teacups).",
+"seen": 1,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "attraction=yes",
+"name": "Attraction, unspecified",
+"how": "object",
+"status": "pending",
+"notes": "A ride with a recognisable shape (carousel, swing ride, teacups).",
+"seen": 1,
+"where": [
+"Efteling"
+]
+},
+{
+"tag": "barrier=block",
+"name": "Concrete block",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "barrier=yes",
+"name": "Barrier, unspecified",
+"how": "object",
+"status": "n/a",
+"notes": "Says only \"a barrier\".",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "building:part=church",
+"name": "Church (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=hotel",
+"name": "Hotel (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=house",
+"name": "House (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=residential",
+"name": "Residential (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building:part=retail",
+"name": "Retail (building part)",
+"how": "building",
+"status": "n/a",
+"notes": "Parts of buildings; the app's building system handles them.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "building=bunker",
+"name": "Bunker (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=carport",
+"name": "Carport (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=chapel",
+"name": "Chapel (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=industrial",
+"name": "Industrial (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=kiosk",
+"name": "Kiosk (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "building=tower",
+"name": "Tower (building)",
+"how": "building",
+"status": "n/a",
+"notes": "Already drawn by the app's buildings. The type could pick the look (a church, a shed, a greenhouse).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "craft=confectionery",
+"name": "Confectionery (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "craft=jeweller",
+"name": "Jeweller (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "craft=metal_construction",
+"name": "Metal construction (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "craft=photographer",
+"name": "Photographer (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "craft=shoemaker",
+"name": "Shoemaker (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "craft=silk_weaving",
+"name": "Silk weaving (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "craft=upholsterer",
+"name": "Upholsterer (craft)",
+"how": "building",
+"status": "pending",
+"notes": "A workshop front: sign, open door, goods outside (Hội An has 46 tailors).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "emergency=ambulance_station",
+"name": "Ambulance station (emergency)",
+"how": "building",
+"status": "pending",
+"notes": "A building with ambulance bays.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "emergency=phone",
+"name": "Emergency phone",
+"how": "object",
+"status": "pending",
+"notes": "An emergency phone on a post.",
+"seen": 1,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "entrance=gate",
+"name": "Gate (entrance)",
+"how": "building",
+"status": "pending",
+"notes": "A door on the wall where the map says (Rothenburg maps 994).",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "healthcare=centre",
+"name": "Centre (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "healthcare=clinic",
+"name": "Clinic (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "healthcare=hospital",
+"name": "Hospital (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "healthcare=occupational_therapist",
+"name": "Occupational therapist (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "healthcare=podiatrist",
+"name": "Podiatrist (healthcare)",
+"how": "none",
+"status": "n/a",
+"notes": "Repeats amenity= (pharmacy, doctors, dentist...); handled there.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=construction",
+"name": "Construction (highway)",
+"how": "none",
+"status": "n/a",
+"notes": "A road being built.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "highway=cycleway",
+"name": "Cycleway (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "highway=services",
+"name": "Services (highway)",
+"how": "area",
+"status": "n/a",
+"notes": "A service area; its buildings are drawn.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "highway=tertiary_link",
+"name": "Tertiary link (highway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app's roads already draw it.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "highway=trailhead",
+"name": "Trailhead (highway)",
+"how": "object",
+"status": "pending",
+"notes": "A trail sign and board.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "highway=turning_loop",
+"name": "Turning loop (highway)",
+"how": "none",
+"status": "n/a",
+"notes": "The road is already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=Q41425145",
+"name": "Q41425145 (historic)",
+"how": "none",
+"status": "n/a",
+"notes": "Not a standard value (a mapping slip).",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=castle",
+"name": "Castle",
+"how": "building",
+"status": "pending",
+"notes": "castle_type picks the look.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "page"
+},
+{
+"tag": "historic=castle_wall",
+"name": "Castle wall (historic)",
+"how": "line",
+"status": "pending",
+"notes": "A castle wall.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=chapel",
+"name": "Chapel (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=house",
+"name": "House (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "historic=prison",
+"name": "Prison (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=ruins",
+"name": "Ruins (historic)",
+"how": "object",
+"status": "n/a",
+"notes": "Too varied to draw generically.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=townhall",
+"name": "Townhall (historic)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "historic=vineyard",
+"name": "Vineyard (historic)",
+"how": "area",
+"status": "new",
+"notes": "Vines in rows.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"object": "farm/vine"
+},
+{
+"tag": "information=guidepost",
+"name": "Guidepost",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "information=tactile_model",
+"name": "Tactile model (information)",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "landuse=allotments",
+"name": "Allotments (landuse)",
+"how": "area",
+"status": "pending",
+"notes": "Small plots, sheds, fences.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "landuse=brownfield",
+"name": "Brownfield (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "landuse=construction",
+"name": "Construction (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "landuse=industrial",
+"name": "Industrial (landuse)",
+"how": "area",
+"status": "n/a",
+"notes": "Land use the app already colours.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "leisure=barefoot",
+"name": "Barefoot (leisure)",
+"how": "line",
+"status": "n/a",
+"notes": "A barefoot path; nothing special to see.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "leisure=bleachers",
+"name": "Bleachers (leisure)",
+"how": "object",
+"status": "pending",
+"notes": "Rows of seats.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "leisure=bowling_alley",
+"name": "Bowling centre",
+"how": "building",
+"status": "n/a",
+"notes": "A building.",
+"seen": 1,
+"where": [
+"Campbellford"
+],
+"carto": "page"
+},
+{
+"tag": "leisure=resort",
+"name": "Resort (leisure)",
+"how": "area",
+"status": "n/a",
+"notes": "Its buildings are drawn.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "leisure=sports_hall",
+"name": "Sports hall (leisure)",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "leisure=stadium",
+"name": "Stadium (leisure)",
+"how": "building",
+"status": "n/a",
+"notes": "Its building is drawn; Rogers Centre is a landmark.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "leisure=track",
+"name": "Track (leisure)",
+"how": "area",
+"status": "pending",
+"notes": "A running track.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=adit",
+"name": "Adit (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A tunnel mouth in a hillside.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=cellar_entrance",
+"name": "Cellar entrance (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A sloping door.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=flagpole",
+"name": "Flagpole (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A flagpole with a flag.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "man_made=fountain",
+"name": "Fountain (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A fountain.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=insect_hotel",
+"name": "Insect hotel (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "Too small.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=lighthouse",
+"name": "Lighthouse",
+"how": "object",
+"status": "pending",
+"notes": "A lighthouse.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "man_made=pier",
+"name": "Pier (man made)",
+"how": "line",
+"status": "pending",
+"notes": "A deck on posts over the water.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "man_made=survey_point",
+"name": "Survey point (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "A marker in the ground: too small.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=ventilation_shaft",
+"name": "Ventilation shaft (man made)",
+"how": "object",
+"status": "pending",
+"notes": "A vent box or grille.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=water_tap",
+"name": "Water tap (man made)",
+"how": "object",
+"status": "n/a",
+"notes": "Too small.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "man_made=water_works",
+"name": "Water works (man made)",
+"how": "building",
+"status": "n/a",
+"notes": "Buildings already drawn.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "man_made=works",
+"name": "Works (man made)",
+"how": "area",
+"status": "n/a",
+"notes": "A factory; its buildings are drawn.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "memorial=statue",
+"name": "Statue",
+"how": "object",
+"status": "pending",
+"notes": "A memorial: stone, stele, statue or monument.",
+"seen": 1,
+"where": [
+"Toronto"
+],
+"carto": "page"
+},
+{
+"tag": "military=bunker",
+"name": "Bunker (military)",
+"how": "object",
+"status": "pending",
+"notes": "A concrete bunker.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "natural=bare_rock",
+"name": "Bare rock (natural)",
+"how": "area",
+"status": "n/a",
+"notes": "The app already colours this ground.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "natural=coastline",
+"name": "Coastline (natural)",
+"how": "area",
+"status": "n/a",
+"notes": "The app already colours this ground.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "natural=grassland",
+"name": "Grassland (natural)",
+"how": "area",
+"status": "n/a",
+"notes": "The app already colours this ground.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "natural=tree_stump",
+"name": "Tree stump (natural)",
+"how": "object",
+"status": "n/a",
+"notes": "Too small to matter.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "natural=yes",
+"name": "Natural, unspecified",
+"how": "none",
+"status": "n/a",
+"notes": "Says only \"natural\".",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "office=consulting",
+"name": "Consulting (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "office=educational_institution",
+"name": "Educational institution (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "office=financial_advisor",
+"name": "Financial advisor (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=guide",
+"name": "Guide (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "office=healthcare",
+"name": "Healthcare (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "office=it",
+"name": "It (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=ngo",
+"name": "Ngo (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=religion",
+"name": "Religion (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=security",
+"name": "Security (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "office=tax",
+"name": "Tax (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "office=tax_advisor",
+"name": "Tax advisor (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=therapist",
+"name": "Therapist (office)",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "office=yes",
+"name": "Office, unspecified",
+"how": "building",
+"status": "n/a",
+"notes": "Offices look like any other building; a name plate at most.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "playground=balancebeam",
+"name": "Balancebeam (playground)",
+"how": "object",
+"status": "pending",
+"notes": "A playground piece.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "playground=sandpit",
+"name": "Sandpit (playground)",
+"how": "object",
+"status": "approved",
+"notes": "A playground piece.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"object": "playground/sandpit"
+},
+{
+"tag": "playground=spinning_disc",
+"name": "Spinning disc (playground)",
+"how": "object",
+"status": "pending",
+"notes": "A playground piece.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "playground=water_stream",
+"name": "Water stream (playground)",
+"how": "area",
+"status": "pending",
+"notes": "Water play: a channel and pump.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "power=cable",
+"name": "Cable (power)",
+"how": "none",
+"status": "n/a",
+"notes": "Underground.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=boutique",
+"name": "Boutique (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "shop=butcher",
+"name": "Butcher",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "shop=cannabis",
+"name": "Cannabis (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=car",
+"name": "Car dealer",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "page"
+},
+{
+"tag": "shop=communication",
+"name": "Communication (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "shop=convenience and toys",
+"name": "Convenience and toys (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=craft",
+"name": "Craft (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "shop=farm",
+"name": "Farm (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "shop=fashion_accessories",
+"name": "Fashion accessories (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=frozen_food",
+"name": "Frozen food (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "shop=funeral_directors",
+"name": "Funeral home",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Campbellford"
+],
+"carto": "known"
+},
+{
+"tag": "shop=glaziery",
+"name": "Glaziery (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=hardware",
+"name": "Hardware store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=houseware",
+"name": "Housewares",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=interior_decoration",
+"name": "Interior decoration",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Campbellford"
+],
+"carto": "known"
+},
+{
+"tag": "shop=laundry",
+"name": "Laundry",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=lighting",
+"name": "Lighting (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "shop=locksmith",
+"name": "Locksmith (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=medical_supply",
+"name": "Medical supplies",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "shop=motorcycle",
+"name": "Motorcycles",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=number_plate",
+"name": "Number plate (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=outdoor",
+"name": "Outdoor gear",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=pastry",
+"name": "Pastry (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=pet",
+"name": "Pet shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Campbellford"
+],
+"carto": "known"
+},
+{
+"tag": "shop=photo",
+"name": "Photo shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=pottery",
+"name": "Pottery (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+]
+},
+{
+"tag": "shop=rental",
+"name": "Rental (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "shop=repair",
+"name": "Repair (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "shop=second_hand",
+"name": "Second-hand",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=shoe_repair",
+"name": "Shoe repair (shop)",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "shop=tea",
+"name": "Tea",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "shop=tobacco",
+"name": "Tobacco",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Hội An"
+],
+"carto": "known"
+},
+{
+"tag": "shop=video",
+"name": "Video",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 1,
+"where": [
+"Swakopmund"
+],
+"carto": "known"
+},
+{
+"tag": "shop=yes",
+"name": "Shop, unspecified",
+"how": "building",
+"status": "n/a",
+"notes": "Says only \"a shop\"; the general shopfront covers it.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "sport=billiards",
+"name": "Billiards (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "sport=handball",
+"name": "Handball (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "sport=hockey",
+"name": "Hockey (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "sport=running",
+"name": "Running (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "sport=skateboard",
+"name": "Skateboard (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "sport=table_tennis",
+"name": "Table tennis (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "sport=yoga",
+"name": "Yoga (sport)",
+"how": "none",
+"status": "n/a",
+"notes": "Says what is played, not a thing to draw; the pitch comes from leisure=pitch.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "telecom=data_center",
+"name": "Data center (telecom)",
+"how": "building",
+"status": "n/a",
+"notes": "A building the app already draws.",
+"seen": 1,
+"where": [
+"Toronto"
+]
+},
+{
+"tag": "tourism=chalet",
+"name": "Chalet",
+"how": "building",
+"status": "n/a",
+"notes": "A building already drawn.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "tourism=motel",
+"name": "Motel",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building (hotel, museum, gallery).",
+"seen": 1,
+"where": [
+"Campbellford"
+],
+"carto": "page"
+},
+{
+"tag": "tourism=picnic_site",
+"name": "Picnic site",
+"how": "area",
+"status": "pending",
+"notes": "Picnic tables.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "tourism=yes",
+"name": "Tourism, unspecified",
+"how": "none",
+"status": "n/a",
+"notes": "Says only \"tourism\".",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "tourism=zoo",
+"name": "Zoo (tourism)",
+"how": "area",
+"status": "n/a",
+"notes": "Its enclosures and buildings are drawn.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "tower:type=monument",
+"name": "Monument (tower type)",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 1,
+"where": [
+"Swakopmund"
+]
+},
+{
+"tag": "tower:type=observation",
+"name": "Observation tower",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "known"
+},
+{
+"tag": "tower:type=staircase",
+"name": "Staircase (tower type)",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "vending=food",
+"name": "Food (vending)",
+"how": "object",
+"status": "pending",
+"notes": "A machine on a post or against a wall.",
+"seen": 1,
+"where": [
+"Rothenburg"
+]
+},
+{
+"tag": "waterway=canal",
+"name": "Canal (waterway)",
+"how": "line",
+"status": "n/a",
+"notes": "The app already draws water.",
+"seen": 1,
+"where": [
+"Campbellford"
+]
+},
+{
+"tag": "waterway=weir",
+"name": "Weir",
+"how": "line",
+"status": "pending",
+"notes": "A low weir across the water.",
+"seen": 1,
+"where": [
+"Rothenburg"
+],
+"carto": "page"
+},
+{
+"tag": "aerialway=station",
+"name": "Cable car station",
+"how": "object",
+"status": "pending",
+"notes": "A cable car station.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "aeroway=aerodrome",
+"name": "Airport",
+"how": "area",
+"status": "n/a",
+"notes": "An airport; its runways are already drawn.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "aeroway=helipad",
+"name": "Helipad",
+"how": "object",
+"status": "pending",
+"notes": "A painted H on a pad.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=bbq",
+"name": "Barbecue",
+"how": "object",
+"status": "pending",
+"notes": "A barbecue grill.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=boat_rental",
+"name": "Boat rental",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=casino",
+"name": "Casino",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=ferry_terminal",
+"name": "Ferry terminal",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=internet_cafe",
+"name": "Internet cafe",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=nightclub",
+"name": "Nightclub",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=parcel_locker",
+"name": "Parcel locker",
+"how": "object",
+"status": "pending",
+"notes": "A bank of parcel lockers.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=prison",
+"name": "Prison",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=public_bath",
+"name": "Public bath",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building, by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=public_bookcase",
+"name": "Public bookcase",
+"how": "object",
+"status": "pending",
+"notes": "A small book cabinet.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=shower",
+"name": "Shower",
+"how": "object",
+"status": "pending",
+"notes": "An outdoor shower.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "amenity=waste_disposal",
+"name": "Waste disposal bin",
+"how": "object",
+"status": "pending",
+"notes": "A big bin.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=cattle_grid",
+"name": "Cattle grid",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=cycle_barrier",
+"name": "Cycle barrier",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=full-height_turnstile",
+"name": "Full-height turnstile",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=kissing_gate",
+"name": "Kissing gate",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=log",
+"name": "Log barrier",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=motorcycle_barrier",
+"name": "Motorcycle barrier",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=stile",
+"name": "Stile",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=swing_gate",
+"name": "Swing gate",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=toll_booth",
+"name": "Toll booth",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "barrier=turnstile",
+"name": "Turnstile",
+"how": "object",
+"status": "pending",
+"notes": "A barrier piece at the point.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "castle_type=defensive",
+"name": "Defensive castle, fortress",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a historic=castle.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "castle_type=palace",
+"name": "Palace, stately home",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a historic=castle.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "diplomatic=consulate",
+"name": "Consulate",
+"how": "building",
+"status": "pending",
+"notes": "A flag on a pole at the door.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "diplomatic=embassy",
+"name": "Embassy",
+"how": "building",
+"status": "pending",
+"notes": "A flag on a pole at the door.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "ford=stepping_stones",
+"name": "Stepping stones",
+"how": "object",
+"status": "pending",
+"notes": "Water across the road; stepping stones for the second.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "ford=yes",
+"name": "Ford",
+"how": "object",
+"status": "pending",
+"notes": "Water across the road; stepping stones for the second.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "golf=pin",
+"name": "Golf hole flag",
+"how": "object",
+"status": "pending",
+"notes": "A flag on a pin.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "highway=mini_roundabout",
+"name": "Mini roundabout",
+"how": "object",
+"status": "pending",
+"notes": "A painted or low raised circle.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "historic=archaeological_site",
+"name": "Archaeological site",
+"how": "none",
+"status": "n/a",
+"notes": "Often nothing visible.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "historic=fort",
+"name": "Fort",
+"how": "building",
+"status": "pending",
+"notes": "A fort.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "historic=manor",
+"name": "Manor house",
+"how": "building",
+"status": "pending",
+"notes": "A manor house.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "information=audioguide",
+"name": "Audioguide",
+"how": "object",
+"status": "n/a",
+"notes": "A small sign with a number; nothing to see.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "information=tactile_map",
+"name": "Tactile map",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "information=terminal",
+"name": "Information terminal",
+"how": "object",
+"status": "pending",
+"notes": "A board, map board, signpost or terminal.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=amusement_arcade",
+"name": "Amusement arcade",
+"how": "building",
+"status": "pending",
+"notes": "A sign on the building.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=beach_resort",
+"name": "Managed beach",
+"how": "area",
+"status": "pending",
+"notes": "Umbrellas and loungers.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=bird_hide",
+"name": "Bird hide",
+"how": "object",
+"status": "pending",
+"notes": "A small wooden hide.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=dance",
+"name": "Dance hall",
+"how": "building",
+"status": "n/a",
+"notes": "A building.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=dog_park",
+"name": "Dog park",
+"how": "area",
+"status": "pending",
+"notes": "A fenced field.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=firepit",
+"name": "Fire pit",
+"how": "object",
+"status": "pending",
+"notes": "A ring of stones.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=fishing",
+"name": "Fishing spot",
+"how": "none",
+"status": "n/a",
+"notes": "A spot, nothing built.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=golf_course",
+"name": "Golf course",
+"how": "area",
+"status": "pending",
+"notes": "Fairways, greens, flags.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=miniature_golf",
+"name": "Miniature golf",
+"how": "area",
+"status": "pending",
+"notes": "Small greens and obstacles.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=sauna",
+"name": "Sauna",
+"how": "building",
+"status": "n/a",
+"notes": "A building.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=slipway",
+"name": "Boat slipway",
+"how": "object",
+"status": "pending",
+"notes": "A ramp into the water.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=swimming_area",
+"name": "Swimming area",
+"how": "area",
+"status": "n/a",
+"notes": "Water already drawn.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "leisure=water_park",
+"name": "Water park",
+"how": "area",
+"status": "pending",
+"notes": "Pools and slides.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "man_made=chimney",
+"name": "Chimney",
+"how": "object",
+"status": "pending",
+"notes": "A chimney (the Hearn stacks).",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=communications_tower",
+"name": "Tall communications tower",
+"how": "object",
+"status": "pending",
+"notes": "A tall concrete tower; landmarks cover the famous ones.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=crane",
+"name": "Crane",
+"how": "object",
+"status": "pending",
+"notes": "A crane.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=cross",
+"name": "Cross",
+"how": "object",
+"status": "pending",
+"notes": "A cross, often on a summit.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=mast",
+"name": "Mast",
+"how": "object",
+"status": "pending",
+"notes": "A lattice mast.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=obelisk",
+"name": "Obelisk",
+"how": "object",
+"status": "pending",
+"notes": "An obelisk.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "man_made=silo",
+"name": "Silo",
+"how": "object",
+"status": "pending",
+"notes": "A silo.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=storage_tank",
+"name": "Storage tank",
+"how": "object",
+"status": "pending",
+"notes": "A round tank.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=telescope",
+"name": "Telescope",
+"how": "object",
+"status": "pending",
+"notes": "A dish or dome.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=water_tower",
+"name": "Water tower",
+"how": "object",
+"status": "pending",
+"notes": "A water tower.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "man_made=windmill",
+"name": "Windmill",
+"how": "object",
+"status": "pending",
+"notes": "A windmill.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "memorial=blue_plaque",
+"name": "Blue plaque",
+"how": "object",
+"status": "n/a",
+"notes": "A plaque on a wall: too small to matter beyond a few metres.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "memorial=bust",
+"name": "Bust",
+"how": "object",
+"status": "pending",
+"notes": "A memorial: stone, stele, statue or monument.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "memorial=stone",
+"name": "Memorial stone",
+"how": "object",
+"status": "pending",
+"notes": "A memorial: stone, stele, statue or monument.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "mountain_pass=yes",
+"name": "Mountain pass",
+"how": "none",
+"status": "n/a",
+"notes": "A point on a route; the ground already shows the pass.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "natural=cave_entrance",
+"name": "Cave entrance",
+"how": "object",
+"status": "pending",
+"notes": "A dark opening; needs the ground cut.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "natural=peak",
+"name": "Peak",
+"how": "object",
+"status": "pending",
+"notes": "A cairn or summit cross, or nothing.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "natural=saddle",
+"name": "Saddle",
+"how": "none",
+"status": "n/a",
+"notes": "The ground already shows it.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "natural=spring",
+"name": "Spring",
+"how": "object",
+"status": "n/a",
+"notes": "Usually nothing visible.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "natural=volcano",
+"name": "Volcano",
+"how": "none",
+"status": "n/a",
+"notes": "The ground already shows it.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "oneway=yes",
+"name": "One-way arrow",
+"how": "none",
+"status": "n/a",
+"notes": "An arrow on a map; nothing to see in the world.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "parking=lane",
+"name": "Parking lane",
+"how": "area",
+"status": "pending",
+"notes": "Parked cars along the kerb, later.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "parking=multi-storey",
+"name": "Multi-storey parking entrance",
+"how": "object",
+"status": "pending",
+"notes": "A ramp or doorway down into the garage.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "parking=street_side",
+"name": "Street-side parking",
+"how": "area",
+"status": "pending",
+"notes": "Parked cars along the kerb, later.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "parking=underground",
+"name": "Underground parking entrance",
+"how": "object",
+"status": "pending",
+"notes": "A ramp or doorway down into the garage.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "place=city",
+"name": "Place name",
+"how": "none",
+"status": "n/a",
+"notes": "A place name, not a thing.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "power=line",
+"name": "Power line",
+"how": "line",
+"status": "pending",
+"notes": "Wires slung between pylons.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "power=minor_line",
+"name": "Minor power line",
+"how": "line",
+"status": "pending",
+"notes": "Wires between poles.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "power=pole",
+"name": "Power pole",
+"how": "object",
+"status": "pending",
+"notes": "A wooden or concrete pole.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "power=substation",
+"name": "Substation",
+"how": "area",
+"status": "pending",
+"notes": "A fenced yard of equipment.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "power=tower",
+"name": "Power pylon",
+"how": "object",
+"status": "pending",
+"notes": "A steel pylon.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "railway=crossing",
+"name": "Rail crossing for people",
+"how": "object",
+"status": "pending",
+"notes": "A path crossing the rails, with gates.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "railway=halt",
+"name": "Railway halt",
+"how": "object",
+"status": "pending",
+"notes": "A short platform with a sign.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "railway=level_crossing",
+"name": "Level crossing",
+"how": "object",
+"status": "pending",
+"notes": "Barriers, lights and signs at a road crossing.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=buddhist",
+"name": "Buddhist temple",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=christian",
+"name": "Church",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=hindu",
+"name": "Hindu temple",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=jewish",
+"name": "Synagogue",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=muslim",
+"name": "Mosque",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=shinto",
+"name": "Shinto shrine",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=sikh",
+"name": "Gurdwara",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "religion=taoist",
+"name": "Taoist temple",
+"how": "building",
+"status": "pending",
+"notes": "Picks the look of a place of worship: spire, dome, pagoda roof, torii gate.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "shop=bed",
+"name": "Beds",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=bicycle",
+"name": "Bicycle shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=bookmaker",
+"name": "Betting shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=car_parts",
+"name": "Car parts",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=carpet",
+"name": "Carpets",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=charity",
+"name": "Charity shop",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=chemist",
+"name": "Chemist",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=computer",
+"name": "Computers",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=dairy",
+"name": "Dairy",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=deli",
+"name": "Deli",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=doityourself",
+"name": "Hardware store",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "shop=frame",
+"name": "Picture framing",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=garden_centre",
+"name": "Garden centre",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=greengrocer",
+"name": "Greengrocer",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=hifi",
+"name": "Hi-fi",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=music",
+"name": "Music",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=paint",
+"name": "Paint",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=perfumery",
+"name": "Perfume",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=seafood",
+"name": "Fishmonger",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=tyres",
+"name": "Tyres",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "shop=video_games",
+"name": "Video games",
+"how": "building",
+"status": "pending",
+"notes": "Shopfront: a sign and awning on its building, picked by type.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "tourism=alpine_hut",
+"name": "Alpine hut",
+"how": "object",
+"status": "pending",
+"notes": "A small mountain hut.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "tourism=caravan_site",
+"name": "Caravan park",
+"how": "area",
+"status": "pending",
+"notes": "Caravans in rows.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "tourism=wilderness_hut",
+"name": "Wilderness hut",
+"how": "object",
+"status": "pending",
+"notes": "A small cabin.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "tower:type=communication",
+"name": "Communication tower",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "tower:type=cooling",
+"name": "Cooling tower",
+"how": "object",
+"status": "pending",
+"notes": "Picks the look of a man_made=tower.",
+"seen": 0,
+"where": [],
+"carto": "known"
+},
+{
+"tag": "waterway=dam",
+"name": "Dam",
+"how": "line",
+"status": "pending",
+"notes": "A dam wall.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "waterway=lock_gate",
+"name": "Lock gate",
+"how": "object",
+"status": "pending",
+"notes": "Lock gates.",
+"seen": 0,
+"where": [],
+"carto": "page"
+},
+{
+"tag": "waterway=waterfall",
+"name": "Waterfall",
+"how": "object",
+"status": "pending",
+"notes": "A waterfall; needs the water model first.",
+"seen": 0,
+"where": [],
+"carto": "page"
+}
+]

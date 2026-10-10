@@ -272,8 +272,8 @@
      "name": "Spreading (old oak, acacia)",
      "osm": "natural=tree, leaf_type=broadleaved",
      "stage": "far away",
-     "status": "check",
-     "notes": "Started again: worked out from the mature shape (trunk, two limbs, three clumps, each made simple)."
+     "status": "approved",
+     "notes": ""
     },
     {
      "id": "feather-1",

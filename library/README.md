@@ -12,6 +12,7 @@ status. The landmarks are listed there too (they live in `landmarks/`).
 | `index.json` | the list: every object, its set, name, stage, map tag, status, notes |
 | `<set>/build.mjs` | makes the set's shapes; exports `build()` returning `{ id: Mesh }` |
 | `<set>/models.json` | the shapes. Generated: do not edit by hand |
+| `tags.json` | every map tag seen in six sample towns or on OpenStreetMap's symbol list: how it would be drawn, a status (`n/a` = recommended against, reason in the notes), and its library object once one exists |
 | `shapes.mjs` | building blocks shared by the sets (rings, cones, clumps, fronds) |
 
 Each model in `models.json` has the same form as a landmark's `model.json`:
