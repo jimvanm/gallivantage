@@ -53,7 +53,7 @@ export const STYLES=[
     [m=>featherSeedling(m)],[m=>featherPalm(m,0,0,12)],[m=>featherPalm(m,3,.3,14)],[m=>featherPalm(m,14,1.6,14)]],
    far(m){stem(m,[[0,0,0],[.04,.45,0],[.12,.85,0]],[.025,.02,.018],3,COCO_BARK[0]);for(let k=0;k<6;k++)fronds(m,[.12,.86,0],1,.5*(1+.22*jr()),.16+.14*jr(),.08,FROND_D,FROND_L,k*1.05+.45*jr(),1)}},   // six fronds, each its own angle, length and droop
   {key:"fan",name:"Fan palm",like:"Washingtonia",conifer:false,stages:[
-    [m=>fanCrown(m,[0,.05,0],4,.4,.35,.6)],[m=>fanPalm(m,0,0,12)],[m=>fanPalm(m,4,3.4,20)],[m=>fanPalm(m,18,4,22)]],
+    [m=>fanCrown(m,[0,.05,0],4,.45,.35,.7,true)],[m=>fanPalm(m,0,0,12)],[m=>fanPalm(m,4,3.4,20)],[m=>fanPalm(m,18,4,22)]],
    far(m){stem(m,[[0,0,0],[0,.8,0]],[.03,.02],3,FAN_BARK);const A=ring(m,0,.86,0,.12,5,0,SKIRT),B=ring(m,0,.68,0,.06,5,.4,SKIRT);band(m,A,B);pad(m,0,.88,0,.5,.12,.5,FAN_L,FAN_D,0,.2)}},
 ];
 

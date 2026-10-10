@@ -156,15 +156,16 @@ export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   for(let i=0;i<K;i++)m.idx.push(pc,rim[i],rim[i+1]);
 }
 export function fanCrown(m,top,n,stalk,R,low,flat=false){
+  const high=low>.5?1.45:1.2;   // a young palm holds its youngest leaves almost straight up
   for(let k=0;k<n;k++){const t=n>1?k/(n-1):0;
-    fanLeaf(m,top,k*2.399+.2*jr(),1.2-(1.2-low)*t,stalk*(1+.1*jr()),R*(1+.08*jr()),mixc(FAN_L,FAN_D,.5+.3*t),mixc(FAN_L,[96,132,60],t),flat)}
+    fanLeaf(m,top,k*2.399+.2*jr(),high-(high-low)*t,stalk*(1+.1*jr()),R*(1+.08*jr()),mixc(FAN_L,FAN_D,.5+.3*t),mixc(FAN_L,[96,132,60],t),flat)}
 }
 // Tall slim trunk, flared at the foot; a tight skirt of dead leaves hanging right under the crown.
 export function fanPalm(m,T,skirt,n){
   if(T>0){stem(m,[[0,0,0],[0,.6,0],[0,T*.5,0],[0,T,0]],[.46,.33,.27,.22],6,FAN_BARK);
     if(skirt>0){const A=ring(m,0,T+.15,0,.8,8,0,[150,122,82],.1),B=ring(m,0,T-skirt*.55,0,.62,8,.2,SKIRT,.12),C=ring(m,0,T-skirt,0,.42,8,.4,[96,74,48],.1);
       C.forEach((id,k)=>{m.pos[id*3+1]+=(k%2?.35:-.15)});band(m,A,B);band(m,B,C)}}
-  fanCrown(m,[0,Math.max(T,.25)+.3,0],n,T>0?1.1:1.5,1.15,-.75,T>0);   // trunked palms have flat leaves
+  fanCrown(m,[0,Math.max(T,.25)+.3,0],n,T>0?1.1:1.6,1.15,T>0?-.75:.8,true);   // flat finger leaves; a young palm holds them up on long stalks
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);
 }
 
