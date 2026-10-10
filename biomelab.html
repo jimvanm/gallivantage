@@ -90,8 +90,8 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
       <label class="check"><input type="checkbox" id="show-trees" checked> Trees</label>
       <label class="check"><input type="checkbox" id="show-vines" checked> Vines</label>
       <label class="check"><input type="checkbox" id="show-canopy" checked> Distant forest as a canopy on the ground</label>
-      <div class="row" style="margin-top:8px"><label for="fade">Canopy comes in from</label><output id="fade-o"></output></div>
-      <input type="range" id="fade" min="0.2" max="0.95" step="0.05" value="0.6">
+      <div class="row" style="margin-top:8px"><label for="fade">Trees thin out into the canopy from</label><output id="fade-o"></output></div>
+      <input type="range" id="fade" min="0.05" max="0.95" step="0.05" value="0.35">
       <div class="row" style="margin-top:8px"><label for="range">Trees drawn within</label><output id="range-o"></output></div>
       <input type="range" id="range" min="500" max="6000" step="100" value="2500">
       <div class="row"><label for="near">Detailed shape within</label><output id="near-o"></output></div>
@@ -174,12 +174,18 @@ void main(){ vec3 n=cross(dFdx(vRel),dFdy(vRel)); float l=length(n); n=l>1e-9?n/
   o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),1.0); }`;
 const TP = prog(`#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
-uniform mat4 uVP; uniform vec3 uEye; uniform float uRange; uniform float uShear; out vec3 vRel; out vec3 vCol;
+uniform mat4 uVP; uniform vec3 uEye; uniform float uRange; uniform float uShear; uniform float uFade0; out vec3 vRel; out vec3 vCol;
+// A fixed number 0..1 for each spot, from its position (no random numbers: it never changes).
+float spot(vec2 q){ vec3 p3=fract(vec3(q.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
 void main(){ float h=iSize.x*0.01,w=iSize.y*0.01,a=iMisc.x*6.2831853,c=cos(a),s=sin(a);
   vec3 p=aPos*vec3(w,h,w);
   p.y+=p.x*(iMisc.z*2.0-1.0)*uShear;
   p=vec3(p.x*c-p.z*s,p.y,p.x*s+p.z*c);
-  p*=clamp((uRange-distance(iPos.xz,uEye.xz))/(uRange*0.08),0.0,1.0);
+  // Trees do not all end at one distance: each has its own end, somewhere between uFade0 of the range and the
+  // range itself, so the forest thins out gradually instead of stopping at a ring that moves with you.
+  // Vine rows (uShear 1) keep one end for the whole row.
+  float d=distance(iPos.xz,uEye.xz), end=uShear>0.5?uRange:uRange*(uFade0+(1.0-uFade0)*spot(floor(iPos.xz*4.0)));
+  p*=clamp((end-d)/(uRange*0.04),0.0,1.0);
   vec3 wp=iPos+p; vRel=wp-uEye; vec3 col=aCol*(0.8+0.4*iMisc.y); vCol=mix(col,col*vec3(1.15,1.08,0.7),iMisc.z*0.6*(1.0-uShear));
   gl_Position=uVP*vec4(wp,1.0); }`, FS);
 const GP = prog(`#version 300 es
@@ -187,7 +193,8 @@ layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(locatio
 uniform mat4 uVP; uniform vec3 uEye; uniform float uRange,uFade0,uCanopy; out vec3 vRel; out vec3 vCol;
 // Far away, where the rules say forest, the ground becomes the forest's canopy: it rises by the trees' height and
 // takes their colour, coming in from uFade0 of the tree range and complete at its end, where the real trees have gone.
-void main(){ float t=smoothstep(uRange*uFade0,uRange,distance(aPos.xz,uEye.xz))*aCan.a*uCanopy;
+// It rises in step with the trees thinning out (the share of trees gone at this distance), so the forest looks the same throughout.
+void main(){ float t=clamp((distance(aPos.xz,uEye.xz)/uRange-uFade0)/(1.0-uFade0),0.0,1.0)*aCan.a*uCanopy;
   vec3 p=aPos; p.y+=aCanH*t; vRel=p-uEye; vCol=mix(aCol,aCan.rgb,t); gl_Position=uVP*vec4(p,1.0); }`, FS);
 const U = (n) => ({ t: gl.getUniformLocation(TP, n), g: gl.getUniformLocation(GP, n) });
 const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear', 'uFade0', 'uCanopy'].map((n) => [n, U(n)]));
@@ -379,10 +386,11 @@ function colourGround() {
     if (s.mix && s.density > 0) {
       const rgb = [0, 0, 0]; let H = 0;
       s.mix.forEach((m, ki) => { if (m) { for (let q = 0; q < 3; q++) rgb[q] += m * KIND_FAR[ki].rgb[q]; H += m * KIND_FAR[ki].H; } });
-      const sp = 0.72 + 0.4 * speckle(i, j);
-      for (let q = 0; q < 3; q++) can[k * 4 + q] = Math.min(255, rgb[q] * sp * 0.9);
+      // lit crowns average about their own colour; speckle it brighter and darker, crown by crown
+      const sp = 0.78 + 0.42 * speckle(i, j);
+      for (let q = 0; q < 3; q++) can[k * 4 + q] = Math.min(255, rgb[q] * sp);
       can[k * 4 + 3] = Math.round(255 * Math.min(1, s.density * 0.9));
-      canH[k] = H * s.size * 0.75;
+      canH[k] = H * s.size * (0.45 + 0.6 * speckle(j + 7919, i));   // bumpy, like a field of crowns
     }
   }
   return { col, can, canH };
@@ -436,7 +444,7 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.6 };
+const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35 };
 const live = new Map();         // key -> { cx, cz, rad, n, u8 }   (trees of one tile, or vines of one parcel)
 let queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
 function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; lastWant = null; }
@@ -673,7 +681,7 @@ function frame(now) {
   want(eye); makeSome(6); rebuild(eye, cam.yaw, hfov, cam.pitch, now);
   const fog = Math.min(0.00012, 0.9 / Math.max(area.S * 2, agl * 2.5));
   gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
-  gl.useProgram(TP); gl.bindVertexArray(tvao); gl.uniformMatrix4fv(UN.uVP.t, false, vp); gl.uniform3fv(UN.uEye.t, eye); gl.uniform1f(UN.uRange.t, settings.range); gl.uniform3fv(UN.uSun.t, SUN); gl.uniform3fv(UN.uSky.t, SKY); gl.uniform1f(UN.uFog.t, fog);
+  gl.useProgram(TP); gl.bindVertexArray(tvao); gl.uniformMatrix4fv(UN.uVP.t, false, vp); gl.uniform3fv(UN.uEye.t, eye); gl.uniform1f(UN.uRange.t, settings.range); gl.uniform1f(UN.uFade0.t, settings.fade); gl.uniform3fv(UN.uSun.t, SUN); gl.uniform3fv(UN.uSky.t, SKY); gl.uniform1f(UN.uFog.t, fog);
   gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); calls = 0; tris = 0;
   for (let k = 0; k < NB; k++) {
     const n = lists.count[k]; if (!n) continue; const o = lists.start[k] * 20;
