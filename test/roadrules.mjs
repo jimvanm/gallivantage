@@ -214,6 +214,25 @@ function world(extra, lines) {
   ok('a road over water is a bridge, at any height, and its banks are not flagged');
 }
 
+// ---- piers -------------------------------------------------------------------------------------
+{
+  // A secondary road on a long, high bridge over a divided motorway: piers
+  // every 30 m or so, but never on the motorway or its shoulders.
+  const { buildRoadShapes } = await import('../src/roadshape.js');
+  const { MeshBuilder } = await import('../src/meshbuilder.js');
+  const valley = (x, z) => 100 - 12 * Math.exp(-((z / 120) ** 2));      // the motorway runs along a valley floor
+  const rl = defaultRules();
+  const r = runAll([line([-800, -14, 800, -14], 'motorway', { oneway: true }), line([800, 14, -800, 14], 'motorway', { oneway: true }),
+    line([0, -400, 0, 400], 'secondary', { brunnel: 'bridge' })], [], valley, rl);
+  const cnt = buildRoadShapes(r.net, new MeshBuilder(), { which: 'prof', colour: 'plain', rules: rl });
+  const onSec = cnt.pierSpots.filter(([, , id]) => r.net.chains[id].kind === 'secondary');
+  assert.ok(onSec.length >= 3, 'the bridge has piers: ' + onSec.length);
+  const edge = 12 / 2 + rl.kinds.motorway.sh;          // a one-way motorway half and its shoulder
+  for (const [x, z] of onSec) for (const cz of [-14, 14]) assert.ok(Math.abs(z - cz) > edge, `pier at z ${z.toFixed(1)} stands on the motorway`);
+  assert.ok(cnt.piersMoved >= 1, 'a pier was moved off the motorway');
+  ok('bridge piers never stand on a road below; they move along to the side');
+}
+
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

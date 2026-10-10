@@ -31,7 +31,8 @@ export function ruleColour(r) {
 export function buildRoadShapes(net, mb, opt) {
   const { rules } = opt;
   const raw = opt.which === 'raw';
-  const counts = { decks: 0, piers: 0, tunnels: 0 };
+  const counts = { decks: 0, piers: 0, tunnels: 0, piersMoved: 0, pierSpots: [] };
+  const onRoad = raw ? null : drivableAt(net, rules);
   for (const c of net.chains) {
     const kind = rules.kinds[c.kind];
     const p = raw ? c.raw : c.prof;
@@ -116,7 +117,7 @@ export function buildRoadShapes(net, mb, opt) {
     let run = -1, sinceP = 0;
     for (let i = 0; i < n; i++) {
       const on = struct[i] === 1;
-      if (on && run < 0) { run = i; counts.decks++; sinceP = PIER_EVERY / 2; }
+      if (on && run < 0) { run = i; counts.decks++; sinceP = PIER_EVERY / 2; c._moved = false; }
       if (!on) { run = -1; continue; }
       if (i > run) {
         const a = i - 1;
@@ -137,12 +138,44 @@ export function buildRoadShapes(net, mb, opt) {
       }
       const ground = c.under ? c.under[i] : c.raw[i];
       if (sinceP >= PIER_EVERY && p[i] - DECK - ground > 2.5) {
-        sinceP = 0; counts.piers++;
+        // Never on a road, railway or path below: wait until clear of it
+        // (the next clear spot along the deck), so the span reaches across.
+        if (onRoad && onRoad(c.id, c.x[i], c.z[i], Math.max(hw * 0.55, 0.6) + 0.5, p[i] - DECK)) { if (!c._moved) { counts.piersMoved++; c._moved = true; } continue; }
+        c._moved = false;
+        sinceP = 0; counts.piers++; counts.pierSpots.push([c.x[i], c.z[i], c.id]);
         box(mb, c.x[i], c.z[i], lx[i], lz[i], hw * 0.55, 0.6, ground - 0.5, p[i] - DECK, pier);
       }
     }
   }
   return counts;
+}
+
+// Whether a spot (a pier r metres round) would stand on another road's
+// surface (with its shoulders) that lies below height y.
+function drivableAt(net, rules) {
+  const cell = 20, m = new Map(), key = (i, j) => i * 100003 + j;
+  for (const c of net.chains) {
+    if (!c.prof) continue;
+    const reach = c.width / 2 + (rules.kinds[c.kind].sh || 0);
+    for (let i = 0; i < c.n; i++) {
+      const k = key(Math.floor(c.x[i] / cell), Math.floor(c.z[i] / cell));
+      let a = m.get(k); if (!a) m.set(k, a = []);
+      a.push([c.id, c.x[i], c.z[i], c.prof[i], reach]);
+    }
+  }
+  const far = 40;
+  return (id, x, z, r, y) => {
+    for (let j = Math.floor((z - far) / cell); j <= Math.floor((z + far) / cell); j++) {
+      for (let i = Math.floor((x - far) / cell); i <= Math.floor((x + far) / cell); i++) {
+        const a = m.get(key(i, j)); if (!a) continue;
+        for (const [cid, sx, sz, h, reach] of a) {
+          if (cid === id || h > y - 1) continue;
+          if (Math.hypot(sx - x, sz - z) < reach + r + 1) return true;   // samples are 2 m apart: 1 m spare
+        }
+      }
+    }
+    return false;
+  };
 }
 
 // A box standing upright, its long side across the road (a pier).

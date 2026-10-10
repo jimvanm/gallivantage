@@ -588,7 +588,7 @@ function showStats() {
   const rows = [
     ['Roads and railways', `${fmt(net.chains.length)} (${fmt(len / 1000, 1)} km)`],
     ['Where roads cross', fmt(result.crossings.length)],
-    ['Bridge decks / piers', `${fmt(area.counts.decks)} / ${fmt(area.counts.piers)}`],
+    ['Bridge decks / piers', `${fmt(area.counts.decks)} / ${fmt(area.counts.piers)}` + (area.counts.piersMoved ? ` (${fmt(area.counts.piersMoved)} moved off a road)` : '')],
     ['Well over its rules, today', `${fmt(bad / 1000, 2)} km (${fmt(100 * bad / Math.max(1, len))}%)`],
     ['Well over its rules, engineered', `${fmt(badEng / 1000, 2)} km (${fmt(100 * badEng / Math.max(1, len), 1)}%)`],
     ['Ground from Canada\'s survey', `${fmt(100 * area.surveyed)}% of ${area.groundTiles} tiles`],

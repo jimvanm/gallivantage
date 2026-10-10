@@ -323,6 +323,16 @@ reasoning: the project's `ROADS-DRAFT.md`.
   (the banks) the road may leave the ground to reach it, unflagged.
 - Creeks: the road does not dip into them; it bridges them where it rides
   high enough.
+- **Bridge piers never stand on a road, railway or path below** (Jim,
+  10 October, 0.14.8). A pier that would is moved along the deck to the
+  first clear spot, so the span reaches across.
+- [ ] **A bridge can always be replaced by a landmark** (Jim, 10 October).
+      Famous bridges (the Golden Gate) as hand-built landmarks standing in
+      for the rules' plain deck. How they fit together: later.
+- [ ] Oddities in Jim's first real look (0.14.7): where the map's road line
+      runs off the real road beside a slope, the slope covers the road's
+      edge (the ground is truth, so the road cannot cut it); along a ramp,
+      tall grey roadbed walls down to the ground.
 - [ ] Tunnels: test somewhere tunnel-rich (the Welland Canal has one in
       Ontario). Cutting into the ground is not allowed until then.
 - [ ] Jim to look at the 407 at Brock Road and Campbellford with real data.
