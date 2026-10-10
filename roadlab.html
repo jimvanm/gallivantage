@@ -117,6 +117,10 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="row" style="margin-top:8px"><label for="sunTime">Time of day</label><output id="sunTime-o"></output></div>
       <input type="range" id="sunTime" min="6" max="20" step="0.25" value="15" aria-describedby="sunTime-o">
       <p class="note">Swings the sun from east to west. A low sun shows small bumps and dips best. Keys: - and = step it half an hour.</p>
+      <div class="row" style="margin-top:8px"><label for="relief">Shading strength</label><output id="relief-o"></output></div>
+      <input type="range" id="relief" min="1" max="8" step="0.5" value="1" aria-describedby="relief-o">
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="plainGround"> Plain ground colour (only the light shows its shape)</label>
+      <p class="note">Shading strength lights the ground as if it were that many times steeper, so small bumps show. Nothing moves; only the light changes.</p>
     </section>
 
     <section>
@@ -447,17 +451,19 @@ out vec3 vP; out vec3 vCol;
 void main() { vec3 p = aPos - uEye; vP = p; vCol = aCol.rgb; gl_Position = uVP * vec4(p, 1.0); }`;
 const FS = `#version 300 es
 precision highp float;
-in vec3 vP; in vec3 vCol; uniform vec3 uSun; uniform vec3 uSky; uniform float uAlpha; uniform float uAmb; out vec4 frag;
+in vec3 vP; in vec3 vCol; uniform vec3 uSun; uniform vec3 uSky; uniform float uAlpha; uniform float uAmb; uniform float uRelief; out vec4 frag;
 void main() {
   vec3 n = normalize(cross(dFdx(vP), dFdy(vP)));
   if (n.y < 0.0) n = -n;
+  // Shading strength: light the ground as if it were uRelief times steeper.
+  n = normalize(vec3(n.x * uRelief, n.y, n.z * uRelief));
   float lit = uAmb + (1.0 - uAmb) * max(dot(n, uSun), 0.0);
   vec3 c = vCol * lit;
   c = mix(c, uSky, 1.0 - exp(-length(vP) / 7000.0));
   frag = vec4(c, uAlpha);
 }`;
 const prog = program(gl, VS, FS);
-const U = uniforms(gl, prog, ['uVP', 'uEye', 'uSun', 'uSky', 'uAlpha', 'uAmb']);
+const U = uniforms(gl, prog, ['uVP', 'uEye', 'uSun', 'uSky', 'uAlpha', 'uAmb', 'uRelief']);
 const A_POS = gl.getAttribLocation(prog, 'aPos'), A_COL = gl.getAttribLocation(prog, 'aCol');
 const SKY = [0.73, 0.83, 0.91];
 
@@ -477,6 +483,7 @@ function free(m) { if (m) { gl.deleteVertexArray(m.vao); m.bufs.forEach((b) => g
 // the area's own range), the map's water blue. Both halves draw this same
 // ground: it is never changed.
 let gridIdx = null, gridIdxN = 0;
+let plainGround = false;
 function groundMesh(h) {
   const N = area.N, st = area.step;
   let lo = Infinity, hi = -Infinity;
@@ -486,7 +493,7 @@ function groundMesh(h) {
     const k = j * N + i;
     f[4 * k] = -area.S / 2 + i * st; f[4 * k + 1] = h[k]; f[4 * k + 2] = -area.S / 2 + j * st;
     const t = Math.max(0, Math.min(1, (h[k] - lo) / Math.max(10, hi - lo)));
-    let c = [92 + 70 * t, 128 - 14 * t, 72 + 6 * t];
+    let c = plainGround ? [128, 130, 104] : [92 + 70 * t, 128 - 14 * t, 72 + 6 * t];
     if (area.water[k]) c = [52, 92, 140];
     u[4 * k + 3] = rgba(c[0] | 0, c[1] | 0, c[2] | 0);
   }
@@ -650,6 +657,9 @@ function setSun() {
   $('sunTime-o').textContent = `${hh}:${String(mm).padStart(2, '0')} · sun ${Math.round(up)}° up, in the ${compass(az)}`;
 }
 $('sunTime').oninput = setSun; setSun();
+const showRelief = () => { $('relief-o').textContent = `× ${fmt($('relief').value, 1)}`; };
+$('relief').oninput = showRelief; showRelief();
+$('plainGround').onchange = () => { plainGround = $('plainGround').checked; if (area) { free(meshes.natGround); meshes.natGround = groundMesh(area.nat); } };
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
   if (e.key !== '-' && e.key !== '=') return;
@@ -779,8 +789,11 @@ function frame(now) {
   };
   gl.uniform1f(U.uAlpha, 1);
   const plainToday = $('colour').value === 'plain';
-  const left = () => { draw(meshes.natGround, true); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
-  const right = () => { draw(meshes.natGround, true); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
+  const relief = Number($('relief').value);
+  const ground = () => { gl.uniform1f(U.uRelief, relief); draw(meshes.natGround, true); gl.uniform1f(U.uRelief, 1); };
+  gl.uniform1f(U.uRelief, 1);
+  const left = () => { ground(); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
+  const right = () => { ground(); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
   const split = view === 'split';
   $('divider').style.display = $('tagL').style.display = $('tagR').style.display = split ? '' : 'none';
   if (split) {
