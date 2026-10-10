@@ -32,12 +32,11 @@ h1{margin:0;font-size:26px;letter-spacing:-.01em}
 .tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
-/* Each table scrolls inside its own box, so its column names stay in view. */
-.tablebox{overflow:auto;max-height:calc(100vh - 190px);background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.tablebox{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
 table{width:100%;border-collapse:collapse;font-size:14px;min-width:820px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
-th{font-size:12px;color:var(--muted);font-weight:700;background:var(--panel);position:sticky;top:0;z-index:1;box-shadow:inset 0 -1px 0 var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:700;background:var(--panel);position:sticky;top:0}
 td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .pic{width:96px;height:96px;border-radius:6px;background:var(--pic);display:block;cursor:zoom-in;border:0;padding:0}
 .pic img{width:96px;height:96px;display:block;border-radius:6px}
