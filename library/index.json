@@ -80,48 +80,48 @@
      "name": "Spire (spruce, fir)",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "far away",
-     "status": "pending",
-     "notes": "Waiting on the mountain: pines look wrong there; settle that first."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "pine-1",
      "name": "Pine",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "sapling",
-     "status": "pending",
-     "notes": "Waiting on the mountain: pines look wrong there; settle that first."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "pine-2",
      "name": "Pine",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "pole",
-     "status": "pending",
-     "notes": "Waiting on the mountain: pines look wrong there; settle that first."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "pine-3",
      "name": "Pine",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "mature",
-     "status": "pending",
-     "notes": "Waiting on the mountain: pines look wrong there; settle that first."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "pine-4",
      "name": "Pine",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "old",
-     "status": "pending",
-     "notes": "Waiting on the mountain: pines look wrong there; settle that first."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "pine-far",
      "name": "Pine",
      "osm": "natural=tree, leaf_type=needleleaved",
      "stage": "far away",
-     "status": "pending",
-     "notes": "Redone: darker grey-brown trunk, taller, rounder, narrower crown of two lumps. Still waiting on the mountain."
+     "status": "approved",
+     "notes": "Approved with the mountain, 9 Oct: good enough to set aside."
     },
     {
      "id": "column-1",
