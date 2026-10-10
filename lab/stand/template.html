@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Tree Stand</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +31,7 @@ canvas:active{cursor:grabbing}
 .speed{position:absolute;top:12px;right:12px;font:600 13px var(--mono);color:#14211b;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:4px;pointer-events:none}
 .hint span{background:rgba(255,255,255,.8);padding:3px 8px;border-radius:4px;display:inline-block}
 #busy[hidden]{display:none}
+[hidden]{display:none!important}
 #busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,30,25,.35);color:#fff;font:700 18px var(--body)}
 .panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;min-width:0;padding-block:20px 28px;padding-inline:20px;display:flex;flex-direction:column;gap:22px}
 h1{font-family:var(--display);font-size:26px;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em}
@@ -89,6 +91,7 @@ ul.how{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
       <div class="seg" role="group" aria-label="Scene">
         <button id="s-styles" aria-pressed="true">The styles</button>
         <button id="s-mtn" aria-pressed="false">The mountain</button>
+        <button id="s-vines" aria-pressed="false">Vineyard</button>
       </div>
     </section>
 
@@ -180,12 +183,13 @@ const STYLE_INFO=[["spire","Spire","Spruce, fir",true],["pine","Pine","Pine",tru
   ["oval","Tall oval","Poplar, birch",false],["spread","Spreading","Old oak, acacia",false],["feather","Feather palm","Coconut",false],["fan","Fan palm","Washingtonia",false],...(LIB.extra||[]).map(e=>[e.key,e.name,e.like,false])];
 const ALL={p:[],c:[],i:[]},SHAPES=[];
 // Every shape is scaled to unit height and width, so one shader stretches it to each tree's real size.
-function pack(id){const m=LIB.models[id];let H=0,W=0;for(let i=0;i<m.pos.length;i+=3){H=Math.max(H,m.pos[i+1]);W=Math.max(W,Math.abs(m.pos[i]),Math.abs(m.pos[i+2]))}W*=2;
+// ref: use another shape's size instead (a row piece's far shape must fill exactly the same metres as the near one).
+function pack(id,ref){const m=LIB.models[id];let H=0,W=0;for(let i=0;i<m.pos.length;i+=3){H=Math.max(H,m.pos[i+1]);W=Math.max(W,Math.abs(m.pos[i]),Math.abs(m.pos[i+2]))}W*=2;if(ref){H=ref.H;W=ref.W}
   const base=ALL.p.length/3,first=ALL.i.length;for(let i=0;i<m.pos.length;i+=3)ALL.p.push(m.pos[i]/W,m.pos[i+1]/H,m.pos[i+2]/W);ALL.c.push(...m.col);for(const x of m.idx)ALL.i.push(x+base);
   return{first,count:m.idx.length,tris:m.idx.length/3,H,W,lib:id}}
 const STYLES=STYLE_INFO.map(([key,name,like,conifer],si)=>{const s={key,name,like,conifer},ids=[];for(let i=1;LIB.models[`${key}-${i}`];i++)ids.push(`${key}-${i}`);
   s.shapes=ids.map(id=>{const sh=pack(id);sh.style=si;SHAPES.push(sh);sh.id=SHAPES.length-1;return sh});
-  const f=pack(`${key}-far`);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
+  const rowPiece=(LIB.extra||[]).some(e=>e.key===key&&e.vineyard)||key==="vpost",f=pack(`${key}-far`,rowPiece?s.shapes[s.shapes.length-1]:null);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
 // The far shapes also go in as ordinary shapes, so the rows can show them up close.
 STYLES.forEach((s,si)=>{const f=s.far;f.style=si;f.isFar=true;SHAPES.push(f);f.id=SHAPES.length-1});
 const NSH=SHAPES.length;
@@ -431,6 +435,28 @@ $("rows").onclick=e=>{const b=e.target.closest("button");if(!b||!T||!T.labels)re
 let labels=[];
 function setLabels(list){labels=(list||[]).map(l=>{const el=document.createElement("div");el.className="lbl"+(l.status&&l.status!=="approved"?" open":"");el.textContent=l.text;return{...l,el}});$("labels").replaceChildren(...labels.map(l=>l.el))}
 let plantMs=0;
+// ================= vineyard trials =================
+// One block per trial plot with a vineyard layout: 12 rows 2.6 m apart, 40 to 51 m long, along x.
+//   metre: one 1 m piece per metre (post built in). posts: 1 m vines, a post every 5 m, heavier posts at the ends.
+//   bays: one 5 m piece per 5 m (its post at the start), leftover metres filled with B's vine, heavier end posts.
+// The label gives triangles per 10 m of row, near and far (posts have no far shape).
+const BYLIB=Object.fromEntries(SHAPES.map(s=>[s.lib,s]));
+function plantVines(){
+  const blocks=(LIB.extra||[]).filter(e=>e.vineyard),items=[],labels=[],r=rng(77);
+  const ROWS=12,GAP=2.6,LANE=ROWS*GAP+22;
+  blocks.forEach((b,bi)=>{const z0=(bi-(blocks.length-1)/2)*LANE-(ROWS-1)*GAP/2,lay=b.vineyard.layout;let metres=0,near=0,far=0;
+    const put=(id,x,z)=>{const sh=BYLIB[id];if(!sh)return;items.push([sh,x,z]);near+=sh.tris;far+=STYLES[sh.style].farTris};
+    for(let row=0;row<ROWS;row++){const z=z0+row*GAP,L=40+row;metres+=L;
+      if(lay==="metre")for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);
+      if(lay==="posts"){for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);for(let x=5;x<L;x+=5)put("vpost-1",x,z);put("vpost-2",0,z);put("vpost-2",L,z)}
+      if(lay==="bays"){const nb=Math.floor(L/5);for(let k=0;k<nb;k++)put(`${b.key}-1`,k*5+2.5,z);for(let i=nb*5;i<L;i++)put("vineB-1",i+.5,z);
+        if(nb*5<L)put("vpost-1",nb*5,z);put("vpost-2",0,z);put("vpost-2",L,z)}}
+    labels.push({text:`${b.name} · ${Math.round(near/metres*10)} triangles per 10 m near, ${Math.round(far/metres*10)} far`,x:-3,y:3.5,z:z0+(ROWS-1)*GAP/2,status:"testing"})});
+  const D=allocTrees(items.length);
+  items.forEach(([sh,x,z],i)=>writeTree(D,i,x,0,z,sh.H,sh.W,0,118+r()*20,30+r()*20,sh.id));
+  D.n=items.length;const out=bucket(D);out.labels=labels;return out;
+}
+
 // Look at whatever is in the rows, close enough to judge it.
 function frameRows(){const L=T.labels;if(!L.length)return;const xs=L.map(l=>l.x),zs=L.map(l=>l.z),hs=L.map(l=>l.y);
   const w=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs),Math.max(...hs));
@@ -439,14 +465,16 @@ function plant(resetView){
   $("busy").hidden=false;
   setTimeout(()=>{const t0=performance.now();
     if(scene==="styles"){groundAt=()=>0;flatGround();T=plantStyles();setLabels(T.labels);frameRows()}
+    else if(scene==="vines"){groundAt=()=>0;flatGround();T=plantVines();setLabels(T.labels);frameRows()}
     else{if(!HGT)buildGrids();groundAt=(x,z)=>sample(HGT,x,z);mountainGround();T=plantMountain(+$("count").value);setLabels([]);if(resetView)setView("hill")}
     plantMs=performance.now()-t0;lastBuild=null;$("busy").hidden=true},30);
 }
-function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s==="styles"));$("s-mtn").setAttribute("aria-pressed",String(s==="mountain"));$("mtn-ctrls").hidden=s!=="mountain";$("rows").hidden=s!=="styles";
+function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s==="styles"));$("s-mtn").setAttribute("aria-pressed",String(s==="mountain"));$("s-vines").setAttribute("aria-pressed",String(s==="vines"));$("mtn-ctrls").hidden=s!=="mountain";$("rows").hidden=s!=="styles";
   if(s==="styles"){Object.assign(cam,{tx:-15,tz:0,yaw:.75,pitch:.3,dist:170});settings.range=2500;settings.near=1000}
+  else if(s==="vines"){settings.range=2500;settings.near=150}
   else{settings.range=2500;settings.near=200}
   $("range").value=settings.range;$("near").value=settings.near;showRange();plant(true)}
-$("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");
+$("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");$("s-vines").onclick=()=>setScene("vines");
 
 // ================= frame =================
 const SKY=[.73,.83,.91],SUN=norm([.5,.75,.35]);
