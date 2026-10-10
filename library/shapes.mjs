@@ -132,7 +132,7 @@ export function featherPalm(m,T,lean,n){
   for(let i=1;i<m.pos.length;i+=3)m.pos[i]=Math.max(m.pos[i],.03);   // low fronds rest on the ground, never through it
 }
 export function featherSeedling(m){for(let k=0;k<4;k++)feather(m,[0,.05,0],k*1.7,1.0,1.25,.35,.06,FROND_L,FROND_D)}
-// Fan leaf (Washingtonia): a stalk, then a big fan: flat fingers (12 triangles) or folded (8 triangles).
+// Fan leaf (Washingtonia): a stalk, then a big fan: a solid middle with pointed fingers (14 triangles) or folded (8 triangles).
 export const FAN_L=[112,156,72],FAN_D=[70,112,52];
 export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   const d=[Math.cos(a)*Math.cos(el),Math.sin(el),Math.sin(a)*Math.cos(el)];let s=norm(cross(d,[0,1,0])),n=norm(cross(s,d));
@@ -142,11 +142,13 @@ export function fanLeaf(m,base,a,el,stalk,R,c0,c1,flat=false){
   const b0=m.v(base[0]+s[0]*w,base[1],base[2]+s[2]*w,c0),b1=m.v(base[0]-s[0]*w,base[1],base[2]-s[2]*w,c0),pc=m.v(...P,c0),p1=m.v(P[0]-s[0]*w,P[1],P[2]-s[2]*w,c0);
   m.idx.push(b0,b1,pc,b1,p1,pc);
   if(flat){
-    // Flat: narrow fingers radiating from the end of the stalk, with gaps between them, as the
-    // real leaf's segments do; each finger is one triangle, its tip a little longer or shorter.
-    const F=10,span=3.5;
-    for(let f=0;f<F;f++){const a0=-span/2+span*(f+.12)/F,a1=-span/2+span*(f+.88)/F,r=R*(.9+.1*jr()),tip=(a,rr)=>m.v(P[0]+rr*(Math.cos(a)*d[0]+Math.sin(a)*s[0]),P[1]+rr*(Math.cos(a)*d[1]+Math.sin(a)*s[1]),P[2]+rr*(Math.cos(a)*d[2]+Math.sin(a)*s[2]),c1);
-      m.idx.push(pc,tip(a0,r),tip(a1,r))}
+    // Flat, like the real leaf: a solid middle (a half-size fan, 4 triangles), then fingers that grow
+    // out of its edge, each wide at its base and pointed at its tip (one triangle each), so the
+    // notches between the tips come for free. Tips a little longer or shorter.
+    const F=8,span=3.5,r0=R*.5,at=(a,rr)=>m.v(P[0]+rr*(Math.cos(a)*d[0]+Math.sin(a)*s[0]),P[1]+rr*(Math.cos(a)*d[1]+Math.sin(a)*s[1]),P[2]+rr*(Math.cos(a)*d[2]+Math.sin(a)*s[2]),c1);
+    const arc=[];for(let f=0;f<=F;f++)arc.push(at(-span/2+span*f/F,r0));
+    for(let f=0;f<F;f+=2)m.idx.push(pc,arc[f],arc[f+2]);
+    for(let f=0;f<F;f++)m.idx.push(arc[f],arc[f+1],at(-span/2+span*(f+.5)/F,R*(.92+.08*jr())));
     return;
   }
   const K=6,rim=[];
