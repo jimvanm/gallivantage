@@ -256,6 +256,74 @@ function world(extra, lines) {
   ok('a road mapped off its real place moves onto the flat strip in the ground; not on flat ground; not at junctions');
 }
 
+// ---- junctions -----------------------------------------------------------------------------------
+{
+  // A T on a hillside: a secondary road runs across a 6% slope, a local road
+  // climbs to it from below. One junction; the local road meets its edge on
+  // the junction's surface, with no hump, and follows its ground beyond.
+  const hill = (x, z) => 100 + 0.06 * z;                       // ground rises southward
+  const rl = defaultRules();
+  const r = runAll([line([-300, 0, 300, 0], 'secondary'), line([0, -200, 0, 0], 'local')], [], hill, rl);
+  assert.equal(r.junctions.length, 1, 'one junction');
+  const J = r.junctions[0], sec = r.net.chains.find((c) => c.kind === 'secondary'), loc = r.net.chains.find((c) => c.kind === 'local');
+  assert.equal(J.lead, sec.id, 'the secondary road leads');
+  assert.equal(J.arms.length, 3);
+  const arm = J.arms.find((a) => a.chain === loc.id);
+  assert.ok(Math.abs(loc.prof[arm.ib] - J.h(loc.x[arm.ib], loc.z[arm.ib])) < 1e-6, 'meets the junction surface at its edge');
+  const mid = Math.round(300 / sec.ds);
+  assert.ok(Math.abs(J.h(sec.x[mid], sec.z[mid]) - sec.prof[mid]) < 0.01, 'the junction surface is the leading road\'s');
+  const sc = checkProfile(loc, loc.prof, loc.K);
+  let worst = 0; for (let i = 0; i < loc.n; i++) if (!loc.inJ[i]) worst = Math.max(worst, sc.vert[i]);
+  assert.ok(worst < 1.2, 'no hump where it joins: ' + worst.toFixed(2));
+  let far = 0; for (let i = 0; i < loc.n; i++) if (Math.abs(loc.z[i]) > 30) far = Math.max(far, Math.abs(loc.prof[i] - loc.raw[i]));
+  assert.ok(far < 0.15, 'follows its ground beyond the junction: ' + far.toFixed(2));
+  ok('a T junction on a hillside: one surface, the joining road meets its edge without a hump');
+}
+{
+  // Two carriageways of a divided road, 12 m apart, crossed by a local road:
+  // one junction, not two. (With a wide median they are two.)
+  // (Meeting points shared, as the map draws them.)
+  const r = runAll([line([-400, -6, 0, -6, 400, -6], 'secondary', { oneway: true }), line([400, 6, 0, 6, -400, 6], 'secondary', { oneway: true }),
+    line([0, -200, 0, -6, 0, 6, 0, 200], 'local')], [], (x, z) => 100, defaultRules());
+  assert.equal(r.junctions.length, 1, 'the two meeting points make one junction: ' + r.junctions.length);
+  ok('both halves of a divided road make one junction');
+}
+{
+  // A ramp leaving a motorway is not a junction; nor is a level crossing.
+  const r = runAll([line([-600, 0, -100, 0], 'motorway'), line([-100, 0, 600, 0], 'motorway'), line([-100, 0, 100, 30, 300, 80], 'ramp', { cls: 'motorway' })], [], () => 100, defaultRules());
+  assert.equal(r.junctions.length, 0);
+  ok('a motorway ramp is not a junction');
+}
+{
+  // The drawing: each junction is one surface, and roads stop at its edge.
+  const { buildRoadShapes } = await import('../src/roadshape.js');
+  const { MeshBuilder } = await import('../src/meshbuilder.js');
+  const rl = defaultRules();
+  const r = runAll([line([-300, 0, 0, 0, 300, 0], 'secondary'), line([0, -200, 0, 0, 0, 200], 'local')], [], (x, z) => 100 + 0.05 * z, rl);
+  const mb = new MeshBuilder();
+  const cnt = buildRoadShapes(r.net, mb, { which: 'prof', colour: 'plain', rules: rl });
+  assert.equal(cnt.junctions, 1);
+  for (const v of mb.pos) assert.ok(Number.isFinite(v));
+  ok('a junction is drawn as one surface');
+}
+
+// ---- town or country ------------------------------------------------------------------------------
+{
+  const { markTowns } = await import('../src/roadrules.js');
+  const grid = [];
+  const ks = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+  for (const k of ks) {
+    grid.push(line([-300, k * 60, ...ks.flatMap((q) => [q * 60, k * 60]), 300, k * 60], 'local'));
+    grid.push(line([k * 60, -300, ...ks.flatMap((q) => [k * 60, q * 60]), k * 60, 300], 'local'));
+  }
+  const town = runAll(grid, [], () => 100, defaultRules());
+  assert.ok(town.net.chains.filter((c) => c.urban).length > town.net.chains.length * 0.8, 'a grid of streets is a town');
+  const country = runAll([line([-300, 0, 300, 0], 'local'), line([0, 0, 0, 300], 'local')], [], () => 100, defaultRules());
+  assert.ok(country.net.chains.every((c) => !c.urban), 'two lone roads are country');
+  assert.equal(town.net.chains.find((c) => c.urban).K.V, defaultRules().town.local.V, 'town streets keep town rules');
+  ok('dense streets are a town and keep town rules; lone roads are country');
+}
+
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

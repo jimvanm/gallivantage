@@ -31,9 +31,14 @@ export function movedColour(d) {
   return [Math.round(60 + 170 * t), Math.round(120 - 70 * t), Math.round(220 - 20 * t)];
 }
 
+// Town, country, near a junction ('where' colour).
+const WHERE_C = { town: [214, 140, 60], country: [80, 160, 96], junction: [70, 140, 200] };
+export { WHERE_C };
+
 // opt:
 //   which    'prof' (the engineered line) or 'raw' (draped on the ground, as today)
-//   colour   'plain', 'rules', or 'moved' (how far it was moved onto the flat strip)
+//   colour   'plain', 'rules', 'moved' (how far it was moved onto the flat
+//            strip) or 'where' (town, country, near a junction)
 //   curves   in rules colour, count the plan's bends too
 //   rules    the rules (for the kinds' speeds and limits)
 export function buildRoadShapes(net, mb, opt) {
@@ -42,7 +47,8 @@ export function buildRoadShapes(net, mb, opt) {
   const counts = { decks: 0, piers: 0, tunnels: 0, piersMoved: 0, pierSpots: [] };
   const onRoad = raw ? null : drivableAt(net, rules);
   for (const c of net.chains) {
-    const kind = rules.kinds[c.kind];
+    const kind = (!raw && c.K) || rules.kinds[c.kind];
+    const inJ = raw ? null : c.inJ;            // inside a junction: the junction's surface is drawn instead
     // Today's road is on the map's own line (x0, z0 when the road was moved
     // onto the flat strip), draped on the ground there.
     const p = raw ? (c.raw0 || c.raw) : c.prof;
@@ -63,22 +69,35 @@ export function buildRoadShapes(net, mb, opt) {
       lx[i] = dz / L; lz[i] = -dx / L;              // left of the way it runs (z is south)
     }
     // Cross-section heights at the left edge, middle and right edge.
-    const bank = (i) => (raw || rail) ? null : banking(kind.V, c.R[i]);
-    const edgeH = (i, side) => {             // side +1 left, -1 right
+    // No banking near a junction: it is driven slowly, and must meet a level surface.
+    const bank = (i) => (raw || rail || (c.jz && c.jz[i])) ? null : banking(kind.V, c.R[i]);
+    const ownEdge = (i, side) => {
       const e = bank(i);
       if (e === null) return p[i] - (raw || rail ? 0 : CROWN * hw);
       return p[i] - side * e * hw;
+    };
+    // Near a junction's edge the road's edges ease onto the junction's surface,
+    // so the two meet across the road's whole width.
+    const edgeH = (i, side) => {             // side +1 left, -1 right
+      const own = ownEdge(i, side);
+      if (raw || !c.seamW || !(c.seamW[i] > 0) || c.seamJ[i] < 0) return own;
+      const J = net.junctions[c.seamJ[i]];
+      if (!J || !J.h) return own;
+      const w = c.seamW[i];
+      return own * (1 - w) + J.h(X[i] + side * lx[i] * hw, Z[i] + side * lz[i] * hw) * w;
     };
     const col = (i) => {
       let rgb = plain;
       if (sc) rgb = ruleColour(Math.max(sc.vert[i], opt.curves ? sc.curve[i] : 0));
       if (opt.colour === 'moved') rgb = movedColour(raw || !c.shift ? 0 : Math.abs(c.shift[i]));
+      if (opt.colour === 'where') rgb = !raw && c.jz && c.jz[i] ? WHERE_C.junction : c.urban ? WHERE_C.town : WHERE_C.country;
       return rgba(rgb[0], rgb[1], rgb[2]);
     };
     // The surface, three vertices across each sample.
     let prev = -1;
     for (let i = 0; i < n; i++) {
       if (struct && struct[i] === 2 && (i === 0 || struct[i - 1] === 2)) { prev = -1; counts.tunnels++; continue; }
+      if (inJ && inJ[i]) { prev = -1; continue; }
       const k = col(i);
       const base = mb.vert(X[i] + lx[i] * hw, edgeH(i, 1) + LIFT, Z[i] + lz[i] * hw, k);
       mb.vert(X[i], p[i] + LIFT, Z[i], k);
@@ -113,13 +132,14 @@ export function buildRoadShapes(net, mb, opt) {
     for (let i = 1; i < n; i++) {
       const a = i - 1;
       if (struct[a] || struct[i] || !c.under) continue;
+      if (inJ && (inJ[a] || inJ[i])) continue;
       if (p[a] - c.under[a] < 0.15 && p[i] - c.under[i] < 0.15) continue;
       for (const sd of [1, -1]) {
         const P = [X[a] + sd * lx[a] * hw, edgeH(a, sd) + LIFT, Z[a] + sd * lz[a] * hw];
         const Q = [X[i] + sd * lx[i] * hw, edgeH(i, sd) + LIFT, Z[i] + sd * lz[i] * hw];
         const b = mb.verts;
         mb.vert(P[0], P[1], P[2], bed); mb.vert(Q[0], Q[1], Q[2], bed);
-        mb.vert(Q[0], c.under[i] - 0.3, Q[2], bed); mb.vert(P[0], c.under[a] - 0.3, P[2], bed);
+        mb.vert(Q[0], c.under[i] - 0.05, Q[2], bed); mb.vert(P[0], c.under[a] - 0.05, P[2], bed);
         mb.tri(b, b + 1, b + 2); mb.tri(b, b + 2, b + 3);
       }
     }
@@ -128,7 +148,7 @@ export function buildRoadShapes(net, mb, opt) {
     const pier = rgba(PIER_C[0], PIER_C[1], PIER_C[2]);
     let run = -1, sinceP = 0;
     for (let i = 0; i < n; i++) {
-      const on = struct[i] === 1;
+      const on = struct[i] === 1 && !(inJ && inJ[i]);
       if (on && run < 0) { run = i; counts.decks++; sinceP = PIER_EVERY / 2; c._moved = false; }
       if (!on) { run = -1; continue; }
       if (i > run) {
@@ -159,7 +179,49 @@ export function buildRoadShapes(net, mb, opt) {
       }
     }
   }
+  if (!raw && net.junctions) counts.junctions = junctionShapes(net, mb, opt);
   return counts;
+}
+
+// Each junction's surface: one piece over its whole area (the outline of the
+// roads where they leave it), at the junction's own heights, so no two roads'
+// surfaces pile up there. Coloured as its leading road.
+function junctionShapes(net, mb, opt) {
+  let count = 0;
+  for (const J of net.junctions) {
+    if (!J.h || !J.pts || J.pts.length < 3) continue;
+    const L = net.chains[J.lead];
+    let rgb = (ROAD_STYLE[L.cls] || ROAD_STYLE.minor).c;
+    if (opt.colour === 'rules') rgb = ruleColour(0);
+    if (opt.colour === 'where') rgb = WHERE_C.junction;
+    if (opt.colour === 'moved') rgb = [150, 150, 150];
+    const colour = rgba(rgb[0], rgb[1], rgb[2]);
+    // The outline, a point every 2 m or so.
+    const ring = [];
+    for (let k = 0; k < J.pts.length; k++) {
+      const [ax, az] = J.pts[k], [bx, bz] = J.pts[(k + 1) % J.pts.length];
+      const m = Math.max(1, Math.ceil(Math.hypot(bx - ax, bz - az) / 2));
+      for (let q = 0; q < m; q++) ring.push([ax + (bx - ax) * q / m, az + (bz - az) * q / m]);
+    }
+    // Rings in toward the middle, so the surface follows its heights.
+    let cx = 0, cz = 0;
+    for (const [x, z] of J.pts) { cx += x; cz += z; }
+    cx /= J.pts.length; cz /= J.pts.length;
+    const RINGS = 4, base = mb.verts, R = ring.length;
+    mb.vert(cx, J.h(cx, cz) + LIFT, cz, colour);
+    for (let r = 1; r <= RINGS; r++) {
+      const t = r / RINGS;
+      for (const [x, z] of ring) { const px = cx + (x - cx) * t, pz = cz + (z - cz) * t; mb.vert(px, J.h(px, pz) + LIFT, pz, colour); }
+    }
+    const at = (r, k) => base + 1 + (r - 1) * R + (k % R);
+    for (let k = 0; k < R; k++) mb.tri(base, at(1, k + 1), at(1, k));
+    for (let r = 1; r < RINGS; r++) for (let k = 0; k < R; k++) {
+      mb.tri(at(r, k), at(r, k + 1), at(r + 1, k + 1));
+      mb.tri(at(r, k), at(r + 1, k + 1), at(r + 1, k));
+    }
+    count++;
+  }
+  return count;
 }
 
 // Whether a spot (a pier r metres round) would stand on another road's
@@ -217,8 +279,9 @@ export function roadPoint(c, f, dir, which, rules) {
   const L = Math.hypot(fx, fz) || 1; fx /= L; fz /= L;
   const lx = fz, lz = -fx;                               // left of the way you drive
   const off = c.oneway ? 0 : -c.width / 4;               // right-hand lane
-  const kind = rules.kinds[c.kind];
-  let e = which === 'raw' ? null : banking(kind.V, c.R[Math.round(f)] * dir);
+  const kind = (!raw && c.K) || rules.kinds[c.kind];
+  const ii = Math.round(f);
+  let e = raw || (c.jz && c.jz[ii]) ? null : banking(kind.V, c.R[ii] * dir);
   const h = p[i] + (p[i + 1] - p[i]) * u;
   const bank = e === null ? (which === 'raw' ? 0 : (off < 0 ? -CROWN : 0)) : e;
   const y = h + LIFT + (e === null ? (which === 'raw' ? 0 : -CROWN * Math.abs(off)) : -e * off);

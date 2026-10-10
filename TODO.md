@@ -345,6 +345,27 @@ reasoning: the project's `ROADS-DRAFT.md`.
       and a colour for how far each road moved. Jim to judge on real ground.
 - [ ] A junction where the joining roads do not meet cleanly, Campbellford,
       44.30795, -77.79373, heading 124 (Jim's screenshot, 0.14.10).
+- **Junctions are places of their own (Jim, 10 October, 0.14.15).** Where
+  three or more road arms meet (a road passing through counts as two), the
+  junction is one paved area: as wide as its widest road plus a rounded
+  corner; meeting points whose areas touch (both halves of a divided road)
+  make one. The road fitted first there leads and keeps its line; the
+  junction's surface is its surface (crown included), following the ground
+  beyond its edges (no steeper than 15%), as real corners on a slope do.
+  Every other road meets that surface at the junction's edge across its
+  whole width, not one point in the middle. Within the junction and 15 m
+  beyond, roads slow to turning speed and may change steepness sharply (real
+  streets flatten into a landing). Not junctions: where a motorway leads,
+  level crossings. Paths and tracks join a junction, never make one.
+  Found from Jim's saved spot at Campbellford (44.30820, -77.79501): the old
+  rules pinned the side road to one raised point and made a hump.
+- **Town rules (0.14.15).** Built-up areas come from the roads themselves:
+  more than 10 km of road per square km over about 450 m square. In town:
+  main road 60 km/h, secondary 50 (up to 12%), local 40 (15%), lane 25
+  (18%), with less roadbed. Jim's spot: road well over its rules 7.8% before,
+  2.7% after (today's draped roads 5.1%), no flags left.
+- **Save a spot (0.14.13):** F in the lab saves roads and ground for 600 m
+  square to a file, so the rules can be rerun on exactly the same data.
 - [ ] Old streets are steeper than modern rules allow (Campbellford's hill).
       Proposed: colour "steep because the ground is" apart from "broken by
       us". Not decided.

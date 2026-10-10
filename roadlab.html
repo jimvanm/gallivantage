@@ -102,10 +102,13 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="row"><label for="view">Show</label>
         <select id="view"><option value="split" selected>Side by side</option><option value="raw">Today only</option><option value="eng">Engineered only</option></select></div>
       <div class="row" style="margin-top:6px"><label for="colour">Road colour</label>
-        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option></select></div>
+        <select id="colour"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option></select></div>
+      <div class="key" id="keyWhere" style="margin-top:6px" hidden><span><i class="sw" style="background:#d68c3c"></i>in town</span><span><i class="sw" style="background:#50a060"></i>in the country</span><span><i class="sw" style="background:#468cc8"></i>junction and its slow zone</span></div>
       <div class="key" id="keyMoved" style="margin-top:6px" hidden><span><i class="sw" style="background:#969696"></i>on the map's line</span><span><i class="sw" style="background:#5d6ed8"></i>moved a little</span><span><i class="sw" style="background:#e632c8"></i>moved 5 m</span></div>
       <div class="key" id="keyRules" style="margin-top:6px"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½ times its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
-      <label class="check" style="margin-top:6px"><input type="checkbox" id="bench" checked> Move roads onto the flat strip in the ground (where the map's line is off the real road)</label>
+      <label class="check" style="margin-top:6px"><input type="checkbox" id="junctions" checked> Junctions as places of their own (one surface; roads meet its edge)</label>
+      <label class="check"><input type="checkbox" id="townOn" checked> Town rules in built-up areas</label>
+      <label class="check"><input type="checkbox" id="bench" checked> Move roads onto the flat strip in the ground (where the map's line is off the real road)</label>
       <label class="check"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
       <div class="row" style="margin-top:6px"><label for="roadAlpha">Roads see-through</label><output id="roadAlpha-o"></output></div>
@@ -136,6 +139,9 @@ ul.finds li:hover{outline:1px solid var(--line)}
     <section>
       <h2>Rules for each kind of road</h2>
       <table id="kinds"><thead><tr><th>Kind</th><th title="design speed, km/h">km/h</th><th title="steepest grade, per cent">steepest %</th><th title="hilltops: metres of road per 1% change of grade">hilltop</th><th title="dips: metres of road per 1% change of grade">dip</th><th title="how far it may ride above the ground on its own bed, metres (0: none, a bridge instead)">bed m</th></tr></thead><tbody></tbody></table>
+      <h2 style="margin-top:12px">In town</h2>
+      <table id="townKinds"><thead><tr><th>Kind</th><th>km/h</th><th>steepest %</th><th>hilltop</th><th>dip</th><th>bed m</th></tr></thead><tbody></tbody></table>
+      <p class="note" style="margin-top:6px">In town (where the roads round about are dense) these kinds are slower, so may be steeper and round off more sharply: town streets follow the ground. Near a junction every road slows to turning speed and may change steepness sharply, within the junction and 15 m beyond its edge.</p>
       <p class="note" style="margin-top:6px">Bed: how far a road may ride above the ground to stay smooth. Past that, a slow road follows the bumps; 0 means none (motorways and railways bridge instead). Hilltop and dip: how gently the road must round off, in metres of road for each 1% change in steepness. Bigger is gentler. At 120 km/h a hilltop needs about 95, so a driver sees far enough over it.</p>
     </section>
 
@@ -171,7 +177,7 @@ import { surveyTileHeights } from './src/surveytile.js';
 import { buildRoads } from './src/roads.js';
 import { MeshBuilder, rgba } from './src/meshbuilder.js';
 import { Controls } from './src/controls.js';
-import { defaultRules, KIND_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile, clipPolyline } from './src/roadrules.js';
+import { defaultRules, KIND_ORDER, TOWN_ORDER, linesFromLayer, waterwaysFromLayer, runAll, checkProfile, clipPolyline } from './src/roadrules.js';
 import { buildRoadShapes, roadPoint } from './src/roadshape.js';
 
 const $ = (id) => document.getElementById(id);
@@ -192,15 +198,28 @@ function showRules() {
   const tb = $('kinds').tBodies[0];
   tb.innerHTML = KIND_ORDER.map((k) => { const K = rules.kinds[k];
     return `<tr><td>${K.label}</td>` + ['V', 'G', 'Kc', 'Ks', 'bed'].map((f) => `<td><input type="number" data-k="${k}" data-f="${f}" value="${K[f]}" step="${f === 'G' ? 0.5 : f === 'V' ? 10 : f === 'bed' ? 0.1 : 1}" min="${f === 'bed' ? 0 : 0.1}"></td>`).join('') + '</tr>'; }).join('');
+  $('townKinds').tBodies[0].innerHTML = TOWN_ORDER.map((k) => { const T = rules.town[k];
+    return `<tr><td>${rules.kinds[k].label}</td>` + ['V', 'G', 'Kc', 'Ks', 'bed'].map((f) => `<td><input type="number" data-t="${k}" data-f="${f}" value="${T[f]}" step="${f === 'G' ? 0.5 : f === 'V' ? 10 : f === 'bed' ? 0.1 : 1}" min="${f === 'bed' ? 0 : 0.1}"></td>`).join('') + '</tr>'; }).join('');
   for (const id of Object.keys(SLIDERS)) { $(id).value = rules[id]; $(id + '-o').textContent = SLIDERS[id](rules[id]); }
+  $('junctions').checked = rules.junctions !== false; $('townOn').checked = rules.townOn !== false;
   showSettings();
 }
+$('townKinds').addEventListener('change', (e) => {
+  const t = e.target; if (!t.dataset.t) return;
+  const v = Number(t.value); if (!(v > 0 || (t.dataset.f === 'bed' && v === 0))) { t.value = rules.town[t.dataset.t][t.dataset.f]; return; }
+  rules.town[t.dataset.t][t.dataset.f] = v; showSettings(); later(rebuild);
+});
+for (const id of ['junctions', 'townOn']) $(id).addEventListener('change', () => { rules[id] = $(id).checked; showSettings(); stopDriving(); later(rebuild); });
 function showSettings() {
   const out = {};
   for (const id of Object.keys(SLIDERS)) if (rules[id] !== START[id]) out[id] = rules[id];
   const kinds = {};
   for (const k of KIND_ORDER) for (const f of ['V', 'G', 'Kc', 'Ks', 'bed']) if (rules.kinds[k][f] !== START.kinds[k][f]) (kinds[k] || (kinds[k] = {}))[f] = rules.kinds[k][f];
   if (Object.keys(kinds).length) out.kinds = kinds;
+  const town = {};
+  for (const k of TOWN_ORDER) for (const f of ['V', 'G', 'Kc', 'Ks', 'bed']) if (rules.town[k][f] !== START.town[k][f]) (town[k] || (town[k] = {}))[f] = rules.town[k][f];
+  if (Object.keys(town).length) out.town = town;
+  for (const id of ['junctions', 'townOn']) if (rules[id] !== START[id]) out[id] = rules[id];
   $('settings').textContent = Object.keys(out).length ? JSON.stringify(out) : '(the starting rules, unchanged)';
 }
 $('kinds').addEventListener('change', (e) => {
@@ -529,7 +548,7 @@ function nextRoad(c, atEnd, fx, fz) {
   return best;
 }
 function driveStep(dt) {
-  const c = result.net.chains[drive.chain], K = rules.kinds[c.kind];
+  const c = result.net.chains[drive.chain], K = c.K || rules.kinds[c.kind];
   const v = K.V / 3.6 * Number($('driveSpeed').value);
   drive.f += drive.dir * v * dt / c.ds;
   if (drive.f > c.n - 1 || drive.f < 0) {
@@ -604,7 +623,7 @@ $('saveSpot').onclick = () => {
 $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').value; };
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
-for (const id of ['colour', 'curves']) $(id).onchange = () => { $('keyMoved').hidden = $('colour').value !== 'moved'; $('keyRules').hidden = $('colour').value !== 'rules'; roadMeshes(); };
+for (const id of ['colour', 'curves']) $(id).onchange = () => { for (const [k, v] of [['keyMoved', 'moved'], ['keyRules', 'rules'], ['keyWhere', 'where']]) $(k).hidden = $('colour').value !== v; roadMeshes(); };
 $('bench').onchange = () => { stopDriving(); rebuild(); };
 const showAlpha = () => { const v = Number($('roadAlpha').value); $('roadAlpha-o').textContent = v <= 0.001 ? 'hidden' : v >= 0.999 ? 'solid' : `${fmt(100 * (1 - v))}% see-through`; };
 $('roadAlpha').oninput = showAlpha; showAlpha();
@@ -644,15 +663,18 @@ for (const id of ['decisions', 'flags']) $(id).addEventListener('click', (e) => 
 
 function showStats() {
   const net = result.net, kinds = {};
-  let len = 0, bad = 0, badEng = 0;
+  let len = 0, bad = 0, badEng = 0, townLen = 0;
   for (const c of net.chains) {
     kinds[c.kind] = (kinds[c.kind] || 0) + c.length; len += c.length;
-    const K = rules.kinds[c.kind];
+    const K = c.K || rules.kinds[c.kind];
     const r = checkProfile(c, c.raw0 || c.raw, K), e = checkProfile(c, c.prof, K);
-    for (let i = 0; i < c.n; i++) { if (r.vert[i] > 1.5) bad += c.ds; if (e.vert[i] > 1.5) badEng += c.ds; }
+    for (let i = 0; i < c.n; i++) { if (r.vert[i] > 1.5) bad += c.ds; if (e.vert[i] > 1.5 && !(c.inJ && c.inJ[i])) badEng += c.ds; }
+    if (c.urban) townLen += c.length;
   }
   const rows = [
     ['Roads and railways', `${fmt(net.chains.length)} (${fmt(len / 1000, 1)} km)`],
+    ['Junctions', fmt((result.junctions || []).length)],
+    ['In town', `${fmt(townLen / 1000, 1)} km of road (${fmt(100 * townLen / Math.max(1, len))}%)`],
     ['Where roads cross', fmt(result.crossings.length)],
     ['Bridge decks / piers', `${fmt(area.counts.decks)} / ${fmt(area.counts.piers)}` + (area.counts.piersMoved ? ` (${fmt(area.counts.piersMoved)} moved off a road)` : '')],
     ['Well over its rules, today', `${fmt(bad / 1000, 2)} km (${fmt(100 * bad / Math.max(1, len))}%)`],

@@ -73,6 +73,32 @@ export const KINDS = {
 };
 export const KIND_ORDER = Object.keys(KINDS);
 
+// In town (built-up areas) the same kinds of road are slower, so may be
+// steeper and round off more sharply, and ride less on a bed: town streets
+// follow the ground. Only these kinds change; the rest keep their rules.
+export const TOWN = {
+  main:      { V: 60, G: 8,  Kc: 10, Ks: 15, bed: 0.3 },
+  secondary: { V: 50, G: 12, Kc: 7,  Ks: 12, bed: 0.2 },
+  local:     { V: 40, G: 15, Kc: 4,  Ks: 8,  bed: 0.1 },
+  minor:     { V: 25, G: 18, Kc: 1,  Ks: 3,  bed: 0.1 },
+};
+export const TOWN_ORDER = Object.keys(TOWN);
+// How much road (km) there must be per square km round a spot for it to be
+// in town, counted over about 450 m square. Open country: under 5; a town
+// grid of 80 m blocks: about 25.
+export const TOWN_DENSITY = 10;
+
+// Near a junction every road slows to turning speed (about 25 km/h), so it
+// may change steepness sharply there: real streets flatten into a landing
+// at a junction. These limits apply within the junction and for LANDING
+// metres beyond its edge.
+export const JUNCTION = { G: 15, Kc: 1, Ks: 2 };
+export const LANDING = 15;           // metres beyond a junction's edge
+const CORNER = { main: 6, secondary: 5, ramp: 5, local: 3, minor: 2 };   // corner rounding, metres
+// A road joining a junction meets its surface across its whole width over
+// this many metres before the edge.
+const SEAM = 10;
+
 // Settings that are not per kind.
 //   hold        how closely a road follows the ground, metres: bumps smaller
 //               than about this are smoothed over, bigger ones followed.
@@ -81,7 +107,10 @@ export const KIND_ORDER = Object.keys(KINDS);
 //               less, and it sits on its own bed on the ground.
 //   clearance   from one road's surface to the other's where one passes over
 //               the other (metres): about 5 m of headroom plus the deck.
-export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5 };
+//   townOn      use town rules in built-up areas.
+//   junctions   treat junctions as places of their own (one surface, roads
+//               meeting its edge, slow zone round it).
+export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5, townOn: true, junctions: true };
 // Higher than this above the ground, with no bridge on the map, no water and
 // no road below: worth a look (a bridge the map does not show, or bad ground).
 export const UNTOLD_BRIDGE = 4;
@@ -93,7 +122,16 @@ const NEAR_WATER = 25;
 export function defaultRules() {
   const kinds = {};
   for (const k of KIND_ORDER) kinds[k] = { ...KINDS[k] };
-  return { kinds, ...SETTINGS };
+  const town = {};
+  for (const k of TOWN_ORDER) town[k] = { ...TOWN[k] };
+  return { kinds, town, ...SETTINGS };
+}
+
+// The rules a road keeps: its kind's, or its kind's in town.
+export function kindFor(rules, c) {
+  const K = rules.kinds[c.kind];
+  if (c.urban && rules.townOn !== false && rules.town && rules.town[c.kind]) return { ...K, ...rules.town[c.kind] };
+  return K;
 }
 
 // Which kind of road a map feature is, from the map's own classes
@@ -771,20 +809,29 @@ function solveBand(d0, d1, d2, b) {
 // and the smoothness rules give way there: the road follows the bumps.
 // Returns { p, ok, rounds }.
 const FLOOR_GAP = 0.03, FLOOR_SLACK = 0.02;
-export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map(), floor = null, ceil = null) {
+// lim (optional): per-sample limits { kc, ks, G, K } (crest and sag as 1/(100 K),
+// grade as a fraction, K the smaller of Kc and Ks), for roads whose limits
+// change along them (near junctions). Without it, the kind's own throughout.
+export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map(), floor = null, ceil = null, lim = null) {
   const n = t.length;
   if (n < 3) {
     const p = Float64Array.from(t);
     for (const [i, h] of fixed) p[i] = h;
     return { p, ok: true, rounds: 0 };
   }
-  const kc = 1 / (100 * kind.Kc), ks = 1 / (100 * kind.Ks), G = kind.G / 100;
+  const L = lim || limitsOf(kind, n);
+  const kcA = L.kc, ksA = L.ks, GA = L.G;
   const sig = Math.max(0.05, rules.hold);
   // A first stiffness that smooths over bumps about the size the crest rule
   // could never follow; the rounds then stiffen only where needed.
-  const ell = 0.35 * Math.sqrt(100 * Math.min(kind.Kc, kind.Ks) * sig) * (rules.smooth || 1);
-  const lam0 = Math.pow(Math.max(1, ell / ds), 4);
-  const lam = new Float64Array(n).fill(lam0);
+  const lamInit = new Float64Array(n);
+  let lam0 = 1;
+  for (let i = 0; i < n; i++) {
+    const ell = 0.35 * Math.sqrt(100 * L.K[i] * sig) * (rules.smooth || 1);
+    lamInit[i] = Math.pow(Math.max(1, ell / ds), 4);
+    if (lamInit[i] > lam0) lam0 = lamInit[i];
+  }
+  const lam = Float64Array.from(lamInit);
   const gam = new Float64Array(n - 1), gs = new Int8Array(n - 1);
   const fw = new Float64Array(n);          // how hard each point is held up off the ground (0 = not yet)
   const cw = new Float64Array(n);          // how hard each point is held down to its roadbed limit
@@ -815,7 +862,7 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
     }
     for (let i = 0; i < n - 1; i++) {          // held to the steepest grade
       if (!gam[i]) continue;
-      const g = gam[i], target = gs[i] * G * ds;
+      const g = gam[i], target = gs[i] * GA[i] * ds;
       d0[i] += g; d0[i + 1] += g; d1[i] -= g;
       b[i] -= g * target; b[i + 1] += g * target;
     }
@@ -850,14 +897,14 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
       for (let i = 0; i < n; i++) {
         if (p[i] <= ceil[i] + FLOOR_SLACK || pin.has(i)) continue;
         cw[i] = cw[i] ? Math.min(cw[i] * 4, lam0 * 1e9) : 100;
-        for (let j = Math.max(0, i - 3); j <= Math.min(n - 1, i + 3); j++) { free[j] = 1; lam[j] = Math.min(lam[j], lam0); if (j < n - 1) gam[j] = 0; }
+        for (let j = Math.max(0, i - 3); j <= Math.min(n - 1, i + 3); j++) { free[j] = 1; lam[j] = Math.min(lam[j], lamInit[j]); if (j < n - 1) gam[j] = 0; }
         broke = true;
       }
     }
     for (let i = 1; i < n - 1; i++) {
       if (free[i]) continue;
       const k = (p[i - 1] - 2 * p[i] + p[i + 1]) / (ds * ds);
-      if (k < -kc * 1.05 || k > ks * 1.05) {
+      if (k < -kcA[i] * 1.05 || k > ksA[i] * 1.05) {
         lam[i] = Math.min(lam[i] * 1.6, lam0 * 1e7);
         broke = true;
       }
@@ -865,7 +912,7 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
     for (let i = 0; i < n - 1; i++) {
       if (free[i] || free[i + 1]) continue;
       const g = (p[i + 1] - p[i]) / ds;
-      if (Math.abs(g) > G * 1.02) {
+      if (Math.abs(g) > Math.max(GA[i], GA[i + 1]) * 1.02) {
         if (!gam[i] || gs[i] !== Math.sign(g)) { gam[i] = 1e3 * lam0; gs[i] = Math.sign(g); }
         else gam[i] = Math.min(gam[i] * 4, lam0 * 1e9);
         broke = true;
@@ -883,6 +930,25 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
     if (!broke) { ok = true; break; }
   }
   return { p, ok, rounds: round + 1 };
+}
+
+// A kind's limits, the same all along n samples.
+function limitsOf(kind, n) {
+  return { kc: new Float64Array(n).fill(1 / (100 * kind.Kc)), ks: new Float64Array(n).fill(1 / (100 * kind.Ks)),
+    G: new Float64Array(n).fill(kind.G / 100), K: new Float64Array(n).fill(Math.min(kind.Kc, kind.Ks)) };
+}
+
+// A road's limits along it: its own (in town or not), eased to junction
+// limits in each junction's slow zone (c.jz).
+function limitsFor(c) {
+  const L = limitsOf(c.K, c.n);
+  if (!c.jz) return L;
+  for (let i = 0; i < c.n; i++) {
+    if (!c.jz[i]) continue;
+    const Kc = Math.min(c.K.Kc, JUNCTION.Kc), Ks = Math.min(c.K.Ks, JUNCTION.Ks);
+    L.kc[i] = 1 / (100 * Kc); L.ks[i] = 1 / (100 * Ks); L.G[i] = Math.max(c.K.G, JUNCTION.G) / 100; L.K[i] = Math.min(Kc, Ks);
+  }
+  return L;
 }
 
 const lerpAt = (a, f) => {
@@ -926,6 +992,192 @@ export function decideCrossing(A, ia, B, ib, rules) {
   return { rel, tag, ground, d, guessed, conflict, hA };
 }
 
+// ---- town or country -------------------------------------------------------------
+
+const ROADLIKE = new Set(['main', 'secondary', 'ramp', 'local', 'minor']);
+
+// Marks each road as in town (c.urban) where the roads round it are dense:
+// more than TOWN_DENSITY km of road per square km over about 450 m square,
+// for most of its length. Uses only the roads themselves, so it works
+// anywhere the map has them. Motorways and paths do not count toward it.
+export function markTowns(net) {
+  const cell = 50, m = new Map(), key = (i, j) => i * 100003 + j;
+  for (const c of net.chains) {
+    if (!ROADLIKE.has(c.kind)) continue;
+    for (let i = 0; i < c.n; i++) {
+      const k = key(Math.floor(c.x[i] / cell), Math.floor(c.z[i] / cell));
+      m.set(k, (m.get(k) || 0) + c.ds);
+    }
+  }
+  const reach = 4, area = ((2 * reach + 1) * cell / 1000) ** 2;      // km²
+  const dens = (x, z) => {
+    const ci = Math.floor(x / cell), cj = Math.floor(z / cell);
+    let sum = 0;
+    for (let j = cj - reach; j <= cj + reach; j++) for (let i = ci - reach; i <= ci + reach; i++) sum += m.get(key(i, j)) || 0;
+    return sum / 1000 / area;
+  };
+  for (const c of net.chains) {
+    c.density = dens(c.x[c.n >> 1], c.z[c.n >> 1]);
+    let inTown = 0;
+    const step = Math.max(1, Math.round(25 / c.ds));
+    let tried = 0;
+    for (let i = 0; i < c.n; i += step) { tried++; if (dens(c.x[i], c.z[i]) >= TOWN_DENSITY) inTown++; }
+    c.urban = ROADLIKE.has(c.kind) && inTown * 2 > tried;
+  }
+}
+
+// ---- junctions -----------------------------------------------------------------------
+//
+// A junction is a place of its own, worked out before the roads that meet
+// there. Where three or more road arms meet (a road passing through counts
+// as two), the junction is one paved area round the meeting point, as wide
+// as its widest road plus a rounded corner. Junction points close enough for
+// their areas to touch (both halves of a divided road) make one junction.
+//
+// The road fitted first among those meeting there leads: it keeps its own
+// height line straight through, and the junction's surface is its surface
+// extended (its crown, then level beyond its edges). Every other road meets
+// that surface at the junction's edge, across its whole width, not at one
+// point in the middle. Within the junction and for LANDING metres beyond its
+// edge, every road slows to turning speed and may change steepness sharply,
+// as real streets flatten into a junction.
+//
+// Not junctions: where a motorway leads (ramps leave it gradually), and
+// where a railway meets a road (a level crossing, as before). Paths and
+// tracks do not make a junction, and join one where they meet it.
+
+const NOT_ARM = new Set(['path', 'track', 'rail', 'railMinor']);
+
+// Finds junctions. order: chain ids in the order they will be fitted (the
+// first among a junction's roads leads). Adds net.junctions = [{ id, x, z,
+// R, nodes, arms: [{ chain, ib, i0 }], lead, pts }] and, per chain, inJ (inside
+// a junction's area: junction id + 1), jz (in its slow zone), seamW / seamJ
+// (how far, 0 to 1, the road's edges blend to the junction's surface).
+export function findJunctions(net, rules, order) {
+  const rank = new Map(order.map((id, k) => [id, k]));
+  const { chains, nodes } = net;
+  const cand = [];
+  for (const [id, nd] of Object.entries(nodes)) {
+    const arms = [];
+    let rail = false;
+    for (const [cid, s] of nd.on) {
+      const c = chains[cid];
+      if (c.kind === 'rail' || c.kind === 'railMinor') rail = true;
+      if (NOT_ARM.has(c.kind)) continue;
+      const i0 = Math.max(0, Math.min(c.n - 1, Math.round(s / c.ds)));
+      if (s > 0.5) arms.push({ chain: cid, i0, dir: -1 });
+      if (s < c.length - 0.5) arms.push({ chain: cid, i0, dir: 1 });
+    }
+    if (arms.length < 3 || rail) continue;
+    let lead = null;
+    for (const a of arms) if (lead === null || rank.get(a.chain) < rank.get(lead)) lead = a.chain;
+    if (rules.kinds[chains[lead].kind].noLevel) continue;
+    let half = 0, corner = 0;
+    for (const a of arms) { const c = chains[a.chain]; half = Math.max(half, c.width / 2 + (rules.kinds[c.kind].sh || 0)); corner = Math.max(corner, CORNER[c.kind] || 2); }
+    cand.push({ node: Number(id), x: nd.x, z: nd.z, R: half + corner, arms, lead });
+  }
+  // Points whose areas touch make one junction.
+  const parent = cand.map((_, i) => i);
+  const find = (i) => (parent[i] === i ? i : (parent[i] = find(parent[i])));
+  const near = new Buckets(40);
+  cand.forEach((c, i) => near.add(c.x, c.z, i));
+  cand.forEach((a, i) => near.near(a.x, a.z, 2 * a.R + 1, (j) => {
+    if (j <= i) return;
+    const b = cand[j];
+    if (Math.hypot(a.x - b.x, a.z - b.z) < a.R + b.R) parent[find(i)] = find(j);
+  }));
+  const groups = new Map();
+  cand.forEach((c, i) => { const r = find(i); if (!groups.has(r)) groups.set(r, []); groups.get(r).push(c); });
+  const out = [];
+  for (const g of groups.values()) {
+    const x = g.reduce((a, c) => a + c.x, 0) / g.length, z = g.reduce((a, c) => a + c.z, 0) / g.length;
+    let R = 0, lead = null, leadNode = null;
+    for (const c of g) {
+      R = Math.max(R, Math.hypot(c.x - x, c.z - z) + c.R);
+      if (lead === null || rank.get(c.lead) < rank.get(lead)) { lead = c.lead; leadNode = c; }
+    }
+    const J = { id: out.length, x, z, R, nodes: g.map((c) => c.node), arms: [], lead, leadI: leadNode.arms.find((a) => a.chain === lead).i0 };
+    // Each arm: walk out from its junction point until outside the area.
+    const seen = new Set();
+    for (const c of g) for (const a of c.arms) {
+      const ch = chains[a.chain];
+      let i = a.i0;
+      while (i >= 0 && i < ch.n && Math.hypot(ch.x[i] - x, ch.z[i] - z) < R) i += a.dir;
+      if (i < 0 || i >= ch.n) continue;                 // the road ends inside the junction
+      const key = a.chain + ':' + i;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      J.arms.push({ chain: a.chain, ib: i, i0: a.i0, dir: a.dir });
+    }
+    out.push(J);
+  }
+  // Per road: inside the area, slow zone, and the seam at the edge.
+  for (const c of chains) { c.inJ = null; c.jz = null; c.seamW = null; c.seamJ = null; }
+  for (const J of out) {
+    for (const a of J.arms) {
+      const c = chains[a.chain];
+      if (!c.inJ) { c.inJ = new Int32Array(c.n); c.jz = new Uint8Array(c.n); c.seamW = new Float32Array(c.n); c.seamJ = new Int32Array(c.n).fill(-1); }
+      for (let i = a.ib - a.dir; i >= 0 && i < c.n && Math.hypot(c.x[i] - J.x, c.z[i] - J.z) < J.R; i -= a.dir) { c.inJ[i] = J.id + 1; c.jz[i] = 1; }
+      for (let i = a.ib; i >= 0 && i < c.n; i += a.dir) {
+        const d = Math.abs(i - a.ib) * c.ds;
+        if (d > LANDING) break;
+        c.jz[i] = 1;
+        const w = Math.max(0, 1 - d / SEAM);
+        if (w > c.seamW[i]) { c.seamW[i] = w; c.seamJ[i] = J.id; }
+      }
+    }
+    // The area's outline: the edges of every road where it leaves the area.
+    const pts = [];
+    for (const a of J.arms) {
+      const c = chains[a.chain], i = a.ib;
+      const p = Math.max(0, i - 1), q = Math.min(c.n - 1, i + 1);
+      const dx = c.x[q] - c.x[p], dz = c.z[q] - c.z[p], L = Math.hypot(dx, dz) || 1;
+      const lx = dz / L, lz = -dx / L, hw = c.width / 2;
+      pts.push([c.x[i] + lx * hw, c.z[i] + lz * hw], [c.x[i] - lx * hw, c.z[i] - lz * hw]);
+    }
+    J.pts = convexHull(pts);
+  }
+  net.junctions = out;
+  return out;
+}
+
+// Convex hull of points [[x, z], ...], anticlockwise seen from above.
+function convexHull(P) {
+  const pts = P.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], hi = [];
+  for (const p of pts) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+  lo.pop(); hi.pop();
+  return lo.concat(hi);
+}
+
+// The junction's surface height at (x, z): its leading road's surface (crown
+// included); beyond its edges, rising or falling with the ground from there
+// (no steeper than a junction may be), as real corners on a slope do. Set
+// once the lead is fitted.
+function junctionSurface(J, L, groundAt) {
+  const span = Math.ceil((J.R + 20) / L.ds);
+  const a = Math.max(0, J.leadI - span), b = Math.min(L.n - 1, J.leadI + span);
+  const hw = L.width / 2;
+  return (x, z) => {
+    let best = Infinity, f = J.leadI, off = 0, fx = x, fz = z;
+    for (let i = a; i < b; i++) {
+      const r = segDist(x, z, L.x[i], L.z[i], L.x[i + 1], L.z[i + 1]);
+      if (r.d < best) { best = r.d; f = i + r.t; off = r.d; fx = r.x; fz = r.z; }
+    }
+    const centre = lerpAt(L.prof, f);
+    if (off <= hw) return centre - CROWN * off;
+    const ex = fx + (x - fx) * hw / off, ez = fz + (z - fz) * hw / off;      // the lead's edge, on the way out
+    const e = off - hw, edge = centre - CROWN * hw;
+    const g1 = groundAt(x, z), g0 = groundAt(ex, ez);
+    if (!Number.isFinite(g1) || !Number.isFinite(g0)) return edge;
+    const most = JUNCTION.G / 100 * e;
+    return edge + Math.max(-most, Math.min(most, g1 - g0));
+  };
+}
+
 // Works out every road's height line, highest kind first, so each lower road
 // meets the ones above it at their height. groundAt(x, z) gives the natural
 // ground (NaN where unknown); waterAt(x, z) (optional) says whether a point
@@ -934,7 +1186,7 @@ export function decideCrossing(A, ia, B, ib, rules) {
 // struct (0 on the ground, 1 bridge, 2 tunnel), why (per sample, what made it a
 // structure). Returns { crossings, flags }.
 export function engineer(net, groundAt, rules, opt = {}) {
-  const { chains } = net;
+  const { chains, nodes } = net;
   const crossings = net.crossings || findCrossings(net);
   const water = opt.waterCrossings || [];
   for (const c of chains) {
@@ -979,7 +1231,27 @@ export function engineer(net, groundAt, rules, opt = {}) {
     }
   }
 
+  // In town or not, and the rules each road keeps.
+  markTowns(net);
+  for (const c of chains) c.K = kindFor(rules, c);
   const order = chains.slice().sort((p, q) => rules.kinds[q.kind].rank - rules.kinds[p.kind].rank || q.length - p.length);
+  // Junctions, and each road's limits along it.
+  const junctions = rules.junctions !== false ? findJunctions(net, rules, order.map((c) => c.id)) : (net.junctions = [], []);
+  const armOf = new Map();          // chain id -> [{ J, arm }] where it joins a junction it does not lead
+  const leads = new Map();          // chain id -> [J] it leads
+  const jNodes = new Set();
+  for (const J of junctions) {
+    for (const n of J.nodes) jNodes.add(n);
+    J.nodeSet = new Set(J.nodes);
+    if (!leads.has(J.lead)) leads.set(J.lead, []);
+    leads.get(J.lead).push(J);
+    for (const a of J.arms) {
+      if (a.chain === J.lead) continue;
+      if (!armOf.has(a.chain)) armOf.set(a.chain, []);
+      armOf.get(a.chain).push({ J, arm: a });
+    }
+  }
+  for (const c of chains) c.lim = limitsFor(c);
   const nodeH = new Map();
   const byChain = new Map();
   for (const x of crossings) {
@@ -987,10 +1259,20 @@ export function engineer(net, groundAt, rules, opt = {}) {
   }
   const flags = [];
   for (const B of order) {
-    const kB = rules.kinds[B.kind];
+    const kB = B.K;
     const fixed = new Map(), lower = new Map(), upper = new Map();
-    // Every junction on it whose height a higher road has already set.
-    for (const [id, s] of B.at) if (nodeH.has(id)) fixed.set(Math.max(0, Math.min(B.n - 1, Math.round(s / B.ds))), nodeH.get(id));
+    // Every meeting point on it whose height a road fitted earlier has set,
+    // except at junctions it joins: there it meets the junction's edge.
+    const joins = armOf.get(B.id) || [];
+    for (const [id, s] of B.at) {
+      if (!nodeH.has(id)) continue;
+      if (joins.length && jNodes.has(id) && joins.some(({ J }) => J.nodeSet.has(id))) continue;
+      fixed.set(Math.max(0, Math.min(B.n - 1, Math.round(s / B.ds))), nodeH.get(id));
+    }
+    for (const { J, arm } of joins) {
+      if (!J.h) continue;
+      fixed.set(arm.ib, J.h(B.x[arm.ib], B.z[arm.ib]));
+    }
     B.decisions = [];
     for (const x of byChain.get(B.id) || []) {
       const otherId = x.a === B.id ? x.b : x.a;
@@ -1023,8 +1305,34 @@ export function engineer(net, groundAt, rules, opt = {}) {
       ceil = new Float64Array(B.n);
       for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : B.raw[i] + kB.bed;
     }
-    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil);
+    // Meeting a junction's edge: the edge height may be a little under its
+    // ground (the leading road's crown) or over its roadbed; the floor and the
+    // roadbed limit give way by that much, easing out over the seam.
+    for (const { J, arm } of joins) {
+      if (!J.h || !fixed.has(arm.ib)) continue;
+      const h = fixed.get(arm.ib), below = Math.max(0, B.raw[arm.ib] - h), above = ceil ? Math.max(0, h - ceil[arm.ib]) : 0;
+      if (!below && !above) continue;
+      for (let i = arm.ib, d = 0; i >= 0 && i < B.n && d <= SEAM; i += arm.dir, d += B.ds) {
+        const w = 1 - d / SEAM;
+        floor[i] -= below * w + 0.02;
+        if (ceil) ceil[i] += above * w + 0.02;
+      }
+    }
+    // Inside a junction the road is on the junction's surface: not held to
+    // its own ground there, nor flagged for leaving it.
+    if (B.inJ) for (let i = 0; i < B.n; i++) if (B.inJ[i] && B.id !== junctions[B.inJ[i] - 1].lead) { w[i] = 0; floor[i] = -Infinity; if (ceil) ceil[i] = Infinity; B.known[i] = 1; }
+    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil, B.lim);
     B.prof = r.p; B.ok = r.ok; B.rounds = r.rounds;
+    // Leading a junction: its surface is now known.
+    for (const J of leads.get(B.id) || []) {
+      J.h = junctionSurface(J, B, groundAt);
+      for (const n of J.nodes) nodeH.set(n, J.h(nodes[n].x, nodes[n].z));
+    }
+    // Joining one: inside it, on its surface.
+    for (const { J, arm } of joins) {
+      if (!J.h) continue;
+      for (let i = arm.ib - arm.dir; i >= 0 && i < B.n && B.inJ[i] === J.id + 1; i -= arm.dir) B.prof[i] = J.h(B.x[i], B.z[i]);
+    }
     for (const [id, s] of B.at) if (!nodeH.has(id)) nodeH.set(id, lerpAt(B.prof, s / B.ds));
   }
 
@@ -1044,20 +1352,20 @@ export function engineer(net, groundAt, rules, opt = {}) {
     for (let i = 0; i < c.n; i++) {
       const lift = c.prof[i] - c.raw[i];
       let untold = false;
-      if (!c.struct[i] && lift > rules.bridgeLift) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = 'above the ground: bridge'; untold = true; }
+      if (!c.struct[i] && lift > rules.bridgeLift && !(c.inJ && c.inJ[i])) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = 'above the ground: bridge'; untold = true; }
       if (untold && run) { run.i1 = i; run.max = Math.max(run.max, lift); run.known ||= c.known[i]; }
       else { close(); if (untold) run = { i0: i, i1: i, max: lift, known: c.known[i] }; }
     }
     close();
     if (!c.ok) {
       let worst = 0, wi = 0;
-      const sc = checkProfile(c, c.prof, rules.kinds[c.kind]);
-      for (let i = 0; i < c.n; i++) if (sc.vert[i] > worst) { worst = sc.vert[i]; wi = i; }
+      const sc = checkProfile(c, c.prof, c.K);
+      for (let i = 0; i < c.n; i++) if (sc.vert[i] > worst && !(c.inJ && c.inJ[i])) { worst = sc.vert[i]; wi = i; }
       if (worst > 1.05) flags.push({ x: c.x[wi], z: c.z[wi], kind: 'rules',
         text: `${rules.kinds[c.kind].label}: cannot keep to its rules here (${(worst * 100).toFixed(0)}% of its limit). The roads it must meet disagree.` });
     }
   }
-  return { crossings, flags };
+  return { crossings, flags, junctions };
 }
 
 // Mark a stretch around fractional sample f, `half` metres either way, as a
@@ -1077,14 +1385,19 @@ function markDeck(c, f, half, why) {
 // height samples do not count. vert: steepness and crest/sag together;
 // curve: the plan's bends against the speed (the map's line is only a chain
 // of straight pieces, so this one is a hint, not a verdict).
+// The road's own limits along it (c.lim: in town, near junctions) are used
+// when it has them; otherwise the kind given.
 export function checkProfile(c, p, kind) {
   const n = c.n, h = Math.max(1, Math.round(5 / c.ds)), B = h * c.ds;
-  const G = kind.G / 100, kc = 1 / (100 * kind.Kc), ks = 1 / (100 * kind.Ks), Rmin = minRadius(kind.V);
+  const L = c.lim && c.lim.kc.length === n ? c.lim : null;
+  const K = c.K || kind;
+  const G0 = K.G / 100, kc0 = 1 / (100 * K.Kc), ks0 = 1 / (100 * K.Ks), Rmin = minRadius(K.V);
   const vert = new Float32Array(n), grade = new Float32Array(n), bend = new Float32Array(n), curve = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const a = Math.max(0, i - h), b = Math.min(n - 1, i + h);
     const g = (p[b] - p[a]) / ((b - a) * c.ds || 1);
     grade[i] = g;
+    const G = L ? L.G[i] : G0, kc = L ? L.kc[i] : kc0, ks = L ? L.ks[i] : ks0;
     let r = Math.abs(g) / G;
     if (i - h >= 0 && i + h < n) {
       const k = (p[i + h] - 2 * p[i] + p[i - h]) / (B * B);
