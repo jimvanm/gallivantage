@@ -314,8 +314,15 @@ reasoning: the project's `ROADS-DRAFT.md`.
   bridge on piers; less, its own bed shows at its edges. Higher than 4 m with
   nothing on the map to explain it (bridge tag, water, river, a road below):
   flagged as worth a look.
+- **Only a little roadbed (Jim, 10 October, 0.14.7).** Each kind may ride
+  only so far above the ground to stay smooth (`bed`: main road 1 m,
+  secondary 0.5, local 0.3, lane 0.2, track and path 0.1). Past that a slow
+  road follows the bumps (slow roads may be bumpy); motorways and railways
+  have no roadbed and bridge instead.
+- **Over water, at any height, it is a bridge**, and within 25 m of the water
+  (the banks) the road may leave the ground to reach it, unflagged.
 - Creeks: the road does not dip into them; it bridges them where it rides
-  high enough. Rivers, canals and the map's water are bridged.
+  high enough.
 - [ ] Tunnels: test somewhere tunnel-rich (the Welland Canal has one in
       Ontario). Cutting into the ground is not allowed until then.
 - [ ] Jim to look at the 407 at Brock Road and Campbellford with real data.

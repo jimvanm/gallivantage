@@ -123,8 +123,8 @@ ul.finds li:hover{outline:1px solid var(--line)}
 
     <section>
       <h2>Rules for each kind of road</h2>
-      <table id="kinds"><thead><tr><th>Kind</th><th title="design speed, km/h">km/h</th><th title="steepest grade, per cent">steepest %</th><th title="hilltops: metres of road per 1% change of grade">hilltop</th><th title="dips: metres of road per 1% change of grade">dip</th></tr></thead><tbody></tbody></table>
-      <p class="note" style="margin-top:6px">Hilltop and dip: how gently the road must round off, in metres of road for each 1% change in steepness. Bigger is gentler. At 120 km/h a hilltop needs about 95, so a driver sees far enough over it.</p>
+      <table id="kinds"><thead><tr><th>Kind</th><th title="design speed, km/h">km/h</th><th title="steepest grade, per cent">steepest %</th><th title="hilltops: metres of road per 1% change of grade">hilltop</th><th title="dips: metres of road per 1% change of grade">dip</th><th title="how far it may ride above the ground on its own bed, metres (0: none, a bridge instead)">bed m</th></tr></thead><tbody></tbody></table>
+      <p class="note" style="margin-top:6px">Bed: how far a road may ride above the ground to stay smooth. Past that, a slow road follows the bumps; 0 means none (motorways and railways bridge instead). Hilltop and dip: how gently the road must round off, in metres of road for each 1% change in steepness. Bigger is gentler. At 120 km/h a hilltop needs about 95, so a driver sees far enough over it.</p>
     </section>
 
     <section>
@@ -177,7 +177,7 @@ const SLIDERS = { hold: (v) => `${fmt(v, 1)} m`, smooth: (v) => `× ${fmt(v, 1)}
 function showRules() {
   const tb = $('kinds').tBodies[0];
   tb.innerHTML = KIND_ORDER.map((k) => { const K = rules.kinds[k];
-    return `<tr><td>${K.label}</td>` + ['V', 'G', 'Kc', 'Ks'].map((f) => `<td><input type="number" data-k="${k}" data-f="${f}" value="${K[f]}" step="${f === 'G' ? 0.5 : f === 'V' ? 10 : 1}" min="0.1"></td>`).join('') + '</tr>'; }).join('');
+    return `<tr><td>${K.label}</td>` + ['V', 'G', 'Kc', 'Ks', 'bed'].map((f) => `<td><input type="number" data-k="${k}" data-f="${f}" value="${K[f]}" step="${f === 'G' ? 0.5 : f === 'V' ? 10 : f === 'bed' ? 0.1 : 1}" min="${f === 'bed' ? 0 : 0.1}"></td>`).join('') + '</tr>'; }).join('');
   for (const id of Object.keys(SLIDERS)) { $(id).value = rules[id]; $(id + '-o').textContent = SLIDERS[id](rules[id]); }
   showSettings();
 }
@@ -185,13 +185,13 @@ function showSettings() {
   const out = {};
   for (const id of Object.keys(SLIDERS)) if (rules[id] !== START[id]) out[id] = rules[id];
   const kinds = {};
-  for (const k of KIND_ORDER) for (const f of ['V', 'G', 'Kc', 'Ks']) if (rules.kinds[k][f] !== START.kinds[k][f]) (kinds[k] || (kinds[k] = {}))[f] = rules.kinds[k][f];
+  for (const k of KIND_ORDER) for (const f of ['V', 'G', 'Kc', 'Ks', 'bed']) if (rules.kinds[k][f] !== START.kinds[k][f]) (kinds[k] || (kinds[k] = {}))[f] = rules.kinds[k][f];
   if (Object.keys(kinds).length) out.kinds = kinds;
   $('settings').textContent = Object.keys(out).length ? JSON.stringify(out) : '(the starting rules, unchanged)';
 }
 $('kinds').addEventListener('change', (e) => {
   const t = e.target; if (!t.dataset.k) return;
-  const v = Number(t.value); if (!(v > 0)) { t.value = rules.kinds[t.dataset.k][t.dataset.f]; return; }
+  const v = Number(t.value); if (!(v > 0 || (t.dataset.f === 'bed' && v === 0))) { t.value = rules.kinds[t.dataset.k][t.dataset.f]; return; }
   rules.kinds[t.dataset.k][t.dataset.f] = v; showSettings(); later(rebuild);
 });
 for (const id of Object.keys(SLIDERS)) $(id).addEventListener('input', () => { rules[id] = Number($(id).value); $(id + '-o').textContent = SLIDERS[id](rules[id]); showSettings(); later(rebuild); });

@@ -184,6 +184,36 @@ function world(extra, lines) {
   }
   ok('the ground is never changed: the road rides on it or bridges over it');
 }
+// ---- a little roadbed, and water ----------------------------------------------------------------
+{
+  // A local road over a field with 0.6 m bumps: it may ride at most 0.3 m
+  // above the ground, so it follows the bumps (slow roads may be bumpy).
+  const bumpy = (x, z) => 100 + 0.6 * Math.max(0, Math.sin(z / 6));
+  const r = runAll([line([0, -150, 0, 150], 'local')], [], bumpy, defaultRules());
+  const c = r.net.chains[0];
+  let hi = 0, lo = 0;
+  for (let i = 0; i < c.n; i++) { hi = Math.max(hi, c.prof[i] - c.raw[i]); lo = Math.max(lo, c.raw[i] - c.prof[i]); }
+  assert.ok(hi < 0.35, 'no more than its roadbed above the ground: ' + hi.toFixed(2));
+  assert.ok(lo < 0.03, 'never under it');
+  assert.ok(!r.flags.length, 'and that is not a fault: ' + r.flags.map((f) => f.text).join(' | '));
+  // A motorway has no roadbed limit: it rides smooth and bridges instead.
+  const m = runAll([line([0, -150, 0, 150], 'motorway')], [], bumpy, defaultRules()).net.chains[0];
+  let mh = 0; for (let i = 0; i < m.n; i++) mh = Math.max(mh, m.prof[i] - m.raw[i]);
+  assert.ok(mh > 0.4, 'a motorway rides smooth over them');
+  ok('a slow road follows bumps higher than its roadbed; a motorway rides over them');
+}
+{
+  // A local road across a river at water level, the banks dipping a little
+  // either side: over the water and on the banks it is a bridge, unflagged.
+  const g = (x, z) => 100 - (Math.abs(z) < 60 ? 2 : 0) - (Math.abs(z) >= 60 && Math.abs(z) < 75 ? 5 : 0);
+  const waterAt = (x, z) => Math.abs(z) < 60;
+  const r = runAll([line([0, -300, 0, 300], 'local')], [], g, defaultRules(), { waterAt });
+  const c = r.net.chains[0];
+  for (let i = 0; i < c.n; i++) if (Math.abs(c.z[i]) < 60) assert.equal(c.struct[i], 1, 'over the water: a bridge at any height');
+  assert.ok(!r.flags.length, 'the banks are not flagged: ' + r.flags.map((f) => f.text).join(' | '));
+  ok('a road over water is a bridge, at any height, and its banks are not flagged');
+}
+
 // ---- from real map tiles -------------------------------------------------------------------
 {
   // One secondary road crossing from one zoom-14 tile into the next, as the

@@ -56,17 +56,20 @@ import { ROAD_STYLE, RAIL_STYLE } from './roads.js';
 //        to meet it.
 //   noLevel  never crosses anything at the same level (motorways).
 //   sh   shoulder beyond the drawn road edge, metres, kept level with the road.
+//   bed  how far it may ride above the ground on its own bed, metres, to stay
+//        smooth. Past that, a slow road follows the bumps instead (slow roads
+//        may be bumpy); a fast one (no limit, 0) is a bridge there instead.
 export const KINDS = {
-  motorway:  { label: 'Motorway',        V: 120, G: 4,  Kc: 95,  Ks: 50, rank: 9, noLevel: true, sh: 3 },
-  rail:      { label: 'Main railway',    V: 120, G: 2,  Kc: 150, Ks: 150, rank: 8, sh: 1.5 },
-  main:      { label: 'Main road',       V: 90,  G: 5,  Kc: 45,  Ks: 30, rank: 7, sh: 2 },
-  secondary: { label: 'Secondary road',  V: 70,  G: 7,  Kc: 20,  Ks: 20, rank: 6, sh: 1.5 },
-  ramp:      { label: 'Ramp',            V: 60,  G: 6,  Kc: 15,  Ks: 15, rank: 5, sh: 1.5 },
-  railMinor: { label: 'Siding or tram',  V: 40,  G: 3,  Kc: 40,  Ks: 40, rank: 4, sh: 1 },
-  local:     { label: 'Local road',      V: 50,  G: 9,  Kc: 7,   Ks: 12, rank: 3, sh: 1 },
-  minor:     { label: 'Lane or service', V: 30,  G: 12, Kc: 2,   Ks: 6,  rank: 2, sh: 0.5 },
-  track:     { label: 'Track',           V: 20,  G: 15, Kc: 1,   Ks: 3,  rank: 1, sh: 0.3 },
-  path:      { label: 'Path',            V: 10,  G: 20, Kc: 0.5, Ks: 1,  rank: 0, sh: 0.2 },
+  motorway:  { label: 'Motorway',        V: 120, G: 4,  Kc: 95,  Ks: 50, rank: 9, noLevel: true, sh: 3, bed: 0 },
+  rail:      { label: 'Main railway',    V: 120, G: 2,  Kc: 150, Ks: 150, rank: 8, sh: 1.5, bed: 0 },
+  main:      { label: 'Main road',       V: 90,  G: 5,  Kc: 45,  Ks: 30, rank: 7, sh: 2, bed: 1 },
+  secondary: { label: 'Secondary road',  V: 70,  G: 7,  Kc: 20,  Ks: 20, rank: 6, sh: 1.5, bed: 0.5 },
+  ramp:      { label: 'Ramp',            V: 60,  G: 6,  Kc: 15,  Ks: 15, rank: 5, sh: 1.5, bed: 0.5 },
+  railMinor: { label: 'Siding or tram',  V: 40,  G: 3,  Kc: 40,  Ks: 40, rank: 4, sh: 1, bed: 0.5 },
+  local:     { label: 'Local road',      V: 50,  G: 9,  Kc: 7,   Ks: 12, rank: 3, sh: 1, bed: 0.3 },
+  minor:     { label: 'Lane or service', V: 30,  G: 12, Kc: 2,   Ks: 6,  rank: 2, sh: 0.5, bed: 0.2 },
+  track:     { label: 'Track',           V: 20,  G: 15, Kc: 1,   Ks: 3,  rank: 1, sh: 0.3, bed: 0.1 },
+  path:      { label: 'Path',            V: 10,  G: 20, Kc: 0.5, Ks: 1,  rank: 0, sh: 0.2, bed: 0.1 },
 };
 export const KIND_ORDER = Object.keys(KINDS);
 
@@ -82,6 +85,9 @@ export const SETTINGS = { hold: 1.0, smooth: 1, bridgeLift: 1.5, clearance: 6.5 
 // Higher than this above the ground, with no bridge on the map, no water and
 // no road below: worth a look (a bridge the map does not show, or bad ground).
 export const UNTOLD_BRIDGE = 4;
+// Metres either side of the map's water within which a road may leave the
+// ground for its bridge (the banks).
+const NEAR_WATER = 25;
 
 // Fresh copy of every rule, to change freely (the lab's sliders).
 export function defaultRules() {
@@ -631,9 +637,12 @@ function solveBand(d0, d1, d2, b) {
 // floor (optional, per sample): the ground, which the line may not go under
 // (-Infinity where it may: a tunnel). Where it would, it is held up there,
 // harder each round, so it rides smoothly over what it cannot follow.
+// ceil (optional, per sample): the most it may ride above the ground there
+// (Infinity: no limit). Where it would ride higher, it is pulled down to it
+// and the smoothness rules give way there: the road follows the bumps.
 // Returns { p, ok, rounds }.
 const FLOOR_GAP = 0.03, FLOOR_SLACK = 0.02;
-export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map(), floor = null) {
+export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = new Map(), upper = new Map(), floor = null, ceil = null) {
   const n = t.length;
   if (n < 3) {
     const p = Float64Array.from(t);
@@ -649,6 +658,8 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
   const lam = new Float64Array(n).fill(lam0);
   const gam = new Float64Array(n - 1), gs = new Int8Array(n - 1);
   const fw = new Float64Array(n);          // how hard each point is held up off the ground (0 = not yet)
+  const cw = new Float64Array(n);          // how hard each point is held down to its roadbed limit
+  const free = new Uint8Array(n);          // near a held-down point: smoothness rules give way
   const pin = new Map(fixed);
   let w = Float64Array.from(w0);
   // With no trusted ground at all, keep a whisper of it so the line is defined.
@@ -662,6 +673,10 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
     for (let i = 0; i < n; i++) {              // held up to the ground
       if (!fw[i]) continue;
       d0[i] += fw[i]; b[i] += fw[i] * (floor[i] + FLOOR_GAP);
+    }
+    for (let i = 0; i < n; i++) {              // held down to its roadbed limit
+      if (!cw[i]) continue;
+      d0[i] += cw[i]; b[i] += cw[i] * (ceil[i] - FLOOR_GAP);
     }
     for (let i = 1; i < n - 1; i++) {          // bending at i: p[i-1] - 2 p[i] + p[i+1]
       const L = lam[i];
@@ -700,7 +715,18 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
       if (!any) w.fill(1e-6);
       continue;
     }
+    // Riding higher than its roadbed allows: pulled down, and the smoothness
+    // rules give way around there (they are relaxed back to the start).
+    if (ceil) {
+      for (let i = 0; i < n; i++) {
+        if (p[i] <= ceil[i] + FLOOR_SLACK || pin.has(i)) continue;
+        cw[i] = cw[i] ? Math.min(cw[i] * 4, lam0 * 1e9) : 100;
+        for (let j = Math.max(0, i - 3); j <= Math.min(n - 1, i + 3); j++) { free[j] = 1; lam[j] = Math.min(lam[j], lam0); if (j < n - 1) gam[j] = 0; }
+        broke = true;
+      }
+    }
     for (let i = 1; i < n - 1; i++) {
+      if (free[i]) continue;
       const k = (p[i - 1] - 2 * p[i] + p[i + 1]) / (ds * ds);
       if (k < -kc * 1.05 || k > ks * 1.05) {
         lam[i] = Math.min(lam[i] * 1.6, lam0 * 1e7);
@@ -708,6 +734,7 @@ export function fitProfile(t, w0, ds, kind, rules, fixed = new Map(), lower = ne
       }
     }
     for (let i = 0; i < n - 1; i++) {
+      if (free[i] || free[i + 1]) continue;
       const g = (p[i + 1] - p[i]) / ds;
       if (Math.abs(g) > G * 1.02) {
         if (!gam[i] || gs[i] !== Math.sign(g)) { gam[i] = 1e3 * lam0; gs[i] = Math.sign(g); }
@@ -799,6 +826,14 @@ export function engineer(net, groundAt, rules, opt = {}) {
       else if (opt.waterAt && opt.waterAt(c.x[i], c.z[i])) { c.w[i] = 0; c.struct[i] = 1; c.why[i] = 'over the map\'s water'; }
       if (c.struct[i]) c.known[i] = 1;
     }
+    // Over the map's water at any height, it is a bridge; near the water
+    // (the banks) it may leave the ground to reach it, and is not flagged.
+    const near = Math.round(NEAR_WATER / c.ds);
+    const over = c.struct.map((v, i) => c.why[i] === 'over the map\'s water' ? 1 : 0);
+    for (let i = 0; i < c.n; i++) {
+      if (!over[i]) continue;
+      for (let j = Math.max(0, i - near); j <= Math.min(c.n - 1, i + near); j++) { c.known[j] = 1; c.w[j] = Math.min(c.w[j], 0.2); }
+    }
     c.prof = null;
   }
   // Rivers and creeks: the road does not dip into them. Rivers and canals are
@@ -852,7 +887,14 @@ export function engineer(net, groundAt, rules, opt = {}) {
     // The ground is a floor the road may not go under, except in a tunnel.
     const floor = Float64Array.from(B.raw);
     for (let i = 0; i < B.n; i++) if (B.struct[i] === 2) floor[i] = -Infinity;
-    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor);
+    // Its roadbed limit, except where the map says it leaves the ground
+    // (a bridge, water, a creek, a road below).
+    let ceil = null;
+    if (kB.bed > 0) {
+      ceil = new Float64Array(B.n);
+      for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : B.raw[i] + kB.bed;
+    }
+    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil);
     B.prof = r.p; B.ok = r.ok; B.rounds = r.rounds;
     for (const [id, s] of B.at) if (!nodeH.has(id)) nodeH.set(id, lerpAt(B.prof, s / B.ds));
   }
