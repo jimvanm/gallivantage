@@ -95,3 +95,10 @@ assert.equal(caps.length, 2);
 for (let i = 1; i < pieces.length; i++) assert.equal(pieces[i].from, pieces[i - 1].to, 'each piece starts on the outline the last one ended with');
 assert.deepEqual(rowPieces((x, z) => 0, rows[3], 7), rowPieces((x, z) => 0, rows[3], 7), 'same row, same pieces');
 console.log('biome: ok');
+
+// A dense forest: spots move closer together so it can reach a closed canopy.
+{
+  const dense = plantTile(ctx(tileSeed(16, 11400, 22000)), { ...R, density: 8 }).length / TREE_STRIDE;
+  assert.ok(dense > 5 * n, `800 a hectare gives far more trees: ${dense} against ${n}`);
+  console.log('biome: dense ok');
+}

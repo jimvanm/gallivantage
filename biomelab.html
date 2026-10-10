@@ -69,7 +69,7 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
       <div class="chips" id="places"></div>
       <div class="row" style="margin-top:8px"><input type="text" id="ll" placeholder="or type lat, lon and press Enter" spellcheck="false"></div>
       <div class="row" style="margin-top:8px"><label for="size">Area</label>
-        <select id="size"><option value="6000">6 km square</option><option value="8000">8 km square</option><option value="10000" selected>10 km square</option><option value="14000">14 km square</option></select></div>
+        <select id="size"><option value="6000">6 km square</option><option value="8000">8 km square</option><option value="10000" selected>10 km square</option><option value="14000">14 km square</option><option value="20000">20 km square</option><option value="30000">30 km square</option></select></div>
     </section>
     <section>
       <h2 id="read-h">What the rules read where you look</h2>
@@ -90,15 +90,15 @@ dt{color:var(--muted)} dd{margin:0;font:13px var(--mono);text-align:right}
       <label class="check"><input type="checkbox" id="show-trees" checked> Trees</label>
       <label class="check"><input type="checkbox" id="show-vines" checked> Vines</label>
       <label class="check"><input type="checkbox" id="show-dots" checked> Distant trees as soft dots</label>
-      <div class="row" style="margin-top:8px"><label for="dotr">Dots drawn within</label><output id="dotr-o"></output></div>
-      <input type="range" id="dotr" min="1000" max="10000" step="250" value="5000">
+      <div class="row" style="margin-top:8px"><label for="dotr">Far trees (soft dots) drawn within</label><output id="dotr-o"></output></div>
+      <input type="range" id="dotr" min="1000" max="15000" step="250" value="5000">
       <div class="row"><label for="dotf">Dots thin into the canopy from</label><output id="dotf-o"></output></div>
       <input type="range" id="dotf" min="0.2" max="0.95" step="0.05" value="0.6">
       <label class="check"><input type="checkbox" id="show-canopy" checked> Distant forest as a canopy on the ground</label>
       <div class="row" style="margin-top:8px"><label for="fade">Trees thin out (into dots, or the canopy) from</label><output id="fade-o"></output></div>
       <input type="range" id="fade" min="0.05" max="0.95" step="0.05" value="0.35">
-      <div class="row" style="margin-top:8px"><label for="range">Trees drawn within</label><output id="range-o"></output></div>
-      <input type="range" id="range" min="500" max="6000" step="100" value="2500">
+      <div class="row" style="margin-top:8px"><label for="range">Full trees drawn within</label><output id="range-o"></output></div>
+      <input type="range" id="range" min="500" max="8000" step="100" value="2500">
       <div class="row"><label for="near">Detailed shape within</label><output id="near-o"></output></div>
       <input type="range" id="near" min="0" max="1000" step="10" value="200">
     </section>
@@ -129,7 +129,7 @@ const mixc = (a, b, t) => { t = Math.max(0, Math.min(1, t)); return [a[0] + (b[0
 
 // [name, lat, lon, area (m), start: x east, z south of the middle (m), height above ground, heading (degrees)]
 const PLACES = [
-  ['Banff', 51.19, -115.57, 10000, [-600, 3200, 260, 350]],
+  ['Banff', 51.19, -115.57, 30000, [-600, 3200, 260, 350]],
   ['Saba', 17.635, -63.237, 8000, [-2600, 2600, 280, 45]],
   ['Okanagan (Naramata)', 49.585, -119.575, 10000, [-3800, 600, 220, 75]],
 ];
@@ -307,9 +307,9 @@ function tilesUnder(a, z) {
   return out;
 }
 
-// Ground: the usual zoom-14 height tiles, spikes removed, sampled onto the grid.
+// Ground: the usual height tiles (zoom 14, or 13 for areas over 14 km), spikes removed, sampled onto the grid.
 async function loadGround(a, id) {
-  const tiles = tilesUnder(a, 14), got = new Map();
+  const tiles = tilesUnder(a, a.gz), got = new Map();
   let done = 0;
   await Promise.all(tiles.map(async (t) => {
     const r = await cachedFetch(TILE_URL.replace('{z}', t.z).replace('{x}', t.x).replace('{y}', t.y), { mode: 'cors' });
@@ -323,7 +323,7 @@ async function loadGround(a, id) {
   const N = a.N, h = new Float32Array(N * N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const mx = a.cmx + (-a.S / 2 + i * a.step) / a.k, my = a.cmy - (-a.S / 2 + j * a.step) / a.k;
-    const t = mercToTile(mx, my, 14), tx = Math.floor(t.x), ty = Math.floor(t.y), hh = got.get(tx + '/' + ty);
+    const t = mercToTile(mx, my, a.gz), tx = Math.floor(t.x), ty = Math.floor(t.y), hh = got.get(tx + '/' + ty);
     if (!hh) continue;
     const u = Math.min(254.999, (t.x - tx) * 255), v = Math.min(254.999, (t.y - ty) * 255);
     const iu = Math.floor(u), jv = Math.floor(v), fu = u - iu, fv = v - jv;
@@ -466,7 +466,7 @@ function recolour() {
 async function load(lat, lon, S, start) {
   const id = ++loadId;
   downloaded = 0;
-  const N = 801, a = { lat, lon, S, N, step: S / (N - 1), cmx: lonToMercX(lon), cmy: latToMercY(lat), k: Math.cos(lat * Math.PI / 180) };
+  const N = S > 14000 ? 1201 : 801, a = { lat, lon, S, N, gz: S > 14000 ? 13 : 14, step: S / (N - 1), cmx: lonToMercX(lon), cmy: latToMercY(lat), k: Math.cos(lat * Math.PI / 180) };
   busy('Reading the ground…');
   const t0 = performance.now();
   let g, m;
@@ -631,7 +631,7 @@ function rebuild(eye, yaw, hfov, pitch, now) {
 
 // ================= the panel =================
 const RULE_UI = [
-  ['density', 'Trees overall', 0.1, 2.5, 0.05, (v) => `× ${fmt(v, 2)}`],
+  ['density', 'Forest density (in a full forest)', 0.25, 8, 0.25, (v) => `${fmt(v * 100)} trees a hectare`],
   ['scatter', 'Trees where the map says nothing', 0, 1, 0.05, (v) => `${fmt(v * 100)}% of a forest`],
   ['treeline', 'Treeline height', 0.5, 1.5, 0.05, (v) => `× ${fmt(v, 2)}`],
   ['edge', 'Trees thin out below the treeline over', 50, 800, 10, (v) => `${fmt(v)} m`],
@@ -755,7 +755,7 @@ function frame(now) {
   const W = Math.round(canvas.clientWidth * Math.min(devicePixelRatio || 1, 2)), H = Math.round(canvas.clientHeight * Math.min(devicePixelRatio || 1, 2)); if (!W || !H) return;
   if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; } gl.viewport(0, 0, W, H);
   const eye = [cam.mercX, cam.alt, -cam.mercY], cp = Math.cos(cam.pitch), fwd = [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp];
-  const agl = cam.alt - groundAt(eye[0], eye[2]), vfov = 0.9, hfov = 2 * Math.atan(Math.tan(vfov / 2) * W / H), near = Math.max(0.1, Math.min(20, agl * 0.05)), far = Math.max(25000, agl * 6);
+  const agl = cam.alt - groundAt(eye[0], eye[2]), vfov = 0.9, hfov = 2 * Math.atan(Math.tan(vfov / 2) * W / H), near = Math.max(0.1, Math.min(20, agl * 0.05)), far = Math.max(25000, area.S * 1.6, agl * 6);
   const vp = mm(persp(vfov, W / H, near, far), lookAt(eye, [eye[0] + fwd[0], eye[1] + fwd[1], eye[2] + fwd[2]], [0, 1, 0]));
   want(eye); makeSome(6); rebuild(eye, cam.yaw, hfov, cam.pitch, now);
   const fog = Math.min(0.00012, 0.9 / Math.max(area.S * 2, agl * 2.5));
@@ -809,6 +809,7 @@ function stats() {
 }
 
 const P0 = PLACES[0];
+$('size').value = String(P0[3]);
 load(P0[1], P0[2], P0[3], P0[4]);
 requestAnimationFrame(frame);
 </script>

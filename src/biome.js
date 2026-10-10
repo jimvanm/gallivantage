@@ -34,7 +34,7 @@ export const COVER_NAMES = ['nothing mapped', 'wood or forest', 'grass or meadow
 // The settings Jim can move in the lab. Change defaults only after a look.
 export function defaultRules() {
   return {
-    density: 1,        // trees overall (1 = about 100 a hectare in a full forest)
+    density: 1,        // forest density: 1 = about 100 trees a hectare in a full forest (8 = 800, a closed canopy)
     spacing: 6,        // metres between possible spots (closest two trees can stand)
     scatter: 0.3,      // trees on land the map says nothing about, against a forest (0..1)
     treeline: 1,       // treeline height, times the latitude rule
@@ -175,7 +175,9 @@ export { STRIDE as TREE_STRIDE };
 // latLon(x, z) -> [lat, lon], ground(x, z), grad(x, z) -> [gx, gz], cover(x, z) }.
 // Returns a Float32Array, STRIDE numbers a tree.
 export function plantTile(ctx, R) {
-  const r = rng(ctx.seed), sp = R.spacing, n = Math.max(1, Math.round(ctx.size / sp)), cell = ctx.size / n;
+  // Spots closer together when the forest is denser than they allow (at most 90% of spots taken).
+  const sp = Math.min(R.spacing, 9.5 / Math.sqrt(Math.max(0.01, R.density)));
+  const r = rng(ctx.seed), n = Math.max(1, Math.round(ctx.size / sp)), cell = ctx.size / n;
   const out = [];
   const blendDeg = R.blend / 111;
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
