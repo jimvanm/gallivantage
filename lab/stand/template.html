@@ -1,0 +1,510 @@
+<title>Tree Stand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a 3D stage on the left, a narrow instrument panel on the right; stacked on phones. */
+:root{
+  --bg:#eef2ee; --panel:#f8faf7; --fg:#1b2420; --muted:#5d6b64; --line:#d4ddd6;
+  --accent:#2d6a3e; --accent-ink:#ffffff; --warm:#c8502a; --good:#2f7d4a; --chip:#e3ebe5;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631;
+  --accent:#6cc28a; --accent-ink:#0d1a12; --warm:#f0784f; --good:#6cc28a; --chip:#222c27; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --panel:#18201c; --fg:#e6ece8; --muted:#97a69e; --line:#2b3631;
+  --accent:#6cc28a; --accent-ink:#0d1a12; --warm:#f0784f; --good:#6cc28a; --chip:#222c27; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 380px;height:100%}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:#b9d3e6}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+canvas:active{cursor:grabbing}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,-100%);font:600 12px/1.2 var(--body);color:#14211b;background:rgba(255,255,255,.85);padding:2px 7px;border-radius:4px;white-space:nowrap}
+.lbl.open{background:#fff3c4;color:#5a3d00}
+.hint{position:absolute;left:12px;bottom:12px;right:12px;font-size:12px;color:#14211b;pointer-events:none}
+.speed{position:absolute;top:12px;right:12px;font:600 13px var(--mono);color:#14211b;background:rgba(255,255,255,.85);padding:3px 9px;border-radius:4px;pointer-events:none}
+.hint span{background:rgba(255,255,255,.8);padding:3px 8px;border-radius:4px;display:inline-block}
+#busy[hidden]{display:none}
+#busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,30,25,.35);color:#fff;font:700 18px var(--body)}
+.panel{background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;min-width:0;padding-block:20px 28px;padding-inline:20px;display:flex;flex-direction:column;gap:22px}
+h1{font-family:var(--display);font-size:26px;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.lede{margin:6px 0 0;color:var(--muted)}
+h2{font-family:var(--display);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 8px;color:var(--muted);font-weight:600}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:600 13px var(--body);padding:8px 4px;border:0;background:transparent;color:var(--fg);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ctrls{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.row label{font-weight:700}
+.row output{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+select{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{display:flex;align-items:center;gap:8px;font-weight:700}
+.check input{accent-color:var(--accent);width:16px;height:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:600 12px var(--body);padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14px;margin:0}
+.stats dt{color:var(--muted)}
+.stats dd{margin:0;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums;text-align:right}
+.stats dd.big{color:var(--accent);font-weight:600}
+.verdict{font-size:13px;padding:8px 10px;border-radius:6px;background:var(--chip);border-left:3px solid var(--good);margin:10px 0 0}
+.verdict.warn{border-left-color:var(--warm)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:4px 0;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:700;font-size:12px}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+ul.how{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.note{font-size:13px;color:var(--muted);margin:0}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}
+  .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+  .stage{height:62vh}
+}
+</style>
+
+<div class="app">
+  <div class="stage">
+    <canvas id="gl" aria-label="3D view of trees"></canvas>
+    <div id="labels"></div>
+    <div id="busy" hidden>Planting…</div>
+    <div class="hint"><span>Drag to turn · Shift-drag or two fingers to move · WASD or arrows walk (Shift ×8) · Wheel sets speed · Ctrl+wheel or pinch zooms</span></div>
+    <div id="speed" class="speed">Speed 5.0 m/s</div>
+  </div>
+
+  <aside class="panel">
+    <header>
+      <h1>Tree Stand</h1>
+      <p class="lede">The experimental farm. Library trees not yet approved, plus trials not yet in the library, in rows, labelled with their status. Approved ones are on the library page.</p>
+    </header>
+
+    <section>
+      <h2>Scene</h2>
+      <div class="seg" role="group" aria-label="Scene">
+        <button id="s-styles" aria-pressed="true">The styles</button>
+        <button id="s-mtn" aria-pressed="false">The mountain</button>
+      </div>
+    </section>
+
+    <section class="ctrls">
+      <div class="chips" id="rows"></div>
+      <div id="mtn-ctrls" class="ctrls" hidden>
+        <div class="row"><label for="count">Trees planted</label>
+          <select id="count">
+            <option value="30000">30,000</option>
+            <option value="100000">100,000</option>
+            <option value="300000" selected>300,000</option>
+            <option value="1000000">1,000,000</option>
+            <option value="2000000">2,000,000</option>
+          </select></div>
+        <div class="chips" id="views">
+          <button data-v="eye">Eye level</button>
+          <button data-v="hill">Hillside</button>
+          <button data-v="above">From above</button>
+        </div>
+      </div>
+      <div>
+        <div class="row"><label for="range">Trees drawn within</label><output id="range-o"></output></div>
+        <input type="range" id="range" min="200" max="8000" step="100" value="2500">
+      </div>
+      <div>
+        <div class="row"><label for="near">Detailed shape within</label><output id="near-o"></output></div>
+        <input type="range" id="near" min="0" max="1000" step="10" value="200">
+      </div>
+      <label class="check"><input type="checkbox" id="cull" checked> Skip trees out of view</label>
+    </section>
+
+    <section>
+      <h2>What it costs right now</h2>
+      <dl class="stats">
+        <dt>Trees planted</dt><dd id="st-total">0</dd>
+        <dt>Drawn, detailed shape</dt><dd id="st-near">0</dd>
+        <dt>Drawn, simple shape</dt><dd id="st-far">0</dd>
+        <dt>Skipped (too far or out of view)</dt><dd id="st-skip">0</dd>
+        <dt>Draw calls per frame</dt><dd id="st-calls" class="big">0</dd>
+        <dt>Tree triangles per frame</dt><dd id="st-tri" class="big">0</dd>
+        <dt>Tree list sent to the card</dt><dd id="st-bytes">0</dd>
+        <dt>Last refresh of the list</dt><dd id="st-rebuild">–</dd>
+        <dt>Card time for the trees</dt><dd id="st-gpu">–</dd>
+        <dt>Frame time</dt><dd id="st-frame">–</dd>
+        <dt>Planting took</dt><dd id="st-plant">–</dd>
+      </dl>
+      <p class="verdict" id="verdict">Measuring…</p>
+    </section>
+
+    <section>
+      <h2>The styles</h2>
+      <table>
+        <thead><tr><th>Style</th><th>Like</th><th class="n">Detailed, young to old</th><th class="n">Simple</th></tr></thead>
+        <tbody id="kinds"></tbody>
+      </table>
+      <p class="note" style="margin-top:8px">Triangles per tree. Each style has a shape for each stage of growth: spires gain layers, saplings are thin and sparse, palms keep full-size fronds and grow a trunk. Each tree is then stretched up to 10% either way so no two match.</p>
+    </section>
+
+    <section>
+      <h2>How they stay light</h2>
+      <ul class="how">
+        <li>Solid shapes, no see-through leaf pictures. See-through leaves are what usually make trees slow.</li>
+        <li>A detailed shape per growth stage near you; one simple shape per style beyond, a handful of triangles.</li>
+        <li>One draw call per shape, however many trees.</li>
+        <li>A tree is 20 bytes: where it stands, its height, its width, which way it faces, a shade.</li>
+        <li>Trees are sent nearest first, so the card skips hidden ones cheaply. The ground is drawn after them for the same reason.</li>
+        <li>The list is refreshed only after you move 20 m or turn. Standing still costs nothing.</li>
+        <li>Beyond the last tree, the forest is the ground's colour, as in the app now.</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString("en-CA");
+const kb=b=>b<1024?`${fmt(b)} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`;
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],norm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return[a[0]/l,a[1]/l,a[2]/l]};
+
+// ================= shapes =================
+// Unit tree: height 1, crown 1 across. Shared corners, colour per corner; the
+// face direction comes from screen slopes (as in the app), so no normals.
+// ================= shapes: read from the library =================
+// Filled in from library/trees/models.json and library/index.json when this page is made,
+// so what you see here is exactly what the library holds.
+const LIB=/*LIBRARY_TREES*/null;
+const STYLE_INFO=[["spire","Spire","Spruce, fir",true],["pine","Pine","Pine",true],["column","Column","Cedar, cypress",true],["round","Round","Maple, oak, lime",false],
+  ["oval","Tall oval","Poplar, birch",false],["spread","Spreading","Old oak, acacia",false],["feather","Feather palm","Coconut",false],["fan","Fan palm","Washingtonia",false],...(LIB.extra||[]).map(e=>[e.key,e.name,e.like,false])];
+const ALL={p:[],c:[],i:[]},SHAPES=[];
+// Every shape is scaled to unit height and width, so one shader stretches it to each tree's real size.
+function pack(id){const m=LIB.models[id];let H=0,W=0;for(let i=0;i<m.pos.length;i+=3){H=Math.max(H,m.pos[i+1]);W=Math.max(W,Math.abs(m.pos[i]),Math.abs(m.pos[i+2]))}W*=2;
+  const base=ALL.p.length/3,first=ALL.i.length;for(let i=0;i<m.pos.length;i+=3)ALL.p.push(m.pos[i]/W,m.pos[i+1]/H,m.pos[i+2]/W);ALL.c.push(...m.col);for(const x of m.idx)ALL.i.push(x+base);
+  return{first,count:m.idx.length,tris:m.idx.length/3,H,W,lib:id}}
+const STYLES=STYLE_INFO.map(([key,name,like,conifer],si)=>{const s={key,name,like,conifer},ids=[];for(let i=1;LIB.models[`${key}-${i}`];i++)ids.push(`${key}-${i}`);
+  s.shapes=ids.map(id=>{const sh=pack(id);sh.style=si;SHAPES.push(sh);sh.id=SHAPES.length-1;return sh});
+  const f=pack(`${key}-far`);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
+// The far shapes also go in as ordinary shapes, so the rows can show them up close.
+STYLES.forEach((s,si)=>{const f=s.far;f.style=si;f.isFar=true;SHAPES.push(f);f.id=SHAPES.length-1});
+const NSH=SHAPES.length;
+const NV=ALL.p.length/3,VBUF=new ArrayBuffer(NV*16),VF=new Float32Array(VBUF),VB=new Uint8Array(VBUF);
+for(let i=0;i<NV;i++){VF[i*4]=ALL.p[i*3];VF[i*4+1]=ALL.p[i*3+1];VF[i*4+2]=ALL.p[i*3+2];VB[i*16+12]=ALL.c[i*3];VB[i*16+13]=ALL.c[i*3+1];VB[i*16+14]=ALL.c[i*3+2];VB[i*16+15]=255}
+const IBUF=new Uint32Array(ALL.i);
+$("kinds").innerHTML=STYLES.map(s=>`<tr><td>${s.name}</td><td>${s.like}</td><td class="n">${s.shapes.map(x=>x.tris).join(" · ")}</td><td class="n">${s.farTris}</td></tr>`).join("");
+
+// ================= GL =================
+const canvas=$("gl"),gl=canvas.getContext("webgl2",{antialias:true,powerPreference:"high-performance"});
+function prog(vs,fs){const p=gl.createProgram();for(const[t,s]of[[gl.VERTEX_SHADER,vs],[gl.FRAGMENT_SHADER,fs]]){const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));gl.attachShader(p,sh)}gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p}
+const SHADE=`
+  vec3 n=cross(dFdx(vRel),dFdy(vRel)); float l=length(n); n=l>1e-9?n/l:vec3(0,1,0);
+  if(dot(n,vRel)>0.0) n=-n;
+  float lit=0.55+0.45*max(dot(n,uSun),0.0);
+  vec3 c=vCol*lit;
+  float f=1.0-exp(-length(vRel)*uFog);
+  o=vec4(mix(c,uSky,f),1.0);`;
+const TREE_VS=`#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol;
+layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
+uniform mat4 uVP; uniform vec3 uEye; uniform float uRange;
+out vec3 vRel; out vec3 vCol;
+void main(){
+  float h=iSize.x*0.01, w=iSize.y*0.01, a=iMisc.x*6.2831853, c=cos(a), s=sin(a);
+  vec3 p=aPos*vec3(w,h,w);
+  p=vec3(p.x*c-p.z*s, p.y, p.x*s+p.z*c);
+  float d=distance(iPos.xz,uEye.xz);
+  p*=clamp((uRange-d)/(uRange*0.08),0.0,1.0);
+  vec3 wpos=iPos+p;
+  vRel=wpos-uEye;
+  vec3 col=aCol*(0.8+0.4*iMisc.y);
+  vCol=mix(col, col*vec3(1.15,1.08,0.7), iMisc.z*0.6);
+  gl_Position=uVP*vec4(wpos,1.0);
+}`;
+const FS=`#version 300 es
+precision highp float;
+in vec3 vRel; in vec3 vCol; uniform vec3 uSun,uSky; uniform float uFog; out vec4 o;
+void main(){${SHADE}}`;
+const GROUND_VS=`#version 300 es
+layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol;
+uniform mat4 uVP; uniform vec3 uEye; out vec3 vRel; out vec3 vCol;
+void main(){ vRel=aPos-uEye; vCol=aCol; gl_Position=uVP*vec4(aPos,1.0); }`;
+const TP=prog(TREE_VS,FS),GP=prog(GROUND_VS,FS);
+const UT={},UG={};
+for(const n of["uVP","uEye","uRange","uSun","uSky","uFog"])UT[n]=gl.getUniformLocation(TP,n);
+for(const n of["uVP","uEye","uSun","uSky","uFog"])UG[n]=gl.getUniformLocation(GP,n);
+const tvao=gl.createVertexArray();gl.bindVertexArray(tvao);
+{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,VBUF,gl.STATIC_DRAW);
+ gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,16,0);
+ gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.UNSIGNED_BYTE,true,16,12);
+ const e=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,e);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,IBUF,gl.STATIC_DRAW)}
+const ibuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,ibuf);
+for(const l of[2,3,4]){gl.enableVertexAttribArray(l);gl.vertexAttribDivisor(l,1)}
+gl.bindVertexArray(null);
+let gvao=null,gCount=0;
+function setGround(pos,col,idx){
+  if(gvao)gl.deleteVertexArray(gvao);
+  gvao=gl.createVertexArray();gl.bindVertexArray(gvao);
+  const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,pos,gl.STATIC_DRAW);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+  const c=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,c);gl.bufferData(gl.ARRAY_BUFFER,col,gl.STATIC_DRAW);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.UNSIGNED_BYTE,true,0,0);
+  const e=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,e);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);
+  gCount=idx.length;gl.bindVertexArray(null);
+}
+const timer=gl.getExtension("EXT_disjoint_timer_query_webgl2");
+let query=null,gpuMs=[];
+
+// ================= terrain =================
+function hash(x,z){let h=Math.imul(x|0,374761393)+Math.imul(z|0,668265263);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296}
+function vnoise(x,z){const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi,u=xf*xf*(3-2*xf),w=zf*zf*(3-2*zf);
+  const a=hash(xi,zi),b=hash(xi+1,zi),c=hash(xi,zi+1),d=hash(xi+1,zi+1);return a+(b-a)*u+(c-a)*w+(a-b-c+d)*u*w}
+function fbm(x,z,o=5){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f,z*f);a*=.5;f*=2.03}return s}
+const HALF=3000,GS=20,GN=HALF*2/GS+1;   // 6 km square, 20 m height grid
+let HGT=null,SLOPE=null,PATCH=null;
+const PEAK=[375,-600];
+function heightAt(x,z){
+  const r1=((x-PEAK[0])**2+(z-PEAK[1])**2)/(2*1100**2),r2=((x+1700)**2+(z-1200)**2)/(2*750**2),r3=((x-1950)**2+(z-1650)**2)/(2*680**2);
+  const ridge=1-Math.abs(fbm(x/800,z/800,4)*2-1);
+  return 260+1750*Math.exp(-r1)+520*Math.exp(-r2)+360*Math.exp(-r3)+320*ridge*Math.exp(-r1*.5)+70*fbm(x/250,z/250,4);
+}
+function buildGrids(){
+  HGT=new Float32Array(GN*GN);SLOPE=new Float32Array(GN*GN);PATCH=new Float32Array(GN*GN);
+  for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const x=-HALF+i*GS,z=-HALF+j*GS;HGT[j*GN+i]=heightAt(x,z);PATCH[j*GN+i]=fbm(x/650+20,z/650+20,4)}
+  for(let j=0;j<GN;j++)for(let i=0;i<GN;i++){const i0=Math.max(0,i-1),i1=Math.min(GN-1,i+1),j0=Math.max(0,j-1),j1=Math.min(GN-1,j+1);
+    const dx=(HGT[j*GN+i1]-HGT[j*GN+i0])/((i1-i0)*GS),dz=(HGT[j1*GN+i]-HGT[j0*GN+i])/((j1-j0)*GS);SLOPE[j*GN+i]=Math.hypot(dx,dz)}
+}
+function sample(G,x,z){const gx=Math.min(GN-1.001,Math.max(0,(x+HALF)/GS)),gz=Math.min(GN-1.001,Math.max(0,(z+HALF)/GS)),i=gx|0,j=gz|0,fx=gx-i,fz=gz-j,k=j*GN+i;
+  return G[k]*(1-fx)*(1-fz)+G[k+1]*fx*(1-fz)+G[k+GN]*(1-fx)*fz+G[k+GN+1]*fx*fz}
+let groundAt=()=>0;
+const TREELINE=1600;
+function forestDensity(x,z){
+  const h=sample(HGT,x,z),s=sample(SLOPE,x,z),p=sample(PATCH,x,z);
+  const line=TREELINE+120*(p-.5)*2;
+  if(h>line||s>.9)return 0;
+  let d=Math.min(1,Math.max(0,(p-(h<520?.5:.36))/.14));
+  if(h>line-320)d*=(line-h)/320;
+  return d*Math.sqrt(1-s/.9);
+}
+function mountainGround(){
+  const N=201,step=HALF*2/(N-1),pos=new Float32Array(N*N*3),col=new Uint8Array(N*N*3),idx=new Uint32Array((N-1)*(N-1)*6);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+i*step,z=-HALF+j*step,h=sample(HGT,x,z),s=sample(SLOPE,x,z),k=j*N+i;
+    pos[k*3]=x;pos[k*3+1]=h;pos[k*3+2]=z;
+    let c=mixc([112,142,74],[96,128,66],Math.min(1,Math.max(0,(h-300)/600)));
+    c=mixc(c,[50,76,44],forestDensity(x,z)*.85);
+    c=mixc(c,[132,128,118],Math.min(1,Math.max(0,(h-1500)/250,(s-.75)/.3)));
+    c=mixc(c,[236,240,244],Math.min(1,Math.max(0,(h-1950)/120)));
+    col.set(c,k*3)}
+  let o=0;for(let j=0;j<N-1;j++)for(let i=0;i<N-1;i++){const a=j*N+i;idx[o++]=a;idx[o++]=a+N;idx[o++]=a+1;idx[o++]=a+1;idx[o++]=a+N;idx[o++]=a+N+1}
+  setGround(pos,col,idx);
+}
+function flatGround(){const S=6000;setGround(new Float32Array([-S,0,-S,S,0,-S,S,0,S,-S,0,S]),new Uint8Array([108,142,76,108,142,76,108,142,76,108,142,76]),new Uint32Array([0,1,2,0,2,3]))}
+
+// ================= the trees =================
+// Kept by 100 m cell: x y z (float), height and width in cm (uint16), facing, shade, warmth, style (bytes) = 20 bytes.
+const CELL=100,CN=HALF*2/CELL;
+let T=null;   // {n, buf, f32, u16, u8, cellStart}
+function allocTrees(n){const buf=new ArrayBuffer(n*20);return{n,buf,f32:new Float32Array(buf),u16:new Uint16Array(buf),u8:new Uint8Array(buf)}}
+function writeTree(D,i,x,y,z,h,w,yaw,shade,warm,style){D.f32[i*5]=x;D.f32[i*5+1]=y;D.f32[i*5+2]=z;D.u16[i*10+6]=Math.min(65535,Math.round(h*100));D.u16[i*10+7]=Math.min(65535,Math.round(w*100));
+  D.u8[i*20+16]=yaw;D.u8[i*20+17]=shade;D.u8[i*20+18]=warm;D.u8[i*20+19]=style}
+function bucket(D){ // counting sort into cells
+  const cnt=new Uint32Array(CN*CN+1),cellOf=new Uint32Array(D.n);
+  for(let i=0;i<D.n;i++){const cx=Math.min(CN-1,Math.max(0,Math.floor((D.f32[i*5]+HALF)/CELL))),cz=Math.min(CN-1,Math.max(0,Math.floor((D.f32[i*5+2]+HALF)/CELL)));cellOf[i]=cz*CN+cx;cnt[cellOf[i]+1]++}
+  for(let k=0;k<CN*CN;k++)cnt[k+1]+=cnt[k];
+  const out=allocTrees(D.n),pos=cnt.slice(0,CN*CN),src=new Uint8Array(D.buf),dst=out.u8;
+  for(let i=0;i<D.n;i++){const j=pos[cellOf[i]]++;dst.set(src.subarray(i*20,i*20+20),j*20)}
+  out.cellStart=cnt;return out;
+}
+let rnd=null;
+function rng(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+// A tree: style picked by height up the mountain, growth stage by age, then +/-10% on height and width.
+function plantMountain(N){
+  const r=rng(1234),D=allocTrees(N);let n=0,tries=0;
+  while(n<N&&tries<N*12){tries++;
+    const x=(r()*2-1)*(HALF-20),z=(r()*2-1)*(HALF-20),d=forestDensity(x,z);
+    if(r()>d)continue;
+    const h0=sample(HGT,x,z),conShare=Math.min(1,Math.max(0,(h0-430)/300));
+    let st;const q=r();
+    if(r()<conShare)st=q<.58?0:q<.88?1:2; else st=q<.5?3:q<.8?4:5;
+    const S=STYLES[st];let age=S.conifer?.5+.5*r():.15+.85*r();
+    if(h0>TREELINE-400)age*=Math.max(.2,(TREELINE-h0)/400+.15);
+    const sh=S.shapes[Math.min(S.shapes.length-1,Math.floor(age*S.shapes.length))];
+    writeTree(D,n++,x,h0-.3,z,sh.H*(.9+.2*r()),sh.W*(.9+.2*r()),r()*255,r()*255,r()<.15?200:r()*60,sh.id);
+  }
+  D.n=n;return bucket(D);
+}
+const STAGES={spire:["sapling","young","mature","old"],pine:["sapling","pole","mature","old"],column:["sapling","young","mature"],round:["sapling","young","mature","old"],
+  oval:["sapling","young","mature","old"],spread:["sapling","young","mature","old"],feather:["seedling","young","trunked","mature"],fan:["seedling","young","trunked","mature"]};
+(LIB.extra||[]).forEach(e=>STAGES[e.key]=e.stages);
+// Only shapes not yet approved are shown here; approved ones live in the library page.
+const isOpen=sh=>(LIB.status[sh.lib]?.status||"")!=="approved";
+const OPEN=STYLES.map((S,si)=>si).filter(si=>[...STYLES[si].shapes,STYLES[si].far].some(isOpen));
+const rowZ=si=>(OPEN.indexOf(si)-(OPEN.length-1)/2)*34;
+// Each style with open shapes gets a row: its open growth stages, then its far shape if that is open too.
+function plantStyles(){
+  const D=allocTrees(NSH),labels=[];let n=0;
+  OPEN.forEach(si=>{const S=STYLES[si],z=rowZ(si);let x=-50;
+    [...S.shapes,S.far].forEach((sh,ai)=>{if(!isOpen(sh))return;x+=sh.W/2+(sh.isFar?6:0);writeTree(D,n++,x,0,z,sh.H,sh.W,(si*37+ai*61)%255,128,40,sh.id);
+      const st=LIB.status[sh.lib]?.status||"",stage=sh.isFar?"far":STAGES[S.key][ai]||"";
+      labels.push({text:`${S.name}, ${stage} · ${sh.H<10?sh.H.toFixed(1):Math.round(sh.H)} m · ${st}`,x,y:sh.H+1.2,z,status:st});x+=sh.W/2+6})});
+  D.n=n;const out=bucket(D);out.labels=labels;return out;
+}
+
+// ================= per-move refresh of what is drawn =================
+const NS=STYLES.length,NB=NSH+NS;   // bins: one per detailed shape, then one simple shape per style
+const SHAPE_STYLE=new Uint8Array(SHAPES.map(s=>s.style));
+const lists={count:new Uint32Array(NB),start:new Uint32Array(NB)};
+let inst=new Uint8Array(0),instUsed=0,lastBuild=null,rebuildMs=0,skipped=0;
+const settings={range:2500,near:200,cull:true};
+function rebuild(eye,yaw,hfov,pitch,force){
+  const k=`${settings.range}|${settings.near}|${settings.cull}`;
+  if(!force&&lastBuild&&lastBuild.k===k&&Math.hypot(eye[0]-lastBuild.x,eye[1]-lastBuild.y,eye[2]-lastBuild.z)<20&&Math.abs(yaw-lastBuild.yaw)<.12&&Math.abs(pitch-lastBuild.pitch)<.12)return;
+  const t0=performance.now();
+  const R=settings.range,R2=R*R,NR2=settings.near*settings.near;
+  const cells=[];const vx=-Math.sin(yaw),vz=-Math.cos(yaw);
+  const cullOn=settings.cull&&pitch<.85,half=hfov/2+.15;
+  const cx0=Math.max(0,Math.floor((eye[0]-R+HALF)/CELL)),cx1=Math.min(CN-1,Math.floor((eye[0]+R+HALF)/CELL)),cz0=Math.max(0,Math.floor((eye[2]-R+HALF)/CELL)),cz1=Math.min(CN-1,Math.floor((eye[2]+R+HALF)/CELL));
+  for(let cz=cz0;cz<=cz1;cz++)for(let cx=cx0;cx<=cx1;cx++){const c=cz*CN+cx;if(T.cellStart[c+1]===T.cellStart[c])continue;
+    const mx=-HALF+(cx+.5)*CELL-eye[0],mz=-HALF+(cz+.5)*CELL-eye[2],d=Math.hypot(mx,mz);
+    if(d-CELL*.71>R)continue;
+    if(cullOn&&d>CELL*1.5){const ang=Math.acos(Math.max(-1,Math.min(1,(mx*vx+mz*vz)/d)));if(ang>half+Math.asin(Math.min(1,CELL*.71/d)))continue}
+    cells.push(c,d)}
+  const order=[];for(let i=0;i<cells.length;i+=2)order.push(i);order.sort((a,b)=>cells[a+1]-cells[b+1]);
+  // pass 1: count per style and level
+  const cnt=new Uint32Array(NB);const f=T.f32,u8=T.u8;
+  const bin=(i,d2)=>{const sid=u8[i*20+19];return d2<NR2?sid:NSH+SHAPE_STYLE[sid]};
+  for(const oi of order){const c=cells[oi];for(let i=T.cellStart[c],e=T.cellStart[c+1];i<e;i++){const dx=f[i*5]-eye[0],dy=f[i*5+1]-eye[1],dz=f[i*5+2]-eye[2],d2=dx*dx+dz*dz;if(d2>R2)continue;cnt[bin(i,d2+dy*dy)]++}}
+  const starts=new Uint32Array(NB);let tot=0;for(let k=0;k<NB;k++){starts[k]=tot;tot+=cnt[k]}
+  if(inst.length<tot*20)inst=new Uint8Array(Math.max(tot*20,inst.length*1.5|0,2000));
+  const w=starts.slice();
+  for(const oi of order){const c=cells[oi];for(let i=T.cellStart[c],e=T.cellStart[c+1];i<e;i++){const dx=f[i*5]-eye[0],dy=f[i*5+1]-eye[1],dz=f[i*5+2]-eye[2],d2=dx*dx+dz*dz;if(d2>R2)continue;
+    const j=w[bin(i,d2+dy*dy)]++;inst.set(u8.subarray(i*20,i*20+20),j*20)}}
+  lists.count.set(cnt);lists.start.set(starts);
+  instUsed=tot*20;
+  gl.bindBuffer(gl.ARRAY_BUFFER,ibuf);gl.bufferData(gl.ARRAY_BUFFER,inst.subarray(0,instUsed),gl.DYNAMIC_DRAW);
+  skipped=T.n-tot;rebuildMs=performance.now()-t0;
+  lastBuild={k,x:eye[0],y:eye[1],z:eye[2],yaw,pitch};
+}
+
+// ================= camera =================
+const cam={tx:0,tz:0,yaw:.6,pitch:.35,dist:150};
+let scene="styles";
+const ptrs=new Map();let pinch0=null;
+canvas.addEventListener("contextmenu",e=>e.preventDefault());
+canvas.addEventListener("pointerdown",e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY,b:e.button});pinch0=null});
+canvas.addEventListener("pointerup",e=>{ptrs.delete(e.pointerId);pinch0=null});
+canvas.addEventListener("pointercancel",e=>{ptrs.delete(e.pointerId);pinch0=null});
+function pan(dx,dy){const s=cam.dist*.0016,c=Math.cos(cam.yaw),n=Math.sin(cam.yaw);cam.tx+=(-dx*c-dy*n)*s;cam.tz+=(dx*n-dy*c)*s;clampT()}
+const clampT=()=>{cam.tx=Math.max(-HALF+5,Math.min(HALF-5,cam.tx));cam.tz=Math.max(-HALF+5,Math.min(HALF-5,cam.tz))};
+const clampD=d=>Math.min(16000,Math.max(2,d));
+canvas.addEventListener("pointermove",e=>{const p=ptrs.get(e.pointerId);if(!p)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  if(ptrs.size===1){if(p.b===2||e.shiftKey)pan(dx,dy);else{cam.yaw-=dx*.005;cam.pitch=Math.min(1.5,Math.max(-.3,cam.pitch+dy*.004))}}
+  p.x=e.clientX;p.y=e.clientY;
+  if(ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;if(pinch0){cam.dist=clampD(cam.dist*pinch0.d/d);pan(mx-pinch0.mx,my-pinch0.my)}pinch0={d,mx,my}}});
+// Wheel sets walking speed, as in the app. Ctrl+wheel (or a trackpad pinch) zooms.
+let speedMult=1;const BASE_SPEED=5;
+function showSpeed(){const v=BASE_SPEED*speedMult;$("speed").textContent=`Speed ${v<10?v.toFixed(1):fmt(v)} m/s${v>=28?` · ${fmt(v*3.6)} km/h`:""}`}
+canvas.addEventListener("wheel",e=>{e.preventDefault();
+  if(e.ctrlKey)cam.dist=clampD(cam.dist*Math.exp(e.deltaY*.0012));
+  else{speedMult=Math.min(200,Math.max(.2,speedMult*Math.exp(-e.deltaY*.0012)));showSpeed()}},{passive:false});
+const keys=new Set();
+addEventListener("keydown",e=>{if(/INPUT|SELECT|BUTTON/.test(e.target.tagName))return;const k=e.key.toLowerCase();if(["w","a","s","d","arrowup","arrowdown","arrowleft","arrowright","shift"].includes(k)){keys.add(k);if(k.startsWith("arrow"))e.preventDefault()}});
+addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));addEventListener("blur",()=>keys.clear());
+
+// ================= panel =================
+const persist=(k,v)=>{try{localStorage.setItem("trees."+k,v)}catch(e){}},recall=k=>{try{return localStorage.getItem("trees."+k)}catch(e){return null}};
+function showRange(){$("range-o").textContent=`${(settings.range/1000).toFixed(1)} km`;$("near-o").textContent=settings.near?`${fmt(settings.near)} m`:"never"}
+$("range").oninput=e=>{settings.range=+e.target.value;showRange()};
+$("near").oninput=e=>{settings.near=+e.target.value;showRange()};
+$("cull").onchange=e=>settings.cull=e.target.checked;
+$("count").onchange=e=>{persist("count",e.target.value);plant()};
+{const c=recall("count");if(c&&[...$("count").options].some(o=>o.value===c))$("count").value=c}
+// Find a spot on the way up the mountain at about height h, and look up the slope from there.
+function spotAt(h,dir){let best=null;for(let r=300;r<2900;r+=20){const x=PEAK[0]+Math.cos(dir)*r,z=PEAK[1]+Math.sin(dir)*r;if(Math.abs(x)>HALF-50||Math.abs(z)>HALF-50)break;const g=sample(HGT,x,z);if(!best||Math.abs(g-h)<Math.abs(best.g-h))best={x,z,g}}return best}
+function setView(v){
+  const dir=2.3,awayYaw=Math.atan2(Math.cos(dir),Math.sin(dir));
+  if(v==="eye"){const s=spotAt(800,dir);Object.assign(cam,{tx:s.x,tz:s.z,yaw:awayYaw+.4,pitch:.08,dist:9})}
+  if(v==="hill"){const s=spotAt(330,dir);Object.assign(cam,{tx:s.x,tz:s.z,yaw:awayYaw,pitch:.12,dist:260})}
+  if(v==="above"){Object.assign(cam,{tx:0,tz:0,yaw:.5,pitch:.85,dist:6500});settings.range=8000;$("range").value=8000;showRange()}
+  else if(settings.range>3000){settings.range=2500;$("range").value=2500;showRange()}}
+$("views").onclick=e=>{const b=e.target.closest("button");if(b)setView(b.dataset.v)};
+$("rows").innerHTML=OPEN.map(i=>`<button data-r="${i}">${STYLES[i].name}</button>`).join("");
+$("rows").onclick=e=>{const b=e.target.closest("button");if(!b||!T||!T.labels)return;const r=+b.dataset.r,L=T.labels.filter(l=>l.z===rowZ(r));if(!L.length)return;const mid=(L[0].x+L[L.length-1].x)/2;Object.assign(cam,{tx:mid,tz:rowZ(r),yaw:0,pitch:.14,dist:Math.max(40,(L[L.length-1].x-L[0].x)*1.1)})};
+let labels=[];
+function setLabels(list){labels=(list||[]).map(l=>{const el=document.createElement("div");el.className="lbl"+(l.status&&l.status!=="approved"?" open":"");el.textContent=l.text;return{...l,el}});$("labels").replaceChildren(...labels.map(l=>l.el))}
+let plantMs=0;
+// Look at whatever is in the rows, close enough to judge it.
+function frameRows(){const L=T.labels;if(!L.length)return;const xs=L.map(l=>l.x),zs=L.map(l=>l.z),hs=L.map(l=>l.y);
+  const w=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs),Math.max(...hs));
+  Object.assign(cam,{tx:(Math.max(...xs)+Math.min(...xs))/2,tz:(Math.max(...zs)+Math.min(...zs))/2,yaw:.35,pitch:.18,dist:Math.max(25,w*1.3)})}
+function plant(resetView){
+  $("busy").hidden=false;
+  setTimeout(()=>{const t0=performance.now();
+    if(scene==="styles"){groundAt=()=>0;flatGround();T=plantStyles();setLabels(T.labels);frameRows()}
+    else{if(!HGT)buildGrids();groundAt=(x,z)=>sample(HGT,x,z);mountainGround();T=plantMountain(+$("count").value);setLabels([]);if(resetView)setView("hill")}
+    plantMs=performance.now()-t0;lastBuild=null;$("busy").hidden=true},30);
+}
+function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s==="styles"));$("s-mtn").setAttribute("aria-pressed",String(s==="mountain"));$("mtn-ctrls").hidden=s!=="mountain";$("rows").hidden=s!=="styles";
+  if(s==="styles"){Object.assign(cam,{tx:-15,tz:0,yaw:.75,pitch:.3,dist:170});settings.range=2500;settings.near=1000}
+  else{settings.range=2500;settings.near=200}
+  $("range").value=settings.range;$("near").value=settings.near;showRange();plant(true)}
+$("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");
+
+// ================= frame =================
+const SKY=[.73,.83,.91],SUN=norm([.5,.75,.35]);
+let last=performance.now(),ft=[],statT=0,calls=0,tris=0;
+function persp(f,a,n,fa){const t=1/Math.tan(f/2);return[t/a,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0]}
+function lookAt(e,c,u){const z=norm(sub(e,c)),x=norm(cross(u,z)),y=cross(z,x);return[x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-(x[0]*e[0]+x[1]*e[1]+x[2]*e[2]),-(y[0]*e[0]+y[1]*e[1]+y[2]*e[2]),-(z[0]*e[0]+z[1]*e[1]+z[2]*e[2]),1]}
+function mm(a,b){const r=new Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];r[i*4+j]=s}return r}
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(.1,(now-last)/1000);last=now;ft.push(dt*1000);if(ft.length>90)ft.shift();
+  let fx=0,fz=0;if(keys.has("w")||keys.has("arrowup"))fz-=1;if(keys.has("s")||keys.has("arrowdown"))fz+=1;if(keys.has("a")||keys.has("arrowleft"))fx-=1;if(keys.has("d")||keys.has("arrowright"))fx+=1;
+  if(fx||fz){const sp=BASE_SPEED*speedMult*(keys.has("shift")?8:1)*dt,c=Math.cos(cam.yaw),s=Math.sin(cam.yaw);cam.tx+=(fx*c+fz*s)*sp;cam.tz+=(-fx*s+fz*c)*sp;clampT()}
+  if(!T)return;
+  const dpr=Math.min(devicePixelRatio||1,2),W=Math.round(canvas.clientWidth*dpr),H=Math.round(canvas.clientHeight*dpr);
+  if(!W||!H)return;if(canvas.width!==W||canvas.height!==H){canvas.width=W;canvas.height=H}
+  gl.viewport(0,0,W,H);
+  const ty=groundAt(cam.tx,cam.tz)+1.6;
+  const eye=[cam.tx+cam.dist*Math.cos(cam.pitch)*Math.sin(cam.yaw),ty+cam.dist*Math.sin(cam.pitch),cam.tz+cam.dist*Math.cos(cam.pitch)*Math.cos(cam.yaw)];
+  eye[1]=Math.max(eye[1],groundAt(eye[0],eye[2])+1.2);
+  const vfov=.9,hfov=2*Math.atan(Math.tan(vfov/2)*W/H);
+  const near=Math.min(30,Math.max(.1,cam.dist*.01)),far=Math.max(9000,cam.dist*4);
+  const vp=mm(persp(vfov,W/H,near,far),lookAt(eye,[cam.tx,ty,cam.tz],[0,1,0]));
+  const yawLook=Math.atan2(eye[0]-cam.tx,eye[2]-cam.tz),pitchLook=Math.asin(Math.min(1,Math.max(-1,(eye[1]-ty)/Math.max(1e-6,Math.hypot(eye[0]-cam.tx,eye[1]-ty,eye[2]-cam.tz)))));
+  rebuild(eye,yawLook,hfov,pitchLook,false);
+  const fog=Math.min(.00045,.9/Math.max(settings.range*3,cam.dist*2.5));
+  gl.clearColor(...SKY,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);
+  // trees first, nearest first, so the ground behind them is skipped
+  let timing=false;
+  if(timer&&!query){query=gl.createQuery();gl.beginQuery(timer.TIME_ELAPSED_EXT,query);timing=true}
+  gl.useProgram(TP);gl.bindVertexArray(tvao);
+  gl.uniformMatrix4fv(UT.uVP,false,vp);gl.uniform3fv(UT.uEye,eye);gl.uniform1f(UT.uRange,settings.range);gl.uniform3fv(UT.uSun,SUN);gl.uniform3fv(UT.uSky,SKY);gl.uniform1f(UT.uFog,fog);
+  gl.bindBuffer(gl.ARRAY_BUFFER,ibuf);calls=0;tris=0;
+  for(let k=0;k<NB;k++){const n=lists.count[k];if(!n)continue;const o=lists.start[k]*20;
+    gl.vertexAttribPointer(2,3,gl.FLOAT,false,20,o);gl.vertexAttribPointer(3,2,gl.UNSIGNED_SHORT,false,20,o+12);gl.vertexAttribPointer(4,4,gl.UNSIGNED_BYTE,true,20,o+16);
+    const first=k<NSH?SHAPES[k].first:STYLES[k-NSH].farFirst,count=k<NSH?SHAPES[k].count:STYLES[k-NSH].farCount;
+    gl.drawElementsInstanced(gl.TRIANGLES,count,gl.UNSIGNED_INT,first*4,n);calls++;tris+=n*count/3}
+  if(timing)gl.endQuery(timer.TIME_ELAPSED_EXT);
+  if(query&&!timing){const ok=gl.getQueryParameter(query,gl.QUERY_RESULT_AVAILABLE),dis=gl.getParameter(timer.GPU_DISJOINT_EXT);
+    if(ok){if(!dis){gpuMs.push(gl.getQueryParameter(query,gl.QUERY_RESULT)/1e6);if(gpuMs.length>30)gpuMs.shift()}gl.deleteQuery(query);query=null}}
+  gl.useProgram(GP);gl.bindVertexArray(gvao);
+  gl.uniformMatrix4fv(UG.uVP,false,vp);gl.uniform3fv(UG.uEye,eye);gl.uniform3fv(UG.uSun,SUN);gl.uniform3fv(UG.uSky,SKY);gl.uniform1f(UG.uFog,fog);
+  gl.enable(gl.POLYGON_OFFSET_FILL);gl.polygonOffset(1,1);gl.drawElements(gl.TRIANGLES,gCount,gl.UNSIGNED_INT,0);gl.disable(gl.POLYGON_OFFSET_FILL);
+  for(const l of labels){const c=[l.x,l.y,l.z],x=vp[0]*c[0]+vp[4]*c[1]+vp[8]*c[2]+vp[12],y=vp[1]*c[0]+vp[5]*c[1]+vp[9]*c[2]+vp[13],w=vp[3]*c[0]+vp[7]*c[1]+vp[11]*c[2]+vp[15];
+    if(w<=0||Math.hypot(l.x-eye[0],l.y-eye[1],l.z-eye[2])>130){l.el.hidden=true;continue}l.el.hidden=false;l.el.style.left=`${(x/w*.5+.5)*canvas.clientWidth}px`;l.el.style.top=`${(-y/w*.5+.5)*canvas.clientHeight}px`}
+  if(now-statT>300){statT=now;stats()}
+}
+function stats(){
+  let nN=0,nF=0;for(let k=0;k<NB;k++){if(k<NSH)nN+=lists.count[k];else nF+=lists.count[k]}const avg=ft.reduce((a,b)=>a+b,0)/ft.length;
+  $("st-total").textContent=fmt(T.n);$("st-near").textContent=fmt(nN);$("st-far").textContent=fmt(nF);$("st-skip").textContent=fmt(skipped);
+  $("st-calls").textContent=fmt(calls+1);$("st-tri").textContent=fmt(tris);$("st-bytes").textContent=kb(instUsed);
+  $("st-rebuild").textContent=`${rebuildMs.toFixed(1)} ms`;$("st-frame").textContent=`${avg.toFixed(1)} ms (${fmt(1000/avg)} fps)`;
+  $("st-plant").textContent=`${fmt(plantMs)} ms`;
+  const g=gpuMs.length?gpuMs.reduce((a,b)=>a+b,0)/gpuMs.length:null;
+  $("st-gpu").textContent=timer?(g==null?"measuring…":`${g.toFixed(2)} ms`):"this browser won't say";
+  const v=$("verdict");
+  if(avg>25){v.className="verdict warn";v.textContent=`Slow: ${fmt(tris)} tree triangles a frame${g!=null?`, ${g.toFixed(1)} ms of card time on trees`:""}. Shorten "Trees drawn within" first; that cuts the most.`}
+  else if(rebuildMs>12){v.className="verdict warn";v.textContent=`Smooth while still, but each refresh of the list takes ${rebuildMs.toFixed(0)} ms, a small stutter every 20 m of travel. That is the main program's cost, not the card's.`}
+  else{v.className="verdict";v.textContent=`Comfortable: ${fmt(calls+1)} draw calls, ${fmt(tris)} tree triangles a frame.`}
+}
+setScene("styles");requestAnimationFrame(frame);
+</script>
