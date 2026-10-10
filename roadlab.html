@@ -56,6 +56,7 @@ th{text-align:right;font-weight:600;color:var(--muted);padding:2px 3px}
 th:first-child,td:first-child{text-align:left}
 td{padding:2px 3px;text-align:right}
 .note{color:var(--muted);font-size:13px;margin:0}
+.key[hidden]{display:none}
 .key{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 ul.finds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -101,6 +102,9 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <label class="check" style="margin-top:6px"><input type="checkbox" id="bench" checked> Move roads onto the flat strip in the ground (where the map's line is off the real road)</label>
       <label class="check"><input type="checkbox" id="curves"> Count tight bends too (the map's line is only straight pieces)</label>
       <label class="check"><input type="checkbox" id="flagsOn" checked> Show spots worth a look (purple poles)</label>
+      <div class="row" style="margin-top:6px"><label for="roadAlpha">Roads see-through</label><output id="roadAlpha-o"></output></div>
+      <input type="range" id="roadAlpha" min="0" max="1" step="0.05" value="1" aria-describedby="roadAlpha-o">
+      <p class="note">Slide left to see the ground under the roads; all the way left hides them. Keys: [ and ] step it.</p>
     </section>
 
     <section>
@@ -408,17 +412,17 @@ out vec3 vP; out vec3 vCol;
 void main() { vec3 p = aPos - uEye; vP = p; vCol = aCol.rgb; gl_Position = uVP * vec4(p, 1.0); }`;
 const FS = `#version 300 es
 precision highp float;
-in vec3 vP; in vec3 vCol; uniform vec3 uSun; uniform vec3 uSky; out vec4 frag;
+in vec3 vP; in vec3 vCol; uniform vec3 uSun; uniform vec3 uSky; uniform float uAlpha; out vec4 frag;
 void main() {
   vec3 n = normalize(cross(dFdx(vP), dFdy(vP)));
   if (n.y < 0.0) n = -n;
   float lit = 0.5 + 0.5 * max(dot(n, uSun), 0.0);
   vec3 c = vCol * lit;
   c = mix(c, uSky, 1.0 - exp(-length(vP) / 7000.0));
-  frag = vec4(c, 1.0);
+  frag = vec4(c, uAlpha);
 }`;
 const prog = program(gl, VS, FS);
-const U = uniforms(gl, prog, ['uVP', 'uEye', 'uSun', 'uSky']);
+const U = uniforms(gl, prog, ['uVP', 'uEye', 'uSun', 'uSky', 'uAlpha']);
 const A_POS = gl.getAttribLocation(prog, 'aPos'), A_COL = gl.getAttribLocation(prog, 'aCol');
 const SKY = [0.73, 0.83, 0.91];
 
@@ -553,6 +557,15 @@ $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('dri
 $('driveSpeed-o').textContent = '× 1.00';
 for (const id of ['colour', 'curves']) $(id).onchange = () => { $('keyMoved').hidden = $('colour').value !== 'moved'; $('keyRules').hidden = $('colour').value !== 'rules'; roadMeshes(); };
 $('bench').onchange = () => { stopDriving(); rebuild(); };
+const showAlpha = () => { const v = Number($('roadAlpha').value); $('roadAlpha-o').textContent = v <= 0.001 ? 'hidden' : v >= 0.999 ? 'solid' : `${fmt(100 * (1 - v))}% see-through`; };
+$('roadAlpha').oninput = showAlpha; showAlpha();
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  if (e.key !== '[' && e.key !== ']') return;
+  const el = $('roadAlpha');
+  el.value = Math.max(0, Math.min(1, Number(el.value) + (e.key === ']' ? 0.25 : -0.25)));
+  showAlpha();
+});
 
 // ---- findings ---------------------------------------------------------------------------
 function goLook(x, z) {
@@ -647,9 +660,22 @@ function frame(now) {
     gl.bindVertexArray(m.vao); gl.drawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_INT, 0);
     if (offset) gl.disable(gl.POLYGON_OFFSET_FILL);
   };
+  // Roads (with their decks and piers), as see-through as the slider says:
+  // drawn last, blended over the ground, without hiding each other.
+  const alpha = Number($('roadAlpha').value);
+  const roads = (m) => {
+    if (!m || alpha <= 0.001) return;
+    if (alpha >= 0.999) { draw(m); return; }
+    gl.uniform1f(U.uAlpha, alpha);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
+    draw(m);
+    gl.depthMask(true); gl.disable(gl.BLEND);
+    gl.uniform1f(U.uAlpha, 1);
+  };
+  gl.uniform1f(U.uAlpha, 1);
   const plainToday = $('colour').value === 'plain';
-  const left = () => { draw(meshes.natGround, true); draw(plainToday ? meshes.todayApp : meshes.rawRoads); if ($('flagsOn').checked) draw(meshes.flags); };
-  const right = () => { draw(meshes.natGround, true); draw(meshes.engRoads); if ($('flagsOn').checked) draw(meshes.flags); };
+  const left = () => { draw(meshes.natGround, true); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
+  const right = () => { draw(meshes.natGround, true); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
   const split = view === 'split';
   $('divider').style.display = $('tagL').style.display = $('tagR').style.display = split ? '' : 'none';
   if (split) {
