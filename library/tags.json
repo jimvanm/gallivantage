@@ -3942,8 +3942,8 @@
 "tag": "landuse=vineyard",
 "name": "Vineyard (landuse)",
 "how": "area",
-"status": "new",
-"notes": "Rows of vines planted in the area.",
+"status": "approved",
+"notes": "Rows of vines planted in the area: rows 1.2 to 3 m apart, chained from the farm/vine row pieces.",
 "seen": 2,
 "where": [
 "Rothenburg"
@@ -4906,8 +4906,8 @@
 "tag": "historic=vineyard",
 "name": "Vineyard (historic)",
 "how": "area",
-"status": "new",
-"notes": "Vines in rows.",
+"status": "approved",
+"notes": "Vines in rows, as landuse=vineyard.",
 "seen": 1,
 "where": [
 "Rothenburg"

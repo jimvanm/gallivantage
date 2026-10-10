@@ -366,16 +366,313 @@
      "name": "Grape vine",
      "osm": "landuse=vineyard (rows planted inside)",
      "stage": "",
-     "status": "new",
-     "notes": "After the fan palm."
+     "status": "approved",
+     "notes": "One vine, 1 m of row, with end faces: narrow at the ground, widest 1 m up, a barn roof to a ridge at 1.7 m. No trunk, no posts. Its long lines are not quite level. Rows are built from the row pieces below."
     },
     {
      "id": "vine-far",
      "name": "Grape vine",
      "osm": "landuse=vineyard",
      "stage": "far away",
-     "status": "new",
-     "notes": "After the fan palm."
+     "status": "approved",
+     "notes": "The barn-roof bend dropped."
+    },
+    {
+     "id": "vine-10-00",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 0 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-01",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 0 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-02",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 0 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-10",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 1 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-11",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 1 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-12",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 1 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-20",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 2 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-21",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 2 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-22",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, outline 2 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-10-far",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "10 m, far away",
+     "status": "approved",
+     "part": "row",
+     "notes": "Level, barn-roof bend dropped. Stands in for every 10 m piece."
+    },
+    {
+     "id": "vine-3-00",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 0 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-01",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 0 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-02",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 0 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-10",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 1 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-11",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 1 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-12",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 1 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-20",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 2 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-21",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 2 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-22",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, outline 2 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-3-far",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "3 m, far away",
+     "status": "approved",
+     "part": "row",
+     "notes": "Level, barn-roof bend dropped. Stands in for every 3 m piece."
+    },
+    {
+     "id": "vine-1-00",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 0 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-01",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 0 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-02",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 0 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 0, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-10",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 1 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-11",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 1 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-12",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 1 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 1, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-20",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 2 to 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 0, so the next piece must start on 0. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-21",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 2 to 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 1, so the next piece must start on 1. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-22",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, outline 2 to 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "Starts on outline 2, ends on outline 2, so the next piece must start on 2. Sheared to the ground's slope when planted."
+    },
+    {
+     "id": "vine-1-far",
+     "name": "Grape vine row piece",
+     "osm": "landuse=vineyard",
+     "stage": "1 m, far away",
+     "status": "approved",
+     "part": "row",
+     "notes": "Level, barn-roof bend dropped. Stands in for every 1 m piece."
+    },
+    {
+     "id": "vine-cap-1",
+     "name": "Grape vine row end",
+     "osm": "landuse=vineyard",
+     "stage": "outline 0",
+     "status": "approved",
+     "part": "row",
+     "notes": "The flat end of a row whose last piece ends on outline 0. Not drawn far away."
+    },
+    {
+     "id": "vine-cap-2",
+     "name": "Grape vine row end",
+     "osm": "landuse=vineyard",
+     "stage": "outline 1",
+     "status": "approved",
+     "part": "row",
+     "notes": "The flat end of a row whose last piece ends on outline 1. Not drawn far away."
+    },
+    {
+     "id": "vine-cap-3",
+     "name": "Grape vine row end",
+     "osm": "landuse=vineyard",
+     "stage": "outline 2",
+     "status": "approved",
+     "part": "row",
+     "notes": "The flat end of a row whose last piece ends on outline 2. Not drawn far away."
     }
    ]
   }

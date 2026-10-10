@@ -27,6 +27,13 @@ of the base, a colour per corner, no normals (the app shades from the screen).
 4. `node test/run.mjs library`. It fails if an object is listed without a shape,
    a shape is not listed, or `models.json` is not what `build.mjs` makes now.
 
+## Parts
+
+An entry with `"part": "<group>"` belongs to an object above it rather than
+being an object of its own: the vine's 33 row pieces are parts of `farm/vine`.
+The library page folds each group into one line (click to open), and its
+status counts leave parts out.
+
 ## Status
 
 - `approved`: Jim has seen it and it is right.
@@ -35,6 +42,14 @@ of the base, a colour per corner, no normals (the app shades from the screen).
 - `pending`: waiting on something else first (the notes say what).
 - `rework`: Jim has seen it and it is wrong.
 - `new`: not seen yet.
+
+## The vine
+
+`farm/vine` is one vine on its own (the picture). Rows are built from its row
+pieces: `vine-<len>-<i><j>` (10, 3 or 1 m, from end outline i to end outline
+j), one far shape per length, and `vine-cap-<n>` for row ends. A row chains
+pieces so each starts on the outline the last ended with, and each piece is
+sheared to the ground's slope when planted. See `LIBRARY.md`, "The vine".
 
 ## Trees
 

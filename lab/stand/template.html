@@ -191,7 +191,7 @@ function pack(id,ref){const m=LIB.models[id];let H=0,W=0;for(let i=0;i<m.pos.len
   return{first,count:m.idx.length,tris:m.idx.length/3,H,W,lib:id}}
 const STYLES=STYLE_INFO.map(([key,name,like,conifer],si)=>{const s={key,name,like,conifer},ids=[];for(let i=1;LIB.models[`${key}-${i}`];i++)ids.push(`${key}-${i}`);
   s.shapes=ids.map(id=>{const sh=pack(id);sh.style=si;SHAPES.push(sh);sh.id=SHAPES.length-1;return sh});
-  const rowPiece=(LIB.extra||[]).some(e=>e.key===key&&(e.vineyard||e.rowOnly)),f=pack(`${key}-far`,rowPiece?s.shapes[s.shapes.length-1]:null);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
+  const rowPiece=(LIB.extra||[]).some(e=>e.key===key&&e.rowOnly),f=pack(`${key}-far`,rowPiece?s.shapes[s.shapes.length-1]:null);s.farFirst=f.first;s.farCount=f.count;s.farTris=f.tris;s.far=f;return s});
 // The far shapes also go in as ordinary shapes, so the rows can show them up close.
 STYLES.forEach((s,si)=>{const f=s.far;f.style=si;f.isFar=true;SHAPES.push(f);f.id=SHAPES.length-1});
 const NSH=SHAPES.length;
@@ -448,50 +448,33 @@ $("rows").onclick=e=>{const b=e.target.closest("button");if(!b||!T||!T.labels)re
 let labels=[];
 function setLabels(list){labels=(list||[]).map(l=>{const el=document.createElement("div");el.className="lbl"+(l.status&&l.status!=="approved"?" open":"");el.textContent=l.text;return{...l,el}});$("labels").replaceChildren(...labels.map(l=>l.el))}
 let plantMs=0;
-// ================= vineyard trials =================
-// One block per trial plot with a vineyard layout: rows 2.6 m apart, of different lengths, along x.
-//   chain: 1 m row pieces vrow<i><j> (start outline i, end outline j); each piece starts with the outline the
-//     last one ended with, picked at random, so the row joins exactly while its lines wander; a cap at each end.
-//   metre: one 1 m piece per metre (post built in). posts: 1 m vines, a post every 5 m, heavier posts at the ends.
-//   bays: one 5 m piece per 5 m (its post at the start), leftover metres filled with B's vine, heavier end posts.
-// The label gives triangles per 10 m of row, near and far (posts have no far shape).
+// ================= the vine, in rows =================
+// The library's vine (library/farm): rows are chains of 10 m, 3 m and 1 m pieces, each starting on the outline
+// the last one ended with, so a row joins exactly; a flat cap at each end. 16 rows, 2.6 m apart, on flat ground.
 const BYLIB=Object.fromEntries(SHAPES.map(s=>[s.lib,s]));
 function plantVines(){
-  const blocks=(LIB.extra||[]).filter(e=>e.vineyard),items=[],labels=[],r=rng(77);
-  const ROWS=16,GAP=2.6,LANE=ROWS*GAP+22,rowShade=[];
-  blocks.forEach((b,bi)=>{const z0=(bi-(blocks.length-1)/2)*LANE-(ROWS-1)*GAP/2,lay=b.vineyard.layout;let metres=0,near=0,far=0;
-    const put=(id,x,z)=>{const sh=BYLIB[id];if(!sh)return;items.push([sh,x,z]);near+=sh.tris;far+=STYLES[sh.style].farTris};
-    for(let row=0;row<ROWS;row++){const z=z0+row*GAP,L=40+row+Math.floor(r()*6);metres+=L;rowShade.push([z,118+r()*20,30+r()*20]);
-      if(lay==="chain"){const K=b.vineyard.outlines;let e=Math.floor(r()*K);put(`vcap-${e+1}`,0,z);
-        for(let i=0;i<L;i++){const n=Math.floor(r()*K);put(`vrow${e}${n}-1`,i+.5,z);e=n}put(`vcap-${e+1}`,L,z)}
-      if(lay==="metre")for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);
-      if(lay==="posts"){for(let i=0;i<L;i++)put(`${b.key}-1`,i+.5,z);for(let x=5;x<L;x+=5)put("vpost-1",x,z);put("vpost-2",0,z);put("vpost-2",L,z)}
-      if(lay==="bays"){const nb=Math.floor(L/5);for(let k=0;k<nb;k++)put(`${b.key}-1`,k*5+2.5,z);for(let i=nb*5;i<L;i++)put("vineB-1",i+.5,z);
-        if(nb*5<L)put("vpost-1",nb*5,z);put("vpost-2",0,z);put("vpost-2",L,z)}}
-    labels.push({text:`${b.name} · ${Math.round(near/metres*10)} triangles per 10 m near, ${Math.round(far/metres*10)} far`,x:-3,y:3.5,z:z0+(ROWS-1)*GAP/2,status:"testing"})});
-  const D=allocTrees(items.length);
-  // One shade per row, not per piece, so neighbouring pieces never show a colour step at the join.
-  const shadeOf=z=>rowShade.find(q=>Math.abs(q[0]-z)<.01)||[128,40];
-  items.forEach(([sh,x,z],i)=>{const[,sd,wm]=shadeOf(z);writeTree(D,i,x,0,z,sh.H,sh.W,0,sd,wm,sh.id)});
-  D.n=items.length;const out=bucket(D);out.labels=labels;return out;
-}
+  const r=rng(77),Lst=List(),stat={rows:0,metres:0},ROWS=16,GAP=2.6,z0=-(ROWS-1)*GAP/2;
+  for(let row=0;row<ROWS;row++){stat.metres+=plantRow(Lst,0,z0+row*GAP,0,40+row+Math.floor(r()*6),r,110+r()*36);stat.rows++}
+  let near=0,far=0;for(let i=0;i<Lst.n;i++){const sh=SHAPES[Lst.a[i*9+8]];near+=sh.tris;far+=STYLES[sh.style].farTris}
+  const T=finish(Lst);T.labels=[{text:`The vine in rows · ${Math.round(near/stat.metres*10)} triangles per 10 m near, ${Math.round(far/stat.metres*10)} far`,x:-3,y:3.5,z:0,status:"approved"}];return T}
 
 // ================= vineyard regions: Champagne and Niagara =================
 // The stress test for vines, like the mountain for trees. Rows are chains of 10 m, 3 m and 1 m row pieces
 // (lab/vine/vines.mjs), each starting on the outline the last one ended with, so a row joins exactly.
 // Each piece sits on the ground at its middle and is sheared to the ground's slope along it.
-const PIECE_LENS=[10,3,1],PIECE_KEY={10:"vl10x",3:"vl3x",1:"vrow"};
-const pieceId=(len,i,j)=>BYLIB[len===1?`vrow${i}${j}-1`:`${PIECE_KEY[len]}${i}${j}-1`];
+// Piece ids as make.mjs names them: vine<len>-<n>, n = 3*start outline + end outline + 1; caps vinecap-<n>.
+const PIECE_LENS=[10,3,1];
+const pieceId=(len,i,j)=>BYLIB[`vine${len}-${i*3+j+1}`];
 const smooth=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
 // A growable list of instances: x y z h w yaw shade warm id.
 function List(){return{a:new Float32Array(1<<16),n:0,push(...v){if((this.n+1)*9>this.a.length){const b=new Float32Array(this.a.length*2);b.set(this.a);this.a=b}this.a.set(v,this.n*9);this.n++}}}
 // One row from (x0,z0) along angle byte yb (rows are snapped to the 256 facings, so pieces line up exactly).
 function plantRow(Lst,x0,z0,yb,L,r,shade){
-  const a=yb/256*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a),nx=-dz,nz=dx,K=3,cap=BYLIB["vcap-1"].style;
+  const a=yb/256*Math.PI*2,dx=Math.cos(a),dz=Math.sin(a),nx=-dz,nz=dx,K=3;
   let e=Math.floor(r()*K),t=0;
   // Sink the whole row by one amount (from the cross slope at its middle), so neighbouring pieces never step.
   const mx=x0+dx*L/2,mz=z0+dz*L/2,sink=.03+.3*Math.abs(groundAt(mx+nx*.3,mz+nz*.3)-groundAt(mx-nx*.3,mz-nz*.3))/.6;
-  const capAt=(tt,o)=>{const sh=BYLIB[`vcap-${o+1}`],x=x0+dx*tt,z=z0+dz*tt;Lst.push(x,groundAt(x,z)-.04,z,sh.H,sh.W,yb,shade,128,sh.id)};
+  const capAt=(tt,o)=>{const sh=BYLIB[`vinecap-${o+1}`],x=x0+dx*tt,z=z0+dz*tt;Lst.push(x,groundAt(x,z)-.04,z,sh.H,sh.W,yb,shade,128,sh.id)};
   capAt(0,e);
   while(L-t>=1){const len=PIECE_LENS.find(l=>l<=L-t),nxt=Math.floor(r()*K),sh=pieceId(len,e,nxt),c=t+len/2,x=x0+dx*c,z=z0+dz*c;
     const h0=groundAt(x-dx*len/2,z-dz*len/2),h1=groundAt(x+dx*len/2,z+dz*len/2),slope=Math.max(-1,Math.min(1,(h1-h0)/len));
@@ -589,7 +572,6 @@ function setScene(s){scene=s;$("s-styles").setAttribute("aria-pressed",String(s=
   else{settings.range=2500;settings.near=200}
   $("range").value=settings.range;$("near").value=settings.near;showRange();plant(true)}
 $("s-styles").onclick=()=>setScene("styles");$("s-mtn").onclick=()=>setScene("mountain");$("s-vines").onclick=()=>setScene("vines");$("s-champ").onclick=()=>setScene("champagne");$("s-niag").onclick=()=>setScene("niagara");
-$("s-vines").hidden=!(LIB.extra||[]).some(e=>e.vineyard);   // only when there is a vineyard trial to plant
 
 // ================= frame =================
 const SKY=[.73,.83,.91],SUN=norm([.5,.75,.35]);

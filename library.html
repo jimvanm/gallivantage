@@ -58,6 +58,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .tagbar input,.tagbar select{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
 .tagbar input{min-width:min(320px,100%)}
 .err{padding:12px 14px;border-radius:8px;background:var(--chip);border-left:3px solid var(--rework)}
+.partbtn{font:600 13px var(--body,inherit);padding:6px 12px;border-radius:999px;border:1px solid var(--line,#ccc);background:transparent;color:inherit;cursor:pointer}
 </style>
 </head>
 <body>
@@ -149,7 +150,7 @@ async function load(){
   return{index,models,landmarks,tags};
 }
 
-let DATA=null,tab="obj",filter=null,search="",how="";
+let DATA=null,tab="obj",filter=null,search="",how="";const openParts=new Set();
 const statusChip=s=>{const S=STATUS[s]||{label:s,c:"--muted"};return`<span class="status"><span class="dot" style="background:var(${S.c})"></span>${S.label}</span>`};
 const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const size=m=>{const R=extent(m);return`${R.H<10?R.H.toFixed(1):fmt(R.H)} × ${R.W<10?R.W.toFixed(1):fmt(R.W)}`};
@@ -157,7 +158,8 @@ const pics=new Map();
 const picOf=(key,m)=>{if(!pics.has(key))pics.set(key,picture(m));return pics.get(key)};
 
 function renderCounts(){
-  const all=tab==="tags"?(DATA.tags||[]):DATA.index.sets.flatMap(s=>s.models),n=k=>all.filter(e=>e.status===k).length;
+  // Parts (an object's row pieces and the like) are not counted: they belong to their object.
+  const all=tab==="tags"?(DATA.tags||[]):DATA.index.sets.flatMap(s=>s.models).filter(e=>!e.part),n=k=>all.filter(e=>e.status===k).length;
   $("counts").innerHTML=`<button data-s="" aria-pressed="${!filter}">All <b>${all.length}</b></button>`+Object.entries(STATUS).filter(([k])=>n(k)||k!=="n/a").map(([k,S])=>`<button data-s="${k}" aria-pressed="${filter===k}"><span class="dot" style="background:var(${S.c})"></span>${S.label} <b>${n(k)}</b></button>`).join("");
 }
 const HOW={object:"One object",line:"Follows a line",area:"Fills an area",building:"Dresses a building",none:"Nothing to draw"};
@@ -180,11 +182,16 @@ function render(){
   const box=$("content");
   if(tab==="tags"){renderTags(box);return}
   if(tab==="obj"){
-    box.innerHTML=DATA.index.sets.map(s=>{const rows=s.models.filter(e=>!filter||e.status===filter);if(!rows.length)return"";
+    // Entries with a "part" (e.g. the vine's 33 row pieces) fold into one line under the table; click it to open.
+    box.innerHTML=DATA.index.sets.map(s=>{const parts=s.models.filter(e=>e.part&&(!filter||e.status===filter)),groups=[...new Set(parts.map(e=>e.part))];
+      const rows=s.models.filter(e=>!e.part&&(!filter||e.status===filter)).concat(parts.filter(e=>openParts.has(s.id+"/"+e.part)));if(!rows.length&&!groups.length)return"";
       return`<h2>${esc(s.name)}</h2><div class="tablebox"><table><thead><tr><th>Picture</th><th>Object</th><th>Stage</th><th>Map tag</th><th class="n">Height × width (m)</th><th class="n">Triangles</th><th>Status</th><th>Notes</th></tr></thead><tbody>`+
       rows.map(e=>{const m=DATA.models[s.id][e.id];return`<tr><td><button class="pic" data-set="${s.id}" data-id="${e.id}" aria-label="Look at ${esc(e.name)}"><img alt="" src="${picOf(s.id+"/"+e.id,m)}"></button></td>
         <td><div class="name">${esc(e.name)}</div><div class="id">${esc(s.id)}/${esc(e.id)}</div></td><td>${esc(e.stage)}</td><td class="osm">${esc(e.osm)}</td>
-        <td class="n">${size(m)}</td><td class="n">${fmt(m.tris)}</td><td>${statusChip(e.status)}</td><td class="notes">${esc(e.notes)}</td></tr>`}).join("")+`</tbody></table></div>`}).join("")||`<p class="sub">Nothing with that status.</p>`;
+        <td class="n">${size(m)}</td><td class="n">${fmt(m.tris)}</td><td>${statusChip(e.status)}</td><td class="notes">${esc(e.notes)}</td></tr>`}).join("")+
+      groups.map(g=>{const ps=parts.filter(e=>e.part===g),open=openParts.has(s.id+"/"+g),tr=ps.map(e=>DATA.models[s.id][e.id].tris),st=[...new Set(ps.map(e=>e.status))];
+        return`<tr><td></td><td colspan="4"><button class="partbtn" data-part="${esc(s.id+"/"+g)}" aria-expanded="${open}">${open?"Hide":"Show"} the ${ps.length} ${esc(g)} pieces</button></td>
+        <td class="n">${fmt(Math.min(...tr))}–${fmt(Math.max(...tr))}</td><td>${st.map(statusChip).join(" ")}</td><td class="notes">Parts of an object above, not objects of their own.</td></tr>`}).join("")+`</tbody></table></div>`}).join("")||`<p class="sub">Nothing with that status.</p>`;
   }else{
     if(!DATA.landmarks){box.innerHTML=`<p class="err">The landmark files could not be read.</p>`;return}
     box.innerHTML=`<h2>Landmarks</h2><div class="tablebox"><table><thead><tr><th>Picture</th><th>Landmark</th><th>City</th><th class="n">Height (m)</th><th class="n">Triangles</th><th class="n">Where</th><th class="n">Facing</th></tr></thead><tbody>`+
@@ -200,7 +207,8 @@ for(const[id,t]of TABS)$(id).onclick=()=>{tab=t;filter=null;for(const[i2,t2]of T
 // ---- the close look ----
 const viewCanvas=$("view");let viewer=null,current=null;const vcam={yaw:.65,pitch:.28,dist:1};
 function drawView(){if(!viewer||!current)return;const dpr=Math.min(devicePixelRatio||1,2);viewCanvas.width=Math.round(viewCanvas.clientWidth*dpr);viewCanvas.height=Math.round(viewCanvas.clientHeight*dpr);viewer.draw(current,vcam)}
-$("content").onclick=e=>{const b=e.target.closest(".pic");if(!b)return;
+$("content").onclick=e=>{const pb=e.target.closest(".partbtn");if(pb){const k=pb.dataset.part;openParts.has(k)?openParts.delete(k):openParts.add(k);render();return}
+  const b=e.target.closest(".pic");if(!b)return;
   let m,name,id,foot;
   if(b.dataset.lm){const L=DATA.landmarks.find(x=>x.id===b.dataset.lm);m=L.model;name=L.info.name;id="landmarks/"+L.id;foot=`${fmt(L.info.height)} m tall · ${fmt(m.tris)} triangles`}
   else{const s=DATA.index.sets.find(x=>x.id===b.dataset.set),en=s.models.find(x=>x.id===b.dataset.id);m=DATA.models[s.id][en.id];name=en.name+(en.stage?`, ${en.stage}`:"");id=s.id+"/"+en.id;foot=`${size(m)} m · ${fmt(m.tris)} triangles · ${STATUS[en.status]?.label||en.status}${en.notes?" · "+en.notes:""}`}
