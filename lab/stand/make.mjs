@@ -1,4 +1,4 @@
-// Builds the Tree Stand (lab/stand/index.html): the experimental farm. Run from anywhere:
+// Builds the Tree Stand (lab/stand/index.html, and its page of far shapes and dots, dots.html). Run from anywhere:
 //   node lab/stand/make.mjs
 // It inlines the library's tree shapes and their statuses into template.html, so the page works
 // on its own (open it, serve it, or publish it). Only shapes not yet approved get a row.
@@ -31,4 +31,7 @@ for(const f of (fs.existsSync(pd)?fs.readdirSync(pd):[]).filter(f=>f.endsWith('.
   for(const[id,m]of Object.entries(p.models)){models[id]=m;status[id]={status:p.status,notes:'trial'}}}
 const t=fs.readFileSync(path.join(here,'template.html'),'utf8').replace('/*LIBRARY_TREES*/null',JSON.stringify({models,status,extra}));
 fs.writeFileSync(path.join(here,'index.html'),t);
+// Far shapes and dots (lab/stand/dots.html): the same shapes, to judge each style far away.
+const d=fs.readFileSync(path.join(here,'dots-template.html'),'utf8').replace('/*LIBRARY_TREES*/null',JSON.stringify({models,status}));
+fs.writeFileSync(path.join(here,'dots.html'),d);
 console.log(`Tree Stand: ${Object.keys(models).length} shapes, ${extra.length} trial rows → lab/stand/index.html`);

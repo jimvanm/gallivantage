@@ -492,6 +492,11 @@ in `src/zones.js` (Koppen map, Rubel et al. 2017, about 3 km, 380 KB in
       palms; the library has nothing for rainforest, cloud forest or acacia.
 - [ ] **Vine rows break at map tile edges** (each map tile holds its own
       piece of a parcel). Rows stay in line; a cap marks the break.
+- [ ] **Dots per style** (13 October): `lab/stand/dots.html`, part of the Tree
+      Stand. Each style's dot is traced from its far shape when the page opens
+      (width and colour at 16 heights), so the two match. Jim to judge them
+      there, and the dissolve handover against the shrink-and-grow one; then
+      both go into the Biome Lab.
 - [ ] **Orchards and olive groves** are on the map but not planted yet.
 - [ ] **Into the app**: plant per tile in the worker, on the ground actually
       drawn; the instanced path in `meshprogram.js` (LIBRARY.md, section 6).
