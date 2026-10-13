@@ -364,6 +364,7 @@ function rebuild() {
   const t0 = performance.now();
   result = runAll(area.lines, area.waterways, natAt, rules, { waterAt, bench: $('bench').checked });
   result.read = readGroundRoads(result.net, natAt, rules);
+  surfaces = surfaceIndex(result.net);
   const t1 = performance.now();
   const t2 = performance.now();
   if (!meshes.natGround) meshes.natGround = groundMesh(area.nat);
@@ -508,7 +509,7 @@ addEventListener('keydown', (e) => {
   controls.release();
 }, true);
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
-window.roadlab = { cam, get area() { return area; }, get result() { return result; }, natAt, engAt, load, rules: () => rules };
+window.roadlab = { standAt: (x, z, feet) => standAt(x, z, feet), cam, get area() { return area; }, get result() { return result; }, natAt, engAt, load, rules: () => rules };
 
 let drive = null;    // { chain, f, dir, which, roll }
 function stopDriving() { drive = null; }
@@ -671,6 +672,54 @@ addEventListener('keydown', (e) => {
 });
 
 // ---- findings ---------------------------------------------------------------------------
+// ---- what you stand on ----------------------------------------------------------------
+// The engineered roads, bridge decks and junction surfaces are solid
+// underfoot, as the ground is: walking or flying, you stand on the highest
+// surface under you that is no more than a step above your feet, so you can
+// walk onto a bridge, and pass under one.
+let surfaces = null;
+const STEP_UP = 0.6;            // metres you can step up onto
+function surfaceIndex(net) {
+  const cell = 10, m = new Map(), key = (i, j) => i * 100003 + j;
+  for (const c of net.chains) {
+    if (!c.prof) continue;
+    for (let i = 0; i + 1 < c.n; i++) {
+      if ((c.struct && c.struct[i] === 2) || (c.inJ && c.inJ[i] && c.inJ[i + 1])) continue;
+      const r = c.width / 2;
+      const x0 = Math.min(c.x[i], c.x[i + 1]) - r, x1 = Math.max(c.x[i], c.x[i + 1]) + r;
+      const z0 = Math.min(c.z[i], c.z[i + 1]) - r, z1 = Math.max(c.z[i], c.z[i + 1]) + r;
+      for (let gj = Math.floor(z0 / cell); gj <= Math.floor(z1 / cell); gj++) for (let gi = Math.floor(x0 / cell); gi <= Math.floor(x1 / cell); gi++) {
+        const k = key(gi, gj); let a = m.get(k); if (!a) m.set(k, a = []); a.push(c, i);
+      }
+    }
+  }
+  const js = (net.junctions || []).filter((J) => J.h && J.pts && J.pts.length >= 3);
+  const inside = (pts, x, z) => {          // the outline is convex, anticlockwise
+    for (let k = 0; k < pts.length; k++) {
+      const [ax, az] = pts[k], [bx, bz] = pts[(k + 1) % pts.length];
+      if ((bx - ax) * (z - az) - (bz - az) * (x - ax) < 0) return false;
+    }
+    return true;
+  };
+  return { m, key, cell, js, inside };
+}
+// Height you stand on at (x, z) with your feet at about `feet`.
+function standAt(x, z, feet) {
+  let best = natAt(x, z);
+  if (!surfaces) return best;
+  const consider = (h) => { if (Number.isFinite(h) && h <= feet + STEP_UP && (!Number.isFinite(best) || h > best)) best = h; };
+  const a = surfaces.m.get(surfaces.key(Math.floor(x / surfaces.cell), Math.floor(z / surfaces.cell)));
+  if (a) for (let q = 0; q < a.length; q += 2) {
+    const c = a[q], i = a[q + 1];
+    const ax = c.x[i], az = c.z[i], dx = c.x[i + 1] - ax, dz = c.z[i + 1] - az, L2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+    if (Math.hypot(x - ax - dx * t, z - az - dz * t) > c.width / 2) continue;
+    consider(c.prof[i] + (c.prof[i + 1] - c.prof[i]) * t + 0.08);
+  }
+  for (const J of surfaces.js) if (Math.hypot(x - J.x, z - J.z) < J.R + 2 && surfaces.inside(J.pts, x, z)) consider(J.h(x, z) + 0.08);
+  return best;
+}
+
 function goLook(x, z) {
   stopDriving();
   const g = engAt(x, z);
@@ -734,7 +783,10 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (!area) return;
   const view = $('view').value;
-  const groundFor = view === 'raw' ? natAt : engAt;
+  // Showing only today's draped roads: the ground. Otherwise the engineered
+  // roads and bridges are solid too.
+  const feet = cam.alt - 1.7;
+  const groundFor = view === 'raw' ? natAt : (x, z) => standAt(x, z, feet);
   if (drive) driveStep(dt);
   else {
     const g = groundFor(cam.mercX, -cam.mercY);
