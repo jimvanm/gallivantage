@@ -398,6 +398,21 @@ reasoning: the project's `ROADS-DRAFT.md`.
   within the road's reach: no steeper along than twice the road's grade, and
   level enough across for its roadbed. Jim's 407 spot: both flags gone, road
   well over its rules 7.0% to 1.5%; Campbellford 5.1% to 4.4%.
+- **Merges (Jim's on-ramp spot, 13 October; 0.14.35).** Cause: an on-ramp
+  closes on its motorway over 60 to 100 m before it ends on it, but the two
+  were worked out separately (a motorway is never a junction), so the ramp
+  lay across the motorway up to 0.4 m off its surface, and was drawn 12 m
+  wide (the motorway's width). Now: a road ending on a bigger road at less
+  than 30 degrees merges over the stretch where their surfaces overlap. It
+  is blended onto the bigger road's top by how much they overlap (its own
+  ground where they barely touch; the bigger road's height line and tilt,
+  carried out sideways, once it is on it), held rather than pinned so it
+  keeps its own rules getting there. It is drawn only where it sticks out
+  past the bigger road's edge, so it tapers away like a real merging lane.
+  Off-ramps the same, leaving. Ramps are one lane, 5 m. Jim's on-ramp spot:
+  the ramp within 1 cm of the motorway once on it, no flags; road well over
+  its rules 0.6% (407 spot 0.3%). The near-white road colour is gone (it
+  looked like a junction).
 - **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
   survey is bare earth, so the road's real bed is in it. Every 4 m across
   each road: the widest flat, nearly level strip near the map's line, with a

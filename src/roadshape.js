@@ -41,7 +41,7 @@ export { WHERE_C };
 // their rules, shown as red bands across the road. Junctions are pale grey.
 export const EACH_C = [
   [56, 108, 224], [242, 150, 36], [150, 78, 204], [36, 188, 204], [232, 210, 56], [232, 108, 180],
-  [30, 150, 100], [228, 228, 228], [150, 98, 56], [34, 48, 140], [150, 214, 56], [196, 40, 150],
+  [30, 150, 100], [150, 98, 56], [34, 48, 140], [150, 214, 56], [196, 40, 150],
 ];
 export const OVER_C = [214, 30, 30], JUNCTION_GREY = [190, 190, 186];
 const EACH_CELL = 25;            // metres: roads with points in the same or touching cells must differ
@@ -152,15 +152,36 @@ export function buildRoadShapes(net, mb, opt) {
       if (opt.colour === 'ground') rgb = READ_COLOURS[READ_CLASSES[c.read ? c.read.cls[i] : 3]];
       return rgba(rgb[0], rgb[1], rgb[2]);
     };
+    // Merging into a bigger road (roadrules.js findMerges): on its top, and
+    // only the part sticking out past its edge, so the lane tapers into it.
+    // Returns the left, middle and right points, or null.
+    const merged = (i) => {
+      if (raw || !c.mz || !c.mz[i]) return null;
+      const A = net.chains[c.mA[i]], f = c.mj[i], q = Math.min(A.n - 2, Math.floor(f)), t = f - q;
+      if (!A.prof || !A.cross) return null;
+      const L = (a) => a[q] + (a[q + 1] - a[q]) * t;
+      const dx = A.x[q + 1] - A.x[q], dz = A.z[q + 1] - A.z[q], len = Math.hypot(dx, dz) || 1, nx = dz / len, nz = -dx / len;
+      const ax = L(A.x), az = L(A.z), ah = L(A.prof), tilt = L(A.cross), u = c.mu[i], hwA = A.width / 2;
+      let v0, v1;
+      if (u >= 0) { v0 = Math.max(hwA, u - hw); v1 = Math.max(v0, u + hw); }
+      else { v1 = Math.min(-hwA, u + hw); v0 = Math.min(v1, u - hw); }
+      const pt = (v) => [ax + nx * v, ah + tilt * v + LIFT, az + nz * v];
+      const same = dx * lz[i] - dz * lx[i] <= 0;          // B runs the same way as A (B's left is A's left)
+      return same ? [pt(v1), pt((v0 + v1) / 2), pt(v0)] : [pt(v0), pt((v0 + v1) / 2), pt(v1)];
+    };
     // The surface, three vertices across each sample.
     let prev = -1;
     for (let i = 0; i < n; i++) {
       if (struct && struct[i] === 2 && (i === 0 || struct[i - 1] === 2)) { prev = -1; counts.tunnels++; continue; }
       if (inJ && inJ[i]) { prev = -1; continue; }
       const k = col(i);
-      const base = mb.vert(X[i] + lx[i] * hw, edgeH(i, 1) + LIFT, Z[i] + lz[i] * hw, k);
+      const m = merged(i);
+      const base = m ? mb.vert(m[0][0], m[0][1], m[0][2], k) : mb.vert(X[i] + lx[i] * hw, edgeH(i, 1) + LIFT, Z[i] + lz[i] * hw, k);
+      if (m) { mb.vert(m[1][0], m[1][1], m[1][2], k); mb.vert(m[2][0], m[2][1], m[2][2], k); }
+      else {
       mb.vert(X[i], p[i] + LIFT, Z[i], k);
       mb.vert(X[i] - lx[i] * hw, edgeH(i, -1) + LIFT, Z[i] - lz[i] * hw, k);
+      }
       if (prev >= 0) {
         mb.tri(prev, base, prev + 1); mb.tri(prev + 1, base, base + 1);
         mb.tri(prev + 1, base + 1, prev + 2); mb.tri(prev + 2, base + 1, base + 2);
@@ -191,6 +212,7 @@ export function buildRoadShapes(net, mb, opt) {
     for (let i = 1; i < n; i++) {
       const a = i - 1;
       if (struct[a] || struct[i] || !c.under) continue;
+      if (c.mz && (c.mz[a] || c.mz[i])) continue;           // merging: on the bigger road's top
       if (inJ && (inJ[a] || inJ[i])) continue;
       // The layer's edge, down to the ground at that edge (not under the middle).
       for (const sd of [1, -1]) {

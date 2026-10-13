@@ -199,6 +199,26 @@ function world(extra, lines) {
   for (let i = 0; i < c.n; i++) if (Math.abs(Math.abs(c.z[i]) - 58) < 1.5) assert.equal(c.struct[i], 1, 'the bridge reaches the top of the wall');
   ok('a bridge that stops short of the top of its bank carries on to it');
 }
+{
+  // An on-ramp closing slowly on a motorway across a hillside (ground rising
+  // 4% to the north), ending on it. Where they overlap it merges: on the
+  // motorway's top by its end, and shown only where it sticks out.
+  const nat = (x, z) => 100 - 0.04 * z + 0.3 * Math.sin(x / 40);
+  const r = runAll([line([-900, 0, 0, 0, 900, 0], 'motorway', { oneway: true }), line([-500, -40, -150, -12, 0, 0], 'ramp', { oneway: true })], [], nat, defaultRules());
+  const mw = r.net.chains.find((c) => c.kind === 'motorway'), rp = r.net.chains.find((c) => c.kind === 'ramp');
+  assert.ok(rp.width < 6, 'a ramp is one lane wide');
+  assert.ok(rp.mz && rp.mz[rp.n - 1] === 1, 'it merges at its end');
+  let first = -1; for (let i = 0; i < rp.n; i++) if (rp.mz[i]) { first = i; break; }
+  assert.ok((rp.n - first) * rp.ds > 40, 'over a long stretch, not a point: ' + ((rp.n - first) * rp.ds).toFixed(0) + ' m');
+  const end = rp.n - 1, j = Math.round(rp.mj[end]);
+  assert.ok(Math.abs(rp.prof[end] - mw.prof[j]) < 0.05, 'on the motorway\'s top at its end: ' + (rp.prof[end] - mw.prof[j]).toFixed(3));
+  assert.equal(r.flags.length, 0, 'nothing flagged');
+  const { buildRoadShapes } = await import('../src/roadshape.js');
+  const { MeshBuilder } = await import('../src/meshbuilder.js');
+  const mb = new MeshBuilder();
+  buildRoadShapes(r.net, mb, { which: 'prof', colour: 'each', rules: defaultRules() });
+  ok('an on-ramp merges into its motorway over the stretch where they overlap');
+}
 // ---- a little roadbed, and water ----------------------------------------------------------------
 {
   // A local road over a field with 0.6 m bumps: it may ride at most 0.3 m

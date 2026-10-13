@@ -161,9 +161,13 @@ export function widthOf(line) {
     const rs = line.cls === 'transit' && line.subclass === 'tram' ? RAIL_STYLE.tram : RAIL_STYLE.main;
     return Math.max(rs.bed, 3);
   }
+  // A ramp is one lane with narrow edges (the app draws it as wide as its
+  // motorway, which made ramps overlap their motorway far too early).
+  if (line.kind === 'ramp') return RAMP_WIDTH;
   const st = ROAD_STYLE[line.cls] || ROAD_STYLE.minor;
   return st.w[line.oneway ? 1 : 0];
 }
+const RAMP_WIDTH = 5;
 
 // Steepest banking on a curve, and the side friction a driver can use at a
 // speed (AASHTO's table, simplified). Together they give the tightest curve
@@ -1252,6 +1256,76 @@ function topOf(c, x, z, a, b) {
   return { h: lerpAt(c.prof, f) + lerpAt(c.cross, f) * u, d: best };
 }
 
+// ---- merging: a road running into another at a shallow angle ----------------------------
+//
+// An on-ramp runs alongside the motorway for a long way before it ends on it,
+// closing slowly; an off-ramp leaves the same way. Where the two overlap they
+// are one surface: the joining road takes the bigger road's top (its height
+// line and its tilt across, carried out sideways), and is drawn only where it
+// sticks out past the bigger road's edge, as a lane that tapers away. This is
+// Jim's rule: roads blend only where they are converging or diverging. Roads
+// that merely run alongside, without one ending on the other, keep apart.
+
+const MERGE_SIN = 0.5;        // shallower than 30 degrees: a merge (steeper ones meet at a junction)
+const MERGE_REACH = 400;      // metres: the longest merge looked for
+const MERGE_HOLD = 1e3;       // how hard a road fully on a bigger road is held to its top
+
+// Finds merges. For each road ending on a bigger road (one fitted before it)
+// at a shallow angle: the samples, from that end, where their surfaces overlap.
+// Adds to the joining chain mz (per sample: 1 in a merge), mA (the bigger
+// road's id), mj (where on it, as a fractional sample) and mu (how far left
+// of its centreline, metres).
+function findMerges(net, rules, rank) {
+  const { chains, nodes } = net;
+  const roadlike = (c) => ROADLIKE.has(c.kind) || c.kind === 'motorway';
+  for (const B of chains) {
+    if (!roadlike(B)) continue;
+    for (const atEnd of [false, true]) {
+      const sEnd = atEnd ? B.length : 0;
+      let node = null;
+      for (const [id, s] of B.at) if (Math.abs(s - sEnd) < 0.5) node = id;
+      if (node == null) continue;
+      let best = null;
+      for (const [aid, sA] of nodes[node].on) {
+        const A = chains[aid];
+        if (aid === B.id || !roadlike(A) || !(rank.get(aid) < rank.get(B.id))) continue;
+        const z = walkMerge(B, A, atEnd, Math.round(sA / A.ds));
+        if (z && (!best || z.idx.length > best.idx.length)) best = z;
+      }
+      if (!best) continue;
+      if (!B.mz) { B.mz = new Uint8Array(B.n); B.mA = new Int32Array(B.n).fill(-1); B.mj = new Float64Array(B.n); B.mu = new Float64Array(B.n); }
+      best.idx.forEach((i, k) => { B.mz[i] = 1; B.mA[i] = best.A; B.mj[i] = best.j[k]; B.mu[i] = best.u[k]; });
+    }
+  }
+}
+
+// From B's end on A, inward along B, while the two overlap, stay at a
+// shallow angle, and draw apart (or keep apart) going away from the end.
+function walkMerge(B, A, atEnd, jA) {
+  const hw = B.width / 2 + A.width / 2, step = atEnd ? -1 : 1;
+  const idx = [], js = [], us = [];
+  let j = jA, lastD = -1;
+  for (let i = atEnd ? B.n - 1 : 0, k = 0; i >= 0 && i < B.n && k * B.ds <= MERGE_REACH; i += step, k++) {
+    if (B.struct[i] === 2) break;
+    let bd = Infinity, bf = j, bu = 0, bs = 0;
+    for (let q = Math.max(0, Math.floor(j) - 25); q < Math.min(A.n - 1, Math.floor(j) + 25); q++) {
+      const r = segDist(B.x[i], B.z[i], A.x[q], A.z[q], A.x[q + 1], A.z[q + 1]);
+      if (r.d >= bd) continue;
+      const dx = A.x[q + 1] - A.x[q], dz = A.z[q + 1] - A.z[q], L = Math.hypot(dx, dz) || 1;
+      bd = r.d; bf = q + r.t;
+      bu = Math.sign(dx * (B.z[i] - A.z[q]) - dz * (B.x[i] - A.x[q])) * -r.d;
+      const a = Math.max(0, i - 1), b = Math.min(B.n - 1, i + 1);
+      const ex = B.x[b] - B.x[a], ez = B.z[b] - B.z[a], E = Math.hypot(ex, ez) || 1;
+      bs = Math.abs(dx * ez - dz * ex) / (L * E);          // sine of the angle between them
+    }
+    if (!Number.isFinite(bd) || bd >= hw || bs > MERGE_SIN) break;
+    if (bd < lastD - 0.5) break;                           // closing again away from the end: not a merge
+    lastD = Math.max(lastD, bd);
+    idx.push(i); js.push(bf); us.push(bu); j = bf;
+  }
+  return idx.length >= 3 ? { A: A.id, idx, j: js, u: us } : null;
+}
+
 // A junction's surface, once every road meeting there is fitted: the tops of
 // those roads, blended by how near each one's centreline is, so each eases
 // into the others. Only roads that join there take part.
@@ -1380,7 +1454,8 @@ export function engineer(net, groundAt, rules, opt = {}) {
       armOf.get(a.chain).push({ J, arm: a });
     }
   }
-  for (const c of chains) { c.lim = limitsFor(c); readBottom(c, groundAt); reachBankTops(c); }
+  for (const c of chains) { c.lim = limitsFor(c); readBottom(c, groundAt); reachBankTops(c); c.mz = null; }
+  findMerges(net, rules, new Map(order.map((c, k) => [c.id, k])));
   const nodeH = new Map();
   const byChain = new Map();
   for (const x of crossings) {
@@ -1452,7 +1527,34 @@ export function engineer(net, groundAt, rules, opt = {}) {
     // Inside a junction the road is on the junction's surface: not held to
     // its own ground there, nor flagged for leaving it.
     if (B.inJ) for (let i = 0; i < B.n; i++) if (B.inJ[i] && B.id !== junctions[B.inJ[i] - 1].lead) { w[i] = 0; floor[i] = -Infinity; if (ceil) ceil[i] = Infinity; B.known[i] = 1; }
-    const r = fitProfile(t, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil, B.lim);
+    // Merging into a bigger road (see findMerges): blended onto its top by
+    // how much the two overlap. Where they barely touch, the road keeps to its
+    // own ground; as it moves onto the bigger road it takes that road's top
+    // (its height line, and its tilt carried out sideways). Held, not pinned,
+    // so the road stays within its own rules getting there.
+    let tt = t;
+    if (B.mz) {
+      tt = Float64Array.from(t);
+      B.mo = new Float64Array(B.n);
+      for (let i = 0; i < B.n; i++) {
+        if (!B.mz[i] || (B.inJ && B.inJ[i])) continue;
+        const A = chains[B.mA[i]], f = B.mj[i];
+        if (!A.prof) continue;
+        const q = Math.min(A.n - 2, Math.floor(f));
+        const same = (A.x[q + 1] - A.x[q]) * (B.x[Math.min(B.n - 1, i + 1)] - B.x[Math.max(0, i - 1)]) +
+          (A.z[q + 1] - A.z[q]) * (B.z[Math.min(B.n - 1, i + 1)] - B.z[Math.max(0, i - 1)]) >= 0 ? 1 : -1;
+        const tilt = lerpAt(A.cross, f), hA = lerpAt(A.prof, f) + tilt * B.mu[i];
+        const o = Math.max(0, Math.min(1, (A.width / 2 + B.width / 2 - Math.abs(B.mu[i])) / B.width));
+        B.mo[i] = o;
+        const wh = MERGE_HOLD * o * o;
+        tt[i] = (w[i] * t[i] + wh * hA) / (w[i] + wh || 1); w[i] += wh;
+        B.cross[i] = (1 - o) * B.cross[i] + o * tilt * same;
+        if (floor[i] > hA) floor[i] -= (floor[i] - hA) * o + 0.02 * o;
+        if (ceil && ceil[i] < hA) ceil[i] += (hA - ceil[i]) * o + 0.02 * o;
+        if (o > 0.5) B.known[i] = 1;
+      }
+    }
+    const r = fitProfile(tt, w, B.ds, kB, rules, fixed, lower, upper, floor, ceil, B.lim);
     B.prof = r.p; B.ok = r.ok; B.rounds = r.rounds;
     // Leading a junction: its surface is now known.
     for (const J of leads.get(B.id) || []) {
