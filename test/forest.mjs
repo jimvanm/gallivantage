@@ -86,3 +86,12 @@ assert.ok(FARM['vine-cap-1'], 'farm shapes readable');
   assert.equal(k.live.size, 0, 'tiles out of reach are dropped');
 }
 console.log('forest: ok');
+
+// Tiles are made with headroom: past the range, at least the share needed 25% nearer.
+{
+  const { shareToMake } = await import('../src/forest.js');
+  assert.equal(shareToMake(2000, V), 1, 'all trees while it may show trees');
+  for (const d of [3000, 4000, 6000, 9000]) assert.ok(shareToMake(d, V) >= thinAt((d - 300) * 0.75, V), 'headroom at ' + d);
+  assert.ok(shareToMake(9000, V) < 1, 'still a share far away');
+  console.log('forest: headroom ok');
+}

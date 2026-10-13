@@ -93,7 +93,7 @@ import { decodeTerrarium, pxMetersFor, PX } from './src/heightgrid.js';
 import { cachedFetch } from './src/cache.js';
 import { loadZones, ZONE_NAMES } from './src/zones.js';
 import { defaultRules, readSpot, tileSeed, sunnyFrom, COVER, COVER_NAMES, KINDS as TREE_KINDS } from './src/biome.js';
-import { VIEW_DEFAULTS, levelFor, dotBand as bandOf, reach as reachOf, makeTrees, makeVines, insideRings, farLook, ForestKeeper } from './src/forest.js';
+import { VIEW_DEFAULTS, shareToMake, dotBand as bandOf, reach as reachOf, makeTrees, makeVines, insideRings, farLook, ForestKeeper } from './src/forest.js';
 import { createForestDrawer } from './src/forestdraw.js';
 
 const $ = (id) => document.getElementById(id);
@@ -371,7 +371,6 @@ let rules = defaultRules();
 const START = defaultRules();
 const settings = { ...VIEW_DEFAULTS, trees: true, vines: true, vineSpacing: 2.6, canopy: true, dots: true };
 const VIEW0 = { ...settings };
-const levelAt = (d) => levelFor(d, settings);
 const dotBand = () => bandOf(settings);
 const reach = () => reachOf(settings, settings.dots);
 const keeper = new ForestKeeper();
@@ -401,7 +400,7 @@ function want(eye) {
       if (Math.abs(cx) - s / 2 > area.S / 2 || Math.abs(cz) - s / 2 > area.S / 2) continue;
       const d = Math.hypot(cx - eye[0], cz - eye[2]) - s * 0.71;
       if (d > R) continue;
-      const need = d <= RV + 300 ? 1 : levelAt(d - 300);
+      const need = shareToMake(d, settings);
       items.push({ key: `t${x}/${y}`, d, keep: need, make: () => makeTileTrees({ x, y }, need) });
     }
   }
@@ -536,7 +535,7 @@ function showReading(eye, fwd) {
 // x is east and z south, in true metres from the area's middle; the camera's mercX/mercY carry them.
 const cam = { mercX: 0, mercY: 0, alt: 400, yaw: 0, pitch: -0.2, fly: 1 };
 const controls = new Controls(canvas, cam);
-window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => keeper.makeSome(ms), get queued() { return keeper.queue.length; } };   // for tests and the console
+window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => keeper.makeSome(ms), get queued() { return keeper.queue.length; }, get forest() { return forest.stats; } };   // for tests and the console
 
 // ================= frame =================
 const SKY = [0.73, 0.83, 0.91], SUN = norm([0.5, 0.75, 0.35]);
@@ -555,7 +554,8 @@ function frame(now) {
   const agl = cam.alt - groundAt(eye[0], eye[2]), vfov = 0.9, hfov = 2 * Math.atan(Math.tan(vfov / 2) * W / H), near = Math.max(0.1, Math.min(20, agl * 0.05)), far = Math.max(25000, area.S * 1.6, agl * 6);
   const vp = mm(persp(vfov, W / H, near, far), lookAt(eye, [eye[0] + fwd[0], eye[1] + fwd[1], eye[2] + fwd[2]], [0, 1, 0]));
   const show = { trees: settings.trees, vines: settings.vines, dots: settings.dots };
-  want(eye); keeper.makeSome(5);
+  // a few milliseconds a frame for making tiles; twice that when you outrun them
+  want(eye); keeper.makeSome(keeper.queue.length > 40 ? 10 : 5);
   forest.update({ eye, yaw: cam.yaw, pitch: cam.pitch, hfov, agl, now, keeper, V: settings, show, reach: reach() });
   const fog = Math.min(0.00012, 0.9 / Math.max(area.S * 2, agl * 2.5));
   gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
@@ -583,6 +583,7 @@ function stats() {
     ['Still to make', fmt(keeper.queue.length)],
     ['Held now', `${fmt(nLive)} trees, ${fmt(nVines)} vine pieces`],
     ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)], ['Dots near (with the trees)', fmt(lists.count[DOTS])], ['Dots far', fmt(farCount)],
+    ['Tiles too sparse / missing', `${fmt(forest.stats.short)} / ${fmt(forest.stats.gaps)} (should be 0)`],
     ['Draw calls', fmt(calls + 1)], ['Triangles a frame', fmt(tris)],
     ['List refresh: near, far', `${fmt(rebuildMs, 1)} ms, ${fmt(farMs, 1)} ms`], ['Frame time', `${fmt(avg, 1)} ms (${fmt(1000 / avg)} fps)`],
   ];

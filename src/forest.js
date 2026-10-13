@@ -32,6 +32,10 @@ export const thinAt = (d, V) => d <= V.thinFrom ? 1 : Math.max(1 / 64, (V.thinFr
 // The share a tile must hold to serve its nearest point d away: thinAt rounded up to a power of two, so a tile
 // passing back and forth is not made again for every step.
 export const levelFor = (d, V) => Math.min(1, 2 ** Math.ceil(Math.log2(thinAt(Math.max(1, d), V))));
+// The share to make a tile with, its nearest point d away: all of it while it may show trees (within the range plus
+// 300 m); past that, enough for 25% nearer than it is (about one step richer), so as you fly towards it the tile is
+// made again well before its square would show sparser than its neighbours.
+export const shareToMake = (d, V) => d <= V.range + 300 ? 1 : levelFor(Math.max(1, (d - 300) * 0.75), V);
 // The dots' band: where they melt into the canopy (never starting before the trees have all gone).
 export const dotBand = (V) => { const D = Math.max(V.dotRange, V.range); return [Math.max(V.range, D * V.dotFade), D]; };
 // How far trees are worked out: the dots' reach, or the trees' when there are no dots.

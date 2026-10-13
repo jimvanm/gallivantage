@@ -157,7 +157,8 @@ export function createForestDrawer(gl, lib) {
   const DOTS = NB;                 // the last bin: every tree that may be showing as a dot
   const lists = { count: new Uint32Array(NB + 1), start: new Uint32Array(NB + 1) };
   let inst = new Uint8Array(0), inst32 = new Uint32Array(0), lastBuild = null, lastBuildT = 0;
-  const stats = { rebuildMs: 0, farMs: 0, farCount: 0, lists, DOTS, NSH, NB };
+  const stats = { rebuildMs: 0, farMs: 0, farCount: 0, lists, DOTS, NSH, NB, gaps: 0, gapFrames: 0, short: 0, shortFrames: 0 };
+  let nearSet = new Set(), farSet = new Set();
   // eye: [x, height, z]; agl: metres above the ground; keeper: a ForestKeeper; V: the distances; show: { trees, vines, dots }.
   function rebuild(eye, yaw, hfov, pitch, agl, now, keeper, V, show) {
     const key = `${V.range}|${V.near}|${show.trees}|${show.vines}|${show.dots}|${V.dotRange}|${V.fade}|${V.thinFrom}`;
@@ -173,10 +174,13 @@ export function createForestDrawer(gl, lib) {
       // tiles wholly past the trees' range belong to the far list; note when one changes sides
       const far = b.tree && d - b.rad > R;
       if (b.far !== far) { b.far = far; keeper.farDirty = true; }
-      if (far || d - b.rad > R) continue;
+      // Past the range a tile's dots come from the far list, but only once the far list holds it: until then it stays
+      // here, so its square of forest never blinks to bare ground for the moment in between.
+      if (d - b.rad > R && (!b.tree || farSet.has(b))) continue;
       if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
       chosen.push([b, d, b.tree]);
     }
+    nearSet = new Set(chosen.map((c) => c[0]));
     chosen.sort((a, b) => a[1] - b[1]);             // nearest first, so the card skips hidden pixels
     const cnt = new Uint32Array(NB + 1);
     const bin = (u8, i, d2) => { const s = u8[i * 20 + 19]; return d2 < NR2 ? s : NSH + SHAPE_KIND[s]; };
@@ -223,7 +227,27 @@ export function createForestDrawer(gl, lib) {
     if (farInst.length < tot * 20) farInst = new Uint8Array(Math.max(tot * 20, farInst.length * 1.5 | 0, 2000));
     for (const t of farTiles) farInst.set(t.b.u8.subarray(0, t.n * 20), t.start * 20);
     gl.bindBuffer(gl.ARRAY_BUFFER, fbuf); gl.bufferData(gl.ARRAY_BUFFER, farInst.subarray(0, tot * 20), gl.STATIC_DRAW);
+    farSet = new Set(farTiles.map((t) => t.b));
     stats.farCount = tot; farAt = [eye[0], eye[2]]; farT = now; keeper.farDirty = false; stats.farMs = performance.now() - t0;
+  }
+
+  // A check that should always find nothing: held tiles in view, past the trees' range and within reach, that are in
+  // neither list this frame (their square of forest would blink to bare ground).
+  function countGaps(u) {
+    if (!(u.show.dots && u.show.trees)) { stats.gaps = 0; return; }
+    const R = u.V.range, vx = Math.sin(u.yaw), vz = -Math.cos(u.yaw), half = u.hfov / 2 + 0.15, cull = u.pitch > -0.85;
+    let g = 0, sh = 0;
+    for (const b of u.keeper.live.values()) {
+      if (!b.tree) continue;
+      const mx = b.cx - u.eye[0], mz = b.cz - u.eye[2], d = Math.hypot(mx, mz);
+      // short: the tile holds fewer trees than its nearest dots need now (its square shows sparser than its neighbours)
+      if (d - b.rad <= u.reach && b.keep < thinAt(Math.max(1, d - b.rad), u.V) * 0.999 && d - b.rad > u.V.fade * R) sh++;
+      if (d - b.rad <= R || d - b.rad > u.reach) continue;
+      if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
+      if (!nearSet.has(b) && !farSet.has(b) && prefixBelow(b, thinAt(Math.max(1, d - b.rad - 300), u.V)) > 0) g++;
+    }
+    stats.gaps = g; if (g) stats.gapFrames++;
+    stats.short = sh; if (sh) stats.shortFrames++;
   }
 
   // ---- drawing ----
@@ -262,7 +286,7 @@ export function createForestDrawer(gl, lib) {
     pieceShape: (len, from, to) => KINDS[K[`vine${len}`]].shapes[from * 3 + to],      // for forest.js makeVines
     capShape: (outline) => KINDS[K.vinecap].shapes[outline],
     // Remake the lists if needed. u: { eye, yaw, pitch, hfov, agl, now, keeper, V, show, reach }.
-    update(u) { rebuild(u.eye, u.yaw, u.hfov, u.pitch, u.agl, u.now, u.keeper, u.V, u.show); buildFar(u.eye, u.now, u.keeper, u.V, u.show, u.reach); },
+    update(u) { rebuild(u.eye, u.yaw, u.hfov, u.pitch, u.agl, u.now, u.keeper, u.V, u.show); buildFar(u.eye, u.now, u.keeper, u.V, u.show, u.reach); countGaps(u); },
     draw,
   };
 }
