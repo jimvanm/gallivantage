@@ -36,10 +36,58 @@ export function movedColour(d) {
 const WHERE_C = { town: [214, 140, 60], country: [80, 160, 96], junction: [70, 140, 200] };
 export { WHERE_C };
 
+// 'each' colour: every road its own colour, so roads that meet or run close
+// are told apart. No red among them: red is kept for stretches well over
+// their rules, shown as red bands across the road. Junctions are pale grey.
+export const EACH_C = [
+  [56, 108, 224], [242, 150, 36], [150, 78, 204], [36, 188, 204], [232, 210, 56], [232, 108, 180],
+  [30, 150, 100], [228, 228, 228], [150, 98, 56], [34, 48, 140], [150, 214, 56], [196, 40, 150],
+];
+export const OVER_C = [214, 30, 30], JUNCTION_GREY = [190, 190, 186];
+const EACH_CELL = 25;            // metres: roads with points in the same or touching cells must differ
+
+// One colour (an index into EACH_C) per road. Roads that come within about
+// one cell of each other (they meet, or run alongside) get different colours
+// where there are enough; longest roads choose first.
+export function roadColours(net) {
+  const chains = net.chains, cells = new Map(), near = chains.map(() => new Set());
+  const key = (i, j) => i * 100003 + j;
+  chains.forEach((c, ci) => {
+    const X = c.x0 || c.x, Z = c.z0 || c.z, seen = new Set();
+    for (let i = 0; i < c.n; i += 2) {
+      const k = key(Math.floor(X[i] / EACH_CELL), Math.floor(Z[i] / EACH_CELL));
+      if (seen.has(k)) continue;
+      seen.add(k);
+      let cell = cells.get(k);
+      if (!cell) cells.set(k, cell = { i: Math.floor(X[i] / EACH_CELL), j: Math.floor(Z[i] / EACH_CELL), a: [] });
+      cell.a.push(ci);
+    }
+  });
+  for (const { i, j, a } of cells.values()) {
+    for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++) {   // this cell and the ones touching it
+      const b = cells.get(key(i + di, j + dj));
+      if (!b) continue;
+      for (const p of a) for (const q of b.a) if (p !== q) { near[p].add(q); near[q].add(p); }
+    }
+  }
+  const order = chains.map((_, i) => i).sort((p, q) => chains[q].n - chains[p].n);
+  const out = new Int16Array(chains.length).fill(-1), used = new Int32Array(EACH_C.length);
+  for (const ci of order) {
+    const taken = new Set();
+    for (const q of near[ci]) if (out[q] >= 0) taken.add(out[q]);
+    let best = -1;
+    for (let k = 0; k < EACH_C.length; k++) if (!taken.has(k) && (best < 0 || used[k] < used[best])) best = k;
+    if (best < 0) best = ci % EACH_C.length;           // more neighbours than colours
+    out[ci] = best; used[best]++;
+  }
+  return out;
+}
+
 // opt:
 //   which    'prof' (the engineered line) or 'raw' (draped on the ground, as today)
-//   colour   'plain', 'rules', 'moved' (how far it was moved onto the flat
-//            strip) or 'where' (town, country, near a junction)
+//   colour   'plain', 'each' (every road its own colour), 'rules', 'moved'
+//            (how far it was moved onto the flat strip) or 'where' (town,
+//            country, near a junction)
 //   curves   in rules colour, count the plan's bends too
 //   rules    the rules (for the kinds' speeds and limits)
 export function buildRoadShapes(net, mb, opt) {
@@ -47,16 +95,17 @@ export function buildRoadShapes(net, mb, opt) {
   const raw = opt.which === 'raw';
   const counts = { decks: 0, piers: 0, tunnels: 0, piersMoved: 0, pierSpots: [] };
   const onRoad = raw ? null : drivableAt(net, rules);
-  for (const c of net.chains) {
+  const each = opt.colour === 'each' ? roadColours(net) : null;
+  net.chains.forEach((c, ci) => {
     const kind = (!raw && c.K) || rules.kinds[c.kind];
     const inJ = raw ? null : c.inJ;            // inside a junction: the junction's surface is drawn instead
     // Today's road is on the map's own line (x0, z0 when the road was moved
     // onto the flat strip), draped on the ground there.
     const p = raw ? (c.raw0 || c.raw) : c.prof;
-    if (!p) continue;
+    if (!p) return;
     const X = raw && c.x0 ? c.x0 : c.x, Z = raw && c.z0 ? c.z0 : c.z;
     const struct = raw ? null : c.struct;
-    const sc = opt.colour === 'rules' ? checkProfile(c, p, kind) : null;
+    const sc = opt.colour === 'rules' || each ? checkProfile(c, p, kind) : null;
     const rail = c.kind === 'rail' || c.kind === 'railMinor';
     const st = ROAD_STYLE[c.cls] || ROAD_STYLE.minor;
     const plain = rail ? BED_C : st.c;
@@ -93,6 +142,11 @@ export function buildRoadShapes(net, mb, opt) {
     const col = (i) => {
       let rgb = plain;
       if (sc) rgb = ruleColour(Math.max(sc.vert[i], opt.curves ? sc.curve[i] : 0));
+      if (each) {
+        // Well over its rules: red bands, 2 m in every 6, across the road's own colour.
+        const r = Math.max(sc.vert[i], opt.curves ? sc.curve[i] : 0);
+        rgb = r > 1.5 && (i * c.ds) % 6 < 2 ? OVER_C : EACH_C[each[ci]];
+      }
       if (opt.colour === 'moved') rgb = movedColour(raw || !c.shift ? 0 : Math.abs(c.shift[i]));
       if (opt.colour === 'where') rgb = !raw && c.jz && c.jz[i] ? WHERE_C.junction : c.urban ? WHERE_C.town : WHERE_C.country;
       if (opt.colour === 'ground') rgb = READ_COLOURS[READ_CLASSES[c.read ? c.read.cls[i] : 3]];
@@ -129,7 +183,7 @@ export function buildRoadShapes(net, mb, opt) {
         }
       }
     }
-    if (!struct) continue;
+    if (!struct) return;
     // Where the road stands a little above the ground (less than a bridge),
     // its own bed shows at the edges, down to the ground. The ground itself
     // is not touched.
@@ -186,7 +240,7 @@ export function buildRoadShapes(net, mb, opt) {
         box(mb, X[i], Z[i], lx[i], lz[i], hw * 0.55, 0.6, ground - 0.5, p[i] - DECK, pier);
       }
     }
-  }
+  });
   if (!raw && net.junctions) counts.junctions = junctionShapes(net, mb, opt);
   return counts;
 }
@@ -201,6 +255,7 @@ function junctionShapes(net, mb, opt) {
     const L = net.chains[J.lead];
     let rgb = (ROAD_STYLE[L.cls] || ROAD_STYLE.minor).c;
     if (opt.colour === 'rules') rgb = ruleColour(0);
+    if (opt.colour === 'each') rgb = JUNCTION_GREY;
     if (opt.colour === 'where') rgb = WHERE_C.junction;
     if (opt.colour === 'moved' || opt.colour === 'ground') rgb = [150, 150, 150];
     const colour = rgba(rgb[0], rgb[1], rgb[2]);

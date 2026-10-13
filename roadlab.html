@@ -106,11 +106,12 @@ ul.finds li:hover{outline:1px solid var(--line)}
       <div class="line"><label for="view">Show</label>
         <select id="view" title="The engineered roads (a layer on the ground: the top smooth for the road's speed, the bottom the ground itself), or today's roads draped on the ground, or both side by side"><option value="eng" selected>Engineered</option><option value="raw">Today (draped)</option><option value="split">Side by side</option></select>
         <label for="colour">Colour</label>
-        <select id="colour" class="grow"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option><option value="ground">What the ground says</option></select></div>
+        <select id="colour" class="grow"><option value="each" selected>Each road</option><option value="plain">As in the app</option><option value="rules">By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option><option value="ground">What the ground says</option></select></div>
       <div class="key" id="keyGround" hidden><span><i class="sw" style="background:#40a860"></i>on the ground's street</span><span><i class="sw" style="background:#4678dc"></i>hangs off its edge</span><span><i class="sw" style="background:#deaa28"></i>street narrower</span><span><i class="sw" style="background:#969696"></i>can't tell</span></div>
       <div class="key" id="keyWhere" hidden><span><i class="sw" style="background:#d68c3c"></i>town</span><span><i class="sw" style="background:#50a060"></i>country</span><span><i class="sw" style="background:#468cc8"></i>junction and slow zone</span></div>
       <div class="key" id="keyMoved" hidden><span><i class="sw" style="background:#969696"></i>on the map's line</span><span><i class="sw" style="background:#5d6ed8"></i>moved a little</span><span><i class="sw" style="background:#e632c8"></i>moved 5 m</span></div>
-      <div class="key" id="keyRules"><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½× its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
+      <div class="key" id="keyEach"><span>every road its own colour</span><span><i class="sw" style="background:#bebeba"></i>junction</span><span><i class="sw" style="background:#d61e1e"></i>red bands: well over its rules</span></div>
+      <div class="key" id="keyRules" hidden><span><i class="sw" style="background:#40a860"></i>within its rules</span><span><i class="sw" style="background:#deaa28"></i>up to 1½× its limit</span><span><i class="sw" style="background:#d03a2e"></i>well over</span></div>
       <div class="checks">
         <label class="check" title="Junctions as places of their own: one surface, roads meet its edge"><input type="checkbox" id="junctions" checked>Junctions</label>
         <label class="check" title="Town rules in built-up areas"><input type="checkbox" id="townOn" checked>Town rules</label>
@@ -627,7 +628,7 @@ $('saveSpot').onclick = () => {
 $('driveWhich').onchange = () => { if (drive) drive.which = $('driveWhich').value; };
 $('driveSpeed').oninput = () => $('driveSpeed-o').textContent = `× ${fmt($('driveSpeed').value, 2)}`;
 $('driveSpeed-o').textContent = '× 1.00';
-for (const id of ['colour', 'curves']) $(id).onchange = () => { for (const [k, v] of [['keyMoved', 'moved'], ['keyRules', 'rules'], ['keyWhere', 'where'], ['keyGround', 'ground']]) $(k).hidden = $('colour').value !== v; roadMeshes(); };
+for (const id of ['colour', 'curves']) $(id).onchange = () => { for (const [k, v] of [['keyEach', 'each'], ['keyMoved', 'moved'], ['keyRules', 'rules'], ['keyWhere', 'where'], ['keyGround', 'ground']]) $(k).hidden = $('colour').value !== v; roadMeshes(); };
 $('groundEdges').onchange = () => roadMeshes();
 $('bench').onchange = () => { stopDriving(); rebuild(); };
 // A simple sun: rises in the east at 6:00, highest (55°) in the south at

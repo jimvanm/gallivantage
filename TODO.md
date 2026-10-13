@@ -383,6 +383,12 @@ reasoning: the project's `ROADS-DRAFT.md`.
 - **Shading on roads too (0.14.30).** The shading slider now applies to the
   roads as well as the ground (before, roads were always lit at strength 1,
   so their tilt and bumps barely showed).
+- **Each road its own colour (Jim, 13 October; 0.14.31).** The lab's new
+  default colour: every road a colour of its own, different from the roads
+  it meets or runs close to (within about 25 m), so converging roads can be
+  told apart. Junctions pale grey. Red is kept for trouble: stretches well
+  over their rules (more than 1.5 times a limit) get red bands across the
+  road. "By its rules" (green, amber, red) is still in the menu.
 - **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
   survey is bare earth, so the road's real bed is in it. Every 4 m across
   each road: the widest flat, nearly level strip near the map's line, with a
