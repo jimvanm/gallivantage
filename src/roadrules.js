@@ -1283,6 +1283,37 @@ function junctionBlend(J, chains, fallback) {
 // Adds to each chain: raw (ground under it), prof (its height line), ok,
 // struct (0 on the ground, 1 bridge, 2 tunnel), why (per sample, what made it a
 // structure). Returns { crossings, flags }.
+
+// A bridge's ends reach the top of its banks. The map's bridge often stops a
+// few metres short, where the ground is still climbing the bank far more
+// steeply than any road could. Held to that ground, the road was bent up the
+// bank, and the stiff deck swung up at its other end like a lever (the wedge
+// at the 407 and Brock Road). So the bridge carries on until the ground is
+// within the road's reach: no steeper along than twice the road's steepest
+// grade, and level enough across for its roadbed. At most BANK_REACH metres.
+// Needs readBottom first (mid, hi, lo).
+const BANK_REACH = 20;
+export function reachBankTops(c) {
+  const K = c.K, n = c.n, ds = c.ds;
+  if (!K || !c.mid) return;
+  const steep = 2 * K.G / 100, bed = Math.max(K.bed || 0, 0.3);
+  const ends = [];
+  for (let i = 0; i < n; i++) {
+    if (c.struct[i] !== 1 || !c.known[i]) continue;
+    if (i > 0 && !c.struct[i - 1]) ends.push([i, -1]);
+    if (i < n - 1 && !c.struct[i + 1]) ends.push([i, 1]);
+  }
+  for (const [e, dir] of ends) {
+    for (let j = e + dir, d = ds; j >= 0 && j < n && d <= BANK_REACH; j += dir, d += ds) {
+      if (c.struct[j] || (c.inJ && c.inJ[j])) break;
+      const back = Math.abs(c.mid[j] - c.mid[j - dir]) / ds;              // from the bridge's side
+      const k = j + dir, on = k >= 0 && k < n ? Math.abs(c.mid[k] - c.mid[j]) / ds : 0;
+      if (back <= steep && on <= steep && c.hi[j] - c.lo[j] <= bed) break;
+      c.struct[j] = 1; c.known[j] = 1; c.w[j] = 0; c.why[j] = 'bridge: reaches the top of the bank';
+    }
+  }
+}
+
 export function engineer(net, groundAt, rules, opt = {}) {
   const { chains, nodes } = net;
   const crossings = net.crossings || findCrossings(net);
@@ -1349,7 +1380,7 @@ export function engineer(net, groundAt, rules, opt = {}) {
       armOf.get(a.chain).push({ J, arm: a });
     }
   }
-  for (const c of chains) { c.lim = limitsFor(c); readBottom(c, groundAt); }
+  for (const c of chains) { c.lim = limitsFor(c); readBottom(c, groundAt); reachBankTops(c); }
   const nodeH = new Map();
   const byChain = new Map();
   for (const x of crossings) {

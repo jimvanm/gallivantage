@@ -184,6 +184,21 @@ function world(extra, lines) {
   }
   ok('the ground is never changed: the road rides on it or bridges over it');
 }
+{
+  // A 15 m deep valley with steep walls (between 50 and 60 m out); the map's
+  // bridge stops 4 m short of each top. The bridge carries on to the tops, so
+  // the road is not bent up the walls (the wedge at the 407 and Brock Road).
+  const nat = (x, z) => { const a = Math.abs(z); return a >= 60 ? 100 : a <= 50 ? 85 : 85 + 1.5 * (a - 50); };
+  const r = runAll([line([0, -300, 0, -56], 'secondary'), line([0, -56, 0, 56], 'secondary', { brunnel: 'bridge', layer: 1 }),
+    line([0, 56, 0, 300], 'secondary')], [], nat, defaultRules());
+  const c = r.net.chains[0];
+  assert.equal(r.net.chains.length, 1);
+  assert.ok(c.ok, 'the height line keeps its rules');
+  assert.equal(r.flags.length, 0, 'nothing flagged');
+  assert.ok(maxGrade(c.prof, c.ds) <= KINDS.secondary.G / 100 * 1.1, 'no steep ramp onto the bridge: ' + (100 * maxGrade(c.prof, c.ds)).toFixed(1) + '%');
+  for (let i = 0; i < c.n; i++) if (Math.abs(Math.abs(c.z[i]) - 58) < 1.5) assert.equal(c.struct[i], 1, 'the bridge reaches the top of the wall');
+  ok('a bridge that stops short of the top of its bank carries on to it');
+}
 // ---- a little roadbed, and water ----------------------------------------------------------------
 {
   // A local road over a field with 0.6 m bumps: it may ride at most 0.3 m

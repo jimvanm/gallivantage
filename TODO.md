@@ -389,6 +389,15 @@ reasoning: the project's `ROADS-DRAFT.md`.
   told apart. Junctions pale grey. Red is kept for trouble: stretches well
   over their rules (more than 1.5 times a limit) get red bands across the
   road. "By its rules" (green, amber, red) is still in the menu.
+- **A bridge reaches the top of its bank (Jim's 407 spot, 13 October;
+  0.14.34).** Cause of the wedge on Brock Road's bridge over the 407: the
+  map's bridge stopped a few metres short of the top of each bank, where the
+  ground still climbed 40 to 100%. Held to that ground, the road was bent up
+  the bank, and the stiff deck swung up 5 m at its other end like a lever.
+  Now each end of a bridge carries on (at most 20 m) until the ground is
+  within the road's reach: no steeper along than twice the road's grade, and
+  level enough across for its roadbed. Jim's 407 spot: both flags gone, road
+  well over its rules 7.0% to 1.5%; Campbellford 5.1% to 4.4%.
 - **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
   survey is bare earth, so the road's real bed is in it. Every 4 m across
   each road: the widest flat, nearly level strip near the map's line, with a
