@@ -380,6 +380,9 @@ reasoning: the project's `ROADS-DRAFT.md`.
   his junction within its rules on both roads, 2 to 7 cm above the ground.
   The lab now shows the engineered roads alone; Show switches to today's
   draped roads or side by side.
+- **Shading on roads too (0.14.30).** The shading slider now applies to the
+  roads as well as the ground (before, roads were always lit at strength 1,
+  so their tilt and bumps barely showed).
 - **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
   survey is bare earth, so the road's real bed is in it. Every 4 m across
   each road: the widest flat, nearly level strip near the map's line, with a

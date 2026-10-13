@@ -122,7 +122,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
       </div>
       <div class="slide" title="Slide left to see the ground under the roads; all the way left hides them. Keys: [ and ]"><label for="roadAlpha">See-through</label><input type="range" id="roadAlpha" min="0" max="1" step="0.01" value="1"><output id="roadAlpha-o"></output></div>
       <div class="slide" title="Swings the sun from east to west. A low sun shows small bumps and dips best. Keys: - and ="><label for="sunTime">Time of day</label><input type="range" id="sunTime" min="6" max="20" step="0.25" value="15"><output id="sunTime-o"></output></div>
-      <div class="slide" title="Lights the ground as if it were that many times steeper, so small bumps show. Nothing moves; only the light changes."><label for="relief">Shading</label><input type="range" id="relief" min="1" max="8" step="0.5" value="1"><output id="relief-o"></output></div>
+      <div class="slide" title="Lights the ground and the roads as if they were that many times steeper, so small bumps show. Nothing moves; only the light changes."><label for="relief">Shading</label><input type="range" id="relief" min="1" max="8" step="0.5" value="1"><output id="relief-o"></output></div>
     </section>
 
     <section>
@@ -840,8 +840,10 @@ function frame(now) {
   gl.uniform1f(U.uAlpha, 1);
   const plainToday = $('colour').value === 'plain';
   const relief = Number($('relief').value);
-  const ground = () => { gl.uniform1f(U.uRelief, relief); draw(meshes.natGround, true); gl.uniform1f(U.uRelief, 1); };
-  gl.uniform1f(U.uRelief, 1);
+  // One shading strength for the ground and the roads alike, so a road's own
+  // tilt and bumps show as clearly as the ground's.
+  const ground = () => draw(meshes.natGround, true);
+  gl.uniform1f(U.uRelief, relief);
   const edges = () => { if (meshes.edges) draw(meshes.edges); };
   const left = () => { ground(); edges(); if ($('flagsOn').checked) draw(meshes.flags); roads(plainToday ? meshes.todayApp : meshes.rawRoads); };
   const right = () => { ground(); edges(); if ($('flagsOn').checked) draw(meshes.flags); roads(meshes.engRoads); };
