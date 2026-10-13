@@ -34,7 +34,7 @@ export const COVER_NAMES = ['nothing mapped', 'wood or forest', 'grass or meadow
 // The settings Jim can move in the lab. Change defaults only after a look.
 export function defaultRules() {
   return {
-    density: 1,        // forest density: 1 = about 100 trees a hectare in a full forest (8 = 800, a closed canopy)
+    density: 2.5,      // forest density: 1 = about 100 trees a hectare in a full forest (8 = 800, a closed canopy); Jim: 250
     spacing: 6,        // metres between possible spots (closest two trees can stand)
     scatter: 0.3,      // trees on land the map says nothing about, against a forest (0..1)
     treeline: 1,       // treeline height, times the latitude rule

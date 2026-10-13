@@ -12,7 +12,9 @@ setZoneReader(async (row, col) => {
   return existsSync(f) ? new Uint8Array(gunzipSync(readFileSync(f))) : null;
 });
 const zone = (lat, lon) => ZONES[landZone(lat, lon).zone];
-const R = defaultRules();
+// The rules are tested at 100 trees a hectare (density 1), whatever the starting value is.
+const R = { ...defaultRules(), density: 1 };
+assert.equal(defaultRules().density, 2.5, 'starting density: 250 trees a hectare (Jim, 13 October)');
 
 // ---- the zone map ----
 const PLACES = { banff: [51.178, -115.571], saba: [17.635, -63.232], naramata: [49.59, -119.59], campbellford: [44.30, -77.80],

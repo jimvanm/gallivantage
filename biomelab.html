@@ -92,8 +92,9 @@ import { lonToMercX, latToMercY, mercToTile, tileToMerc, tileSizeMerc, mercYToLa
 import { decodeTerrarium, pxMetersFor, PX } from './src/heightgrid.js';
 import { cachedFetch } from './src/cache.js';
 import { loadZones, ZONE_NAMES } from './src/zones.js';
-import { defaultRules, readSpot, plantTile, tileSeed, sunnyFrom, rng, COVER, COVER_NAMES, KINDS as TREE_KINDS, TREE_STRIDE } from './src/biome.js';
-import { parcelRows, rowPieces } from './src/vines.js';
+import { defaultRules, readSpot, tileSeed, sunnyFrom, COVER, COVER_NAMES, KINDS as TREE_KINDS } from './src/biome.js';
+import { VIEW_DEFAULTS, levelFor, dotBand as bandOf, reach as reachOf, makeTrees, makeVines, insideRings, farLook, ForestKeeper } from './src/forest.js';
+import { createForestDrawer } from './src/forestdraw.js';
 
 const $ = (id) => document.getElementById(id);
 const fmt = (v, d = 0) => Number(v).toLocaleString('en-CA', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -106,6 +107,8 @@ const PLACES = [
   ['Banff', 51.19, -115.57, 30000, [-600, 3200, 260, 350]],
   ['Saba', 17.635, -63.237, 8000, [-2600, 2600, 280, 45]],
   ['Okanagan (Naramata)', 49.585, -119.575, 10000, [-3800, 600, 220, 75]],
+  // the top of the hill in Riverdale Park, by the streetcar tracks on Broadview, looking west to downtown
+  ['Riverdale (Toronto)', 43.6695, -79.3525, 10000, [0, 0, 2, 270]],
 ];
 const KIND_WORDS = { spire: 'spruce, fir', pine: 'pine', column: 'cedar, cypress', round: 'maple, oak', oval: 'poplar, birch', spread: 'spreading (oak, acacia, olive)', feather: 'coconut palm', fan: 'fan palm' };
 
@@ -118,71 +121,18 @@ window.fetch = async (url, init) => { const r = await realFetch(url, init); down
 const get = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); };
 const [TREES, FARM] = await Promise.all([get('library/trees/models.json'), get('library/farm/models.json')]);
 const LIB = { ...TREES, ...FARM };
-const KINDS = TREE_KINDS.map((k) => { const stages = []; for (let i = 1; LIB[`${k}-${i}`]; i++) stages.push(`${k}-${i}`); return { key: k, stages, far: `${k}-far` }; });
-for (const len of [10, 3, 1]) KINDS.push({ key: `vine${len}`, stages: [0, 1, 2].flatMap((i) => [0, 1, 2].map((j) => `vine-${len}-${i}${j}`)), far: `vine-${len}-far`, row: true });
-KINDS.push({ key: 'vinecap', stages: [1, 2, 3].map((n) => `vine-cap-${n}`), far: null, row: true });
-const K = Object.fromEntries(KINDS.map((k, i) => [k.key, i]));
-const P = [], C = [], I = [], SHAPES = [];
-function pack(id, ref) {
-  const m = LIB[id]; let H = 0, W = 0;
-  for (let i = 0; i < m.pos.length; i += 3) { H = Math.max(H, m.pos[i + 1]); W = Math.max(W, Math.abs(m.pos[i]), Math.abs(m.pos[i + 2])); }
-  W *= 2; if (ref) { H = ref.H; W = ref.W; }
-  const base = P.length / 3, first = I.length;
-  for (let i = 0; i < m.pos.length; i += 3) P.push(m.pos[i] / W, m.pos[i + 1] / H, m.pos[i + 2] / W);
-  C.push(...m.col); for (const x of m.idx) I.push(x + base);
-  return { id, first, count: m.idx.length, H, W };
-}
-KINDS.forEach((k, ki) => {
-  k.shapes = k.stages.map((id) => { const s = pack(id); s.kind = ki; SHAPES.push(s); s.n = SHAPES.length - 1; return s; });
-  const f = k.far ? pack(k.far, k.row ? k.shapes[k.shapes.length - 1] : null) : { first: 0, count: 0 };
-  k.farFirst = f.first; k.farCount = f.count;
-});
-const NSH = SHAPES.length, NK = KINDS.length, NB = NSH + NK, SHAPE_KIND = new Uint8Array(SHAPES.map((s) => s.kind));
-
-// ================= GL (the Tree Lab's, unchanged) =================
+// ================= GL: the forest is forestdraw.js's; the ground (and its canopy) is the lab's =================
 const canvas = $('gl'), gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });   // solid: the dots' soft edges must not let the page show through
 function prog(vs, fs) {
   const p = gl.createProgram();
   for (const [t, s] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); gl.attachShader(p, sh); }
   gl.linkProgram(p); return p;
 }
-const DITHER = `// The handover between a tree and its dot: a dissolve, not shrink-and-grow. Each takes a share of a fixed 4 x 4
-// pattern of pixels: the one leaving keeps t..1 of it, the one arriving 0..t, so together they fill every pixel exactly
-// once and neither changes size or moves. The pattern is shifted per tree (off), so neighbours do not dissolve in step.
-float bayer(vec2 p){ ivec2 q=ivec2(mod(p,4.0)); int i=q.x+q.y*4;
-  int m[16]=int[16](0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5); return (float(m[i])+0.5)/16.0; }
-bool keepPx(vec3 k){ float t=fract(bayer(gl_FragCoord.xy)+k.z); return t>=k.x&&t<k.y; }`;
 const FS = `#version 300 es
 precision highp float; in vec3 vRel; in vec3 vCol; uniform vec3 uSun,uSky; uniform float uFog; out vec4 o;
 void main(){ vec3 n=cross(dFdx(vRel),dFdy(vRel)); float l=length(n); n=l>1e-9?n/l:vec3(0,1,0); if(dot(n,vRel)>0.0) n=-n;
   float lit=0.55+0.45*max(dot(n,uSun),0.0); vec3 c=floor(vCol*lit*31.0+0.5)/31.0;
   o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),1.0); }`;
-const TFS = `#version 300 es
-precision highp float; in vec3 vRel; in vec3 vCol; flat in vec3 vKeep; uniform vec3 uSun,uSky; uniform float uFog; out vec4 o;
-${DITHER}
-void main(){ if(!keepPx(vKeep)) discard; vec3 n=cross(dFdx(vRel),dFdy(vRel)); float l=length(n); n=l>1e-9?n/l:vec3(0,1,0); if(dot(n,vRel)>0.0) n=-n;
-  float lit=0.55+0.45*max(dot(n,uSun),0.0); vec3 c=floor(vCol*lit*31.0+0.5)/31.0;
-  o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),1.0); }`;
-const TP = prog(`#version 300 es
-layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
-uniform mat4 uVP; uniform vec3 uEye; uniform float uRange; uniform float uShear; uniform float uFade0; out vec3 vRel; out vec3 vCol; flat out vec3 vKeep;
-// A fixed number 0..1 for each spot, from its position (no random numbers: it never changes).
-float spot(vec2 q){ vec3 p3=fract(vec3(q.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
-void main(){ float h=iSize.x*0.01,w=iSize.y*0.01,a=iMisc.x*6.2831853,c=cos(a),s=sin(a);
-  vec3 p=aPos*vec3(w,h,w);
-  p.y+=p.x*(iMisc.z*2.0-1.0)*uShear;
-  p=vec3(p.x*c-p.z*s,p.y,p.x*s+p.z*c);
-  // Trees do not all end at one distance: each has its own end, somewhere between uFade0 of the range and the
-  // range itself, so the forest thins out gradually instead of stopping at a ring that moves with you.
-  // Vine rows (uShear 1) keep one end for the whole row.
-  // Past its end it dissolves into its dot over 4% of the range (vines just dissolve away).
-  vec2 cell=floor(iPos.xz*4.0);
-  float d=distance(iPos.xz,uEye.xz), end=uShear>0.5?uRange*0.98:uRange*(uFade0+(0.98-uFade0)*spot(cell));   // done by the range's end
-  float t=clamp((d-end)/(uRange*0.04)+0.5,0.0,1.0);
-  vKeep=vec3(t,1.0,spot(cell+29.0));
-  if(t>=1.0) p=vec3(0.0);                      // wholly gone: nothing to draw
-  vec3 wp=iPos+p; vRel=wp-uEye; vec3 col=aCol*(0.8+0.4*iMisc.y); vCol=mix(col,col*vec3(1.15,1.08,0.7),iMisc.z*0.6*(1.0-uShear));
-  gl_Position=uVP*vec4(wp,1.0); }`, TFS);
 const GP = prog(`#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aCol; layout(location=2) in vec4 aCan; layout(location=3) in float aCanH;
 uniform mat4 uVP; uniform vec3 uEye; uniform float uCan0,uCan1,uCanopy; out vec3 vRel; out vec3 vCol;
@@ -191,96 +141,8 @@ uniform mat4 uVP; uniform vec3 uEye; uniform float uCan0,uCan1,uCanopy; out vec3
 // band uCan0..uCan1 metres, so the share already gone is made up by the canopy and the forest looks the same throughout.
 void main(){ float t=clamp((distance(aPos.xz,uEye.xz)-uCan0)/max(1.0,uCan1-uCan0),0.0,1.0)*aCan.a*uCanopy;
   vec3 p=aPos; p.y+=aCanH*t; vRel=p-uEye; vCol=mix(aCol,aCan.rgb,t); gl_Position=uVP*vec4(p,1.0); }`, FS);
-// Dots: what a tree becomes past its own end distance. Each style's dot is traced from its own far shape (as in the
-// Tree Stand's far shapes and dots page): its width and colour at 16 heights, so the dot keeps the far shape's
-// outline (a spruce stays a point, a poplar a tall oval). One flat outline facing you, shaded across as if round;
-// from above it becomes a round crown. Two triangles a tree.
-const NSH_MAX = 128, BANDS = 16;
-if (NSH > NSH_MAX) throw new Error('too many shapes for the dots');
-function trace(id) {
-  const m = LIB[id]; let H = 0, W = 0;
-  for (let i = 0; i < m.pos.length; i += 3) { H = Math.max(H, m.pos[i + 1]); W = Math.max(W, Math.abs(m.pos[i]), Math.abs(m.pos[i + 2])); }
-  W *= 2;
-  const X = (i) => m.pos[i * 3] / W, Y = (i) => m.pos[i * 3 + 1] / H, Z = (i) => m.pos[i * 3 + 2] / W;
-  const hw = new Float32Array(BANDS), col = new Float32Array(BANDS * 3), cn = new Float32Array(BANDS);
-  for (let b = 0; b < BANDS; b++) {
-    const y = (b + 0.5) / BANDS, pts = [];
-    for (let t = 0; t < m.idx.length; t += 3) for (let e = 0; e < 3; e++) {
-      const a = m.idx[t + e], c = m.idx[t + (e + 1) % 3], ya = Y(a), yc = Y(c);
-      if ((ya - y) * (yc - y) <= 0 && ya !== yc) { const f = (y - ya) / (yc - ya); pts.push([X(a) + (X(c) - X(a)) * f, Z(a) + (Z(c) - Z(a)) * f]); }
-    }
-    if (pts.length) { let s = 0; for (let k = 0; k < 16; k++) { const an = k / 16 * Math.PI, ca = Math.cos(an), sa = Math.sin(an); let mx = 0; for (const [x, z] of pts) mx = Math.max(mx, Math.abs(x * ca + z * sa)); s += mx; } hw[b] = s / 16; }
-  }
-  for (let i = 0; i < m.pos.length / 3; i++) { const b = Math.min(BANDS - 1, Math.max(0, Math.floor(Y(i) * BANDS))); for (let q = 0; q < 3; q++) col[b * 3 + q] += m.col[i * 3 + q]; cn[b]++; }
-  for (let b = 0; b < BANDS; b++) if (cn[b]) for (let q = 0; q < 3; q++) col[b * 3 + q] /= cn[b] * 255;
-  for (let b = 0; b < BANDS; b++) if (!cn[b]) for (let k = 1; k < BANDS; k++) { const n = [b - k, b + k].find((j) => j >= 0 && j < BANDS && cn[j]); if (n !== undefined) { for (let q = 0; q < 3; q++) col[b * 3 + q] = col[n * 3 + q]; break; } }
-  return { hw, col };
-}
-const DP = prog(`#version 300 es
-layout(location=0) in vec2 aCorner; layout(location=2) in vec3 iPos; layout(location=3) in vec2 iSize; layout(location=4) in vec4 iMisc;
-uniform mat4 uVP; uniform vec3 uEye,uRight,uUp; uniform float uRange,uFade0,uDot0,uDot1,uThin; uniform vec4 uShapeKind[${NSH_MAX / 4}];
-out vec2 vQ; out vec3 vRel; out float vShade; out float vTop; flat out int vKind; flat out vec3 vKeep;
-float spot(vec2 q){ vec3 p3=fract(vec3(q.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
-void main(){ float h=iSize.x*0.01,w=iSize.y*0.01; vec2 cell=floor(iPos.xz*4.0);
-  float d=distance(iPos.xz,uEye.xz);
-  // It takes over from its tree (the same end, worked out the same way, sharing the pixels), and dissolves into the
-  // canopy somewhere in the dots' own band.
-  float e1=uRange*(uFade0+(0.98-uFade0)*spot(cell)), e2=uDot0+(uDot1-uDot0)*spot(cell+17.0);
-  float tIn=clamp((d-e1)/(uRange*0.04)+0.5,0.0,1.0), tOut=clamp((d-e2)/max(100.0,uDot1*0.05)+0.5,0.0,1.0);
-  // Past uThin, fewer and wider: only the trees whose facing number is below the share kept (the same ones the far
-  // tiles were made with), each wider so together they cover the same ground; seen from the side a dot keeps its
-  // tree's true height. Share: (uThin/d) cubed, at least 1/64.
-  float keep=d<=uThin?1.0:max(1.0/64.0,pow(uThin/d,3.0));
-  bool none=tIn<=tOut||floor(iMisc.x*255.0+0.5)>=keep*256.0;
-  float grow=inversesqrt(keep);
-  int s=int(iMisc.w*255.0+0.5); vKind=int(uShapeKind[s/4][s%4]+0.5);
-  vec3 mid=iPos+vec3(0.0,h*0.5,0.0); float top=abs(normalize(mid-uEye).y);
-  float across=w*grow, up=mix(h,across,top);    // from the side its tree's height; from above as wide as it is
-  vec3 wp=mid+(uRight*(aCorner.x-0.5)*across+uUp*(aCorner.y-0.5)*up)*(none?0.0:1.0);
-  vQ=aCorner; vTop=top; vRel=wp-uEye; vShade=0.8+0.4*iMisc.y; vKeep=vec3(tOut,tIn,spot(cell+29.0));
-  gl_Position=uVP*vec4(wp,1.0); }`, `#version 300 es
-precision highp float; in vec2 vQ; in vec3 vRel; in float vShade; in float vTop; flat in int vKind; flat in vec3 vKeep;
-uniform vec4 uHW[${8 * BANDS / 4}]; uniform vec3 uBandCol[${8 * BANDS}]; uniform vec3 uSun,uSky,uRight,uUp; uniform float uFog; out vec4 o;
-${DITHER}
-float hwAt(int i){ return uHW[i/4][i%4]; }
-void main(){ if(!keepPx(vKeep)) discard;
-  float y=clamp(vQ.y,0.0,0.9999)*${BANDS}.0-0.5; int b0=int(clamp(floor(y),0.0,${BANDS - 1}.0)), b1=min(b0+1,${BANDS - 1}); float f=clamp(y-float(b0),0.0,1.0);
-  int k=vKind*${BANDS}; float hw=mix(hwAt(k+b0),hwAt(k+b1),f), wmax=0.0;
-  for(int i=0;i<${BANDS};i++) wmax=max(wmax,hwAt(k+i));
-  float lim=mix(hw,wmax*sqrt(max(0.0,1.0-pow(vQ.y*2.0-1.0,2.0))),vTop);   // from above: a round crown
-  float x=vQ.x-0.5; if(abs(x)>lim||lim<=0.0) discard;
-  float nx=x/max(lim,1e-4);
-  vec3 n=normalize(uRight*nx*0.85+uUp*0.2-normalize(vRel)*sqrt(max(0.0,1.0-nx*nx)));
-  vec3 col=mix(uBandCol[k+b0],uBandCol[k+b1],f)*vShade;
-  float lit=0.55+0.45*max(dot(n,uSun),0.0); vec3 c=floor(col*lit*31.0+0.5)/31.0;
-  o=vec4(mix(c,uSky,1.0-exp(-length(vRel)*uFog)),1.0); }`);
-const UD = Object.fromEntries(['uVP', 'uEye', 'uRight', 'uUp', 'uRange', 'uFade0', 'uDot0', 'uDot1', 'uThin', 'uShapeKind', 'uHW', 'uBandCol', 'uSun', 'uSky', 'uFog'].map((n) => [n, gl.getUniformLocation(DP, n)]));
-const DOT_SHAPES = TREE_KINDS.map((k) => trace(`${k}-far`));
-{
-  const kinds = new Float32Array(NSH_MAX), hw = new Float32Array(8 * BANDS), col = new Float32Array(8 * BANDS * 3);
-  SHAPES.forEach((sh, i) => { kinds[i] = Math.min(7, sh.kind); });
-  DOT_SHAPES.forEach((d, i) => { hw.set(d.hw, i * BANDS); col.set(d.col, i * BANDS * 3); });
-  gl.useProgram(DP); gl.uniform4fv(UD.uShapeKind, kinds); gl.uniform4fv(UD.uHW, hw); gl.uniform3fv(UD.uBandCol, col);
-}
-const U = (n) => ({ t: gl.getUniformLocation(TP, n), g: gl.getUniformLocation(GP, n) });
-const UN = Object.fromEntries(['uVP', 'uEye', 'uRange', 'uSun', 'uSky', 'uFog', 'uShear', 'uFade0', 'uCanopy', 'uCan0', 'uCan1'].map((n) => [n, U(n)]));
-const tvao = gl.createVertexArray(); gl.bindVertexArray(tvao);
-{
-  const NV = P.length / 3, buf = new ArrayBuffer(NV * 16), f = new Float32Array(buf), b = new Uint8Array(buf);
-  for (let i = 0; i < NV; i++) { f[i * 4] = P[i * 3]; f[i * 4 + 1] = P[i * 3 + 1]; f[i * 4 + 2] = P[i * 3 + 2]; b[i * 16 + 12] = C[i * 3]; b[i * 16 + 13] = C[i * 3 + 1]; b[i * 16 + 14] = C[i * 3 + 2]; b[i * 16 + 15] = 255; }
-  const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, buf, gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 16, 0); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.UNSIGNED_BYTE, true, 16, 12);
-  const e = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, e); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(I), gl.STATIC_DRAW);
-}
-const ibuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); for (const l of [2, 3, 4]) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
-gl.bindVertexArray(null);
-const dvao = gl.createVertexArray(); gl.bindVertexArray(dvao);
-{
-  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); for (const l of [2, 3, 4]) { gl.enableVertexAttribArray(l); gl.vertexAttribDivisor(l, 1); }
-}
-gl.bindVertexArray(null);
+const forest = createForestDrawer(gl, LIB), KINDS = forest.KINDS;
+const UG = Object.fromEntries(['uVP', 'uEye', 'uSun', 'uSky', 'uFog', 'uCanopy', 'uCan0', 'uCan1'].map((n) => [n, gl.getUniformLocation(GP, n)]));
 let gvao = null, gCount = 0, gColBuf = null, gCanBuf = null, gCanHBuf = null;
 function setGround(pos, { col, can, canH }, idx) {
   if (gvao) gl.deleteVertexArray(gvao); gvao = gl.createVertexArray(); gl.bindVertexArray(gvao);
@@ -379,13 +241,6 @@ function fillRings(cover, N, rings, code) {
     for (let q = 0; q + 1 < xs.length; q += 2) for (let i = Math.max(0, Math.ceil(xs[q])); i <= Math.min(N - 1, Math.floor(xs[q + 1])); i++) cover[j * N + i] = code;
   }
 }
-function insideRings(rings, x, z) {
-  let c = false;
-  for (const r of rings) for (let i = 0, n = r.length, j = n - 2; i < n; j = i, i += 2) {
-    if ((r[i + 1] > z) !== (r[j + 1] > z) && x < (r[j] - r[i]) * (z - r[i + 1]) / (r[j + 1] - r[i + 1]) + r[i]) c = !c;
-  }
-  return c;
-}
 let tileUrl = null;
 async function loadMap(a) {
   if (!tileUrl) tileUrl = (await (await fetch(VECTOR_TILEJSON, { mode: 'cors' })).json()).tiles[0];
@@ -434,16 +289,7 @@ function naturalRGB(zone) {
 }
 // Each tree style's look from afar: the average colour of its far shape, and its usual grown height.
 // The leaf colour (green corners only, as the dots use), so the canopy and the dots match where they meet.
-const KIND_FAR = TREE_KINDS.map((k, ki) => {
-  const m = LIB[`${k}-far`] || LIB[KINDS[ki].stages[KINDS[ki].stages.length - 1]], c = [0, 0, 0], all = [0, 0, 0];
-  let n = 0;
-  for (let i = 0; i < m.col.length; i += 3) {
-    for (let q = 0; q < 3; q++) all[q] += m.col[i + q];
-    if (m.col[i + 1] > m.col[i] * 1.05) { for (let q = 0; q < 3; q++) c[q] += m.col[i + q]; n++; }
-  }
-  const sh = KINDS[ki].shapes;
-  return { rgb: n ? c.map((v) => v / n) : all.map((v) => v / (m.col.length / 3)), H: sh.reduce((t, s) => t + s.H, 0) / sh.length };
-});
+const KIND_FAR = TREE_KINDS.map((k, ki) => farLook(LIB[`${k}-far`] || LIB[KINDS[ki].stages[KINDS[ki].stages.length - 1]], KINDS[ki].shapes.map((s) => s.H)));
 // Treetops are not one colour: a fixed speckle per grid point (no random numbers, so it never changes).
 const speckle = (i, j) => { let h = Math.imul(i, 374761393) + Math.imul(j, 668265263); h = Math.imul(h ^ h >>> 13, 1274126177); return ((h ^ h >>> 16) >>> 0) / 4294967296; };
 function colourGround() {
@@ -523,73 +369,30 @@ async function load(lat, lon, S, start) {
 // dropped when it leaves. Vines: one batch per vineyard parcel, the same way.
 let rules = defaultRules();
 const START = defaultRules();
-const settings = { range: 2500, near: 200, trees: true, vines: true, vineSpacing: 2.6, canopy: true, fade: 0.35, dots: true, dotRange: 10000, dotFade: 0.6, thinFrom: 2500 };
+const settings = { ...VIEW_DEFAULTS, trees: true, vines: true, vineSpacing: 2.6, canopy: true, dots: true };
 const VIEW0 = { ...settings };
-// The share of trees kept as dots at distance d (fewer, bigger, past thinFrom), and the tile level that covers it.
-const thinAt = (d) => d <= settings.thinFrom ? 1 : Math.max(1 / 64, (settings.thinFrom / d) ** 3);
-const levelFor = (d) => Math.min(1, 2 ** Math.ceil(Math.log2(thinAt(Math.max(1, d)))));
-// The dots' band: where they thin out into the canopy (never starting before the trees have all gone).
-const dotBand = () => { const D = Math.max(settings.dotRange, settings.range); return [Math.max(settings.range, D * settings.dotFade), D]; };
-const reach = () => settings.dots ? Math.max(settings.dotRange, settings.range) : settings.range;
-const live = new Map();         // key -> { cx, cz, rad, n, u8 }   (trees of one tile, or vines of one parcel)
-let farDirty = true, queue = [], planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }, dirty = true;
-function dropAll() { live.clear(); queue = []; planted = { tiles: 0, trees: 0, ms: 0, rows: 0 }; dirty = true; farDirty = true; lastWant = null; }
-
-function put(u8, f32, u16, i, x, y, z, h, w, yaw, shade, warm, shape) {
-  f32[i * 5] = x; f32[i * 5 + 1] = y; f32[i * 5 + 2] = z; u16[i * 10 + 6] = Math.min(65535, Math.round(h * 100)); u16[i * 10 + 7] = Math.min(65535, Math.round(w * 100));
-  u8[i * 20 + 16] = yaw; u8[i * 20 + 17] = shade; u8[i * 20 + 18] = warm; u8[i * 20 + 19] = shape;
-}
-function batch(n) { const buf = new ArrayBuffer(n * 20); return { u8: new Uint8Array(buf), f32: new Float32Array(buf), u16: new Uint16Array(buf) }; }
+const levelAt = (d) => levelFor(d, settings);
+const dotBand = () => bandOf(settings);
+const reach = () => reachOf(settings, settings.dots);
+const keeper = new ForestKeeper();
+function dropAll() { keeper.clear(); lastWant = null; }
 
 function makeTileTrees(t, keep = 1) {
   const s = tileSizeMerc(16), nw = tileToMerc(t.x, t.y, 16);
   const x0 = (nw.x - area.cmx) * area.k, z0 = (area.cmy - nw.y) * area.k, size = s * area.k;
-  const T = plantTile({ seed: tileSeed(16, t.x, t.y), x0, z0, size, latLon: latLonAt, ground: groundAt, grad: gradAt, cover: coverAt, keep: keep < 1 ? keep : undefined }, rules);
-  const n = T.length / TREE_STRIDE, B = batch(n);
-  let m = 0;
-  for (let i = 0; i < T.length; i += TREE_STRIDE) {
-    const x = T[i], z = T[i + 1];
-    if (!inArea(x, z)) continue;
-    const kind = KINDS[T[i + 2]], st = kind.shapes, sh = st[Math.min(st.length - 1, Math.floor(T[i + 3] * st.length))], size = T[i + 4];
-    const yaw = T[i + 6], shade = T[i + 7], warm = ((yaw * 13.7) % 1) < 0.15 ? 200 : ((yaw * 7.3) % 1) * 60;
-    put(B.u8, B.f32, B.u16, m++, x, groundAt(x, z) - 0.3, z, sh.H * size, sh.W * size * T[i + 5], Math.floor(yaw * 256), Math.floor(shade * 255), warm, sh.n);
-  }
-  // sorted by facing number, so the share kept far away is always the front of the list
-  const order = Array.from({ length: m }, (_, i) => i).sort((a, b) => B.u8[a * 20 + 16] - B.u8[b * 20 + 16]);
-  const u8 = new Uint8Array(m * 20);
-  order.forEach((o, i) => u8.set(B.u8.subarray(o * 20, o * 20 + 20), i * 20));
-  return { cx: x0 + size / 2, cz: z0 + size / 2, rad: size * 0.71, n: m, u8, u32: new Uint32Array(u8.buffer), keep };
-}
-// How many of a tile's trees (sorted) have a facing number below share f.
-function prefix(b, f) {
-  const lim = f * 256; let lo = 0, hi = b.n;
-  while (lo < hi) { const m = (lo + hi) >> 1; if (b.u8[m * 20 + 16] < lim) lo = m + 1; else hi = m; }
-  return lo;
+  return makeTrees({ seed: tileSeed(16, t.x, t.y), x0, z0, size, latLon: latLonAt, ground: groundAt, grad: gradAt, cover: coverAt, keep, inside: inArea }, rules, forest.styles);
 }
 function makeParcelVines(p, pi) {
-  // the parcel's average rise, from spots inside it
-  let gx = 0, gz = 0, c = 0;
-  const [bx0, bz0, bx1, bz1] = p.box, st = Math.max(area.step, Math.min(bx1 - bx0, bz1 - bz0) / 12);
-  for (let z = bz0; z <= bz1; z += st) for (let x = bx0; x <= bx1; x += st) if (insideRings(p.rings, x, z)) { const g = gradAt(x, z); gx += g[0]; gz += g[1]; c++; }
-  const rows = parcelRows((x, z) => inArea(x, z) && insideRings(p.rings, x, z), p.box, c ? [gx / c, gz / c] : [0, 0], settings.vineSpacing);
-  const out = [];
-  const r = rng(tileSeed(17, Math.round(p.cx), Math.round(p.cz)));
-  rows.forEach((row, ri) => {
-    const { pieces, caps } = rowPieces(groundAt, row, tileSeed(18, pi, ri)), shade = 110 + r() * 36;
-    for (const q of pieces) { const sh = KINDS[K[`vine${q.len}`]].shapes[q.from * 3 + q.to]; out.push([q.x, q.y, q.z, sh.H, sh.W, row.yb, shade, Math.round((q.slope + 1) / 2 * 255), sh.n]); }
-    for (const q of caps) { const sh = KINDS[K.vinecap].shapes[q.outline]; out.push([q.x, q.y, q.z, sh.H, sh.W, row.yb, shade, 128, sh.n]); }
-  });
-  const B = batch(out.length);
-  out.forEach((v, i) => put(B.u8, B.f32, B.u16, i, ...v));
-  return { cx: p.cx, cz: p.cz, rad: p.rad, n: out.length, u8: B.u8, u32: new Uint32Array(B.u8.buffer), rows: rows.length };
+  return makeVines(p, pi, { ground: groundAt, grad: gradAt, inside: inArea, step: area.step }, settings.vineSpacing, forest.pieceShape, forest.capShape);
 }
 
-// What should be live around the eye; made nearest first, a few milliseconds a frame.
+// What should be held around the eye: each zoom-16 tile within reach (all its trees while it may show trees; past
+// that, only the share the dots need, made again if it comes closer), and each vineyard within the trees' range.
 let lastWant = null;
 function want(eye) {
   if (lastWant && Math.hypot(eye[0] - lastWant[0], eye[2] - lastWant[1]) < 50 && lastWant[2] === reach()) return;
   lastWant = [eye[0], eye[2], reach()];
-  const R = reach(), RV = settings.range, keep = new Set(), todo = [];
+  const R = reach(), RV = settings.range, items = [];
   if (settings.trees) {
     const t0 = mercToTile(area.cmx + (eye[0] - R) / area.k, area.cmy - (eye[2] - R) / area.k, 16), t1 = mercToTile(area.cmx + (eye[0] + R) / area.k, area.cmy - (eye[2] + R) / area.k, 16);
     const s = tileSizeMerc(16) * area.k;
@@ -598,107 +401,16 @@ function want(eye) {
       if (Math.abs(cx) - s / 2 > area.S / 2 || Math.abs(cz) - s / 2 > area.S / 2) continue;
       const d = Math.hypot(cx - eye[0], cz - eye[2]) - s * 0.71;
       if (d > R) continue;
-      const key = `t${x}/${y}`; keep.add(key);
-      // all its trees while it may show trees; past that, only the share the dots need (made again if it comes closer)
-      const need = d <= RV + 300 ? 1 : levelFor(d - 300), have = live.get(key);
-      if (!have || have.keep < need) todo.push({ key, d, keep: need, make: () => makeTileTrees({ x, y }, need) });
+      const need = d <= RV + 300 ? 1 : levelAt(d - 300);
+      items.push({ key: `t${x}/${y}`, d, keep: need, make: () => makeTileTrees({ x, y }, need) });
     }
   }
   if (settings.vines) area.parcels.forEach((p, pi) => {
     const d = Math.hypot(p.cx - eye[0], p.cz - eye[2]) - p.rad;
-    if (d > RV) return;
-    const key = `v${pi}`; keep.add(key);
-    if (!live.has(key)) todo.push({ key, d, make: () => makeParcelVines(p, pi) });
+    if (d <= RV) items.push({ key: `v${pi}`, d, make: () => makeParcelVines(p, pi) });
   });
   // hold a little beyond range, so turning back does not make it all again
-  for (const [key, b] of live) if (!keep.has(key) && Math.hypot(b.cx - eye[0], b.cz - eye[2]) - b.rad > (key[0] === 'v' ? RV : R) + 300) { live.delete(key); dirty = true; farDirty = true; }
-  queue = todo.sort((p, q) => p.d - q.d);
-}
-function makeSome(budgetMs) {
-  const t0 = performance.now();
-  while (queue.length && performance.now() - t0 < budgetMs) {
-    const job = queue.shift();
-    const have = live.get(job.key);
-    if (have && (job.keep === undefined || have.keep >= job.keep)) continue;
-    const t = performance.now(), b = job.make();
-    if (have) farDirty = true;
-    live.set(job.key, b); dirty = true; farDirty = true;
-    if (job.key[0] === 't') { planted.tiles++; planted.trees += b.n; planted.ms += performance.now() - t; } else planted.rows += b.rows;
-  }
-}
-
-// ================= what is drawn (the Tree Lab's lists, by batch) =================
-const DOTS = NB;                 // the last bin: every tree that may be showing as a dot
-const lists = { count: new Uint32Array(NB + 1), start: new Uint32Array(NB + 1) };
-let inst = new Uint8Array(0), inst32 = new Uint32Array(0), lastBuild = null, rebuildMs = 0, lastBuildT = 0;
-function rebuild(eye, yaw, hfov, pitch, now) {
-  const key = `${settings.range}|${settings.near}|${settings.trees}|${settings.vines}|${settings.dots}|${settings.dotRange}|${settings.fade}|${settings.thinFrom}`;
-  const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > Math.max(20, 0.15 * (eye[1] - groundAt(eye[0], eye[2]))) || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
-  if (!moved && !(dirty && now - lastBuildT > 150)) return;
-  if (lastBuild && lastBuild.k !== key) farDirty = true;
-  const t0 = performance.now(), R = settings.range, R2 = R * R, NR2 = settings.near * settings.near, vx = Math.sin(yaw), vz = -Math.cos(yaw), cull = pitch > -0.85, half = hfov / 2 + 0.15;
-  const dots = settings.dots && settings.trees, F2 = (settings.fade * R - R * 0.05) ** 2;
-  const chosen = [];
-  for (const [k, b] of live) {
-    if (k[0] === 't' ? !settings.trees : !settings.vines) continue;
-    const mx = b.cx - eye[0], mz = b.cz - eye[2], d = Math.hypot(mx, mz);
-    // tiles wholly past the trees' range belong to the far list; note when one changes sides
-    const far = k[0] === 't' && d - b.rad > R;
-    if (b.far !== far) { b.far = far; farDirty = true; }
-    if (far || d - b.rad > R) continue;
-    if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
-    chosen.push([b, d, k[0] === 't']);
-  }
-  chosen.sort((a, b) => a[1] - b[1]);             // nearest first, so the card skips hidden pixels
-  const cnt = new Uint32Array(NB + 1);
-  const bin = (u8, i, d2) => { const s = u8[i * 20 + 19]; return d2 < NR2 ? s : NSH + SHAPE_KIND[s]; };
-  // A tree past where trees start turning into dots may show as either, so it goes to both lists; the card decides.
-  // Past thinFrom only the share of trees kept as dots goes in.
-  const isDot = (u8, i, d2) => d2 > F2 && u8[i * 20 + 16] < thinAt(Math.sqrt(d2)) * 256;
-  for (const [b, , tree] of chosen) {
-    const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
-    for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; if (tree && dots && isDot(b.u8, i, d2)) cnt[DOTS]++; }
-  }
-  const starts = new Uint32Array(NB + 1); let tot = 0; for (let k = 0; k <= NB; k++) { starts[k] = tot; tot += cnt[k]; }
-  if (inst.length < tot * 20) { inst = new Uint8Array(Math.ceil(Math.max(tot * 20, inst.length * 1.5, 2000) / 20) * 20); inst32 = new Uint32Array(inst.buffer); }
-  const w = starts.slice();
-  const copy = (src, i, j) => { const a = i * 5, o = j * 5; inst32[o] = src[a]; inst32[o + 1] = src[a + 1]; inst32[o + 2] = src[a + 2]; inst32[o + 3] = src[a + 3]; inst32[o + 4] = src[a + 4]; };
-  for (const [b, , tree] of chosen) {
-    const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
-    for (let i = 0; i < b.n; i++) {
-      const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz;
-      if (d2 <= R2) copy(b.u32, i, w[bin(b.u8, i, d2 + dy * dy)]++);
-      if (tree && dots && isDot(b.u8, i, d2)) copy(b.u32, i, w[DOTS]++);
-    }
-  }
-  lists.count.set(cnt); lists.start.set(starts);
-  gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); gl.bufferData(gl.ARRAY_BUFFER, inst.subarray(0, tot * 20), gl.DYNAMIC_DRAW);
-  rebuildMs = performance.now() - t0; lastBuild = { k: key, x: eye[0], y: eye[1], z: eye[2], yaw, pitch }; lastBuildT = now; dirty = false;
-}
-
-// The far dots: every tile wholly past the trees' range, as one list of tiles, each its front share (enough for its
-// nearest point, with 300 m to spare). Rebuilt only when tiles change or after 300 m of travel, not every few metres;
-// each frame draws the tiles in view straight from it.
-const fbuf = gl.createBuffer();
-let farTiles = [], farInst = new Uint8Array(0), farAt = null, farMs = 0, farT = 0, farCount = 0;
-function buildFar(eye, now) {
-  const movedFar = !farAt || Math.hypot(eye[0] - farAt[0], eye[2] - farAt[1]) > 300;
-  if (!movedFar && !(farDirty && now - farT > 250)) return;
-  const t0 = performance.now(), R = settings.range, RD = reach();
-  farTiles = []; let tot = 0;
-  if (settings.dots && settings.trees) for (const [k, b] of live) {
-    if (k[0] !== 't') continue;
-    const d = Math.hypot(b.cx - eye[0], b.cz - eye[2]);
-    if (d - b.rad <= R || d - b.rad > RD) continue;
-    const n = prefix(b, thinAt(Math.max(1, d - b.rad - 300)));
-    if (n) { farTiles.push({ b, n, start: tot }); tot += n; }
-  }
-  farTiles.sort((p, q) => Math.hypot(p.b.cx - eye[0], p.b.cz - eye[2]) - Math.hypot(q.b.cx - eye[0], q.b.cz - eye[2]));
-  tot = 0; for (const t of farTiles) { t.start = tot; tot += t.n; }
-  if (farInst.length < tot * 20) farInst = new Uint8Array(Math.max(tot * 20, farInst.length * 1.5 | 0, 2000));
-  for (const t of farTiles) farInst.set(t.b.u8.subarray(0, t.n * 20), t.start * 20);
-  gl.bindBuffer(gl.ARRAY_BUFFER, fbuf); gl.bufferData(gl.ARRAY_BUFFER, farInst.subarray(0, tot * 20), gl.STATIC_DRAW);
-  farCount = tot; farAt = [eye[0], eye[2]]; farT = now; farDirty = false; farMs = performance.now() - t0;
+  keeper.want(items, eye, (key) => key[0] === 'v' ? RV : R);
 }
 
 // ================= the panel =================
@@ -753,13 +465,13 @@ function showView() {
   showSettings();
 }
 for (const list of Object.values(RULE_UI)) for (const [id] of list) $('r-' + id).addEventListener('input', (e) => { rules[id] = Number(e.target.value); showRules(); later(rulesChanged); });
-for (const [id] of DIST_UI) $('d-' + id).addEventListener('input', (e) => { settings[id] = Number(e.target.value); lastWant = null; farDirty = true; showView(); });
+for (const [id] of DIST_UI) $('d-' + id).addEventListener('input', (e) => { settings[id] = Number(e.target.value); lastWant = null; keeper.farDirty = true; showView(); });
 $('vsp').addEventListener('input', (e) => { settings.vineSpacing = Number(e.target.value); showRules(); later(rulesChanged); });
 $('reset').onclick = () => { rules = defaultRules(); Object.assign(settings, { vineSpacing: VIEW0.vineSpacing, near: VIEW0.near, fade: VIEW0.fade, range: VIEW0.range, thinFrom: VIEW0.thinFrom, dotFade: VIEW0.dotFade, dotRange: VIEW0.dotRange }); showRules(); showView(); lastWant = null; rulesChanged(); };
-$('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; dirty = true; farDirty = true; };
+$('show-trees').onchange = (e) => { settings.trees = e.target.checked; lastWant = null; keeper.dirty = true; keeper.farDirty = true; };
 $('show-canopy').onchange = (e) => { settings.canopy = e.target.checked; };
-$('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; dirty = true; farDirty = true; showView(); };
-$('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; dirty = true; };
+$('show-dots').onchange = (e) => { settings.dots = e.target.checked; lastWant = null; keeper.dirty = true; keeper.farDirty = true; showView(); };
+$('show-vines').onchange = (e) => { settings.vines = e.target.checked; lastWant = null; keeper.dirty = true; };
 $('panel').addEventListener('wheel', (e) => e.stopPropagation());
 $('places').innerHTML = PLACES.map((p, i) => `<button data-i="${i}">${p[0].split(' ')[0]}</button>`).join('');
 $('places').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const p = PLACES[+b.dataset.i]; $('size').value = String(p[3]); load(p[1], p[2], p[3], p[4]); };
@@ -824,14 +536,14 @@ function showReading(eye, fwd) {
 // x is east and z south, in true metres from the area's middle; the camera's mercX/mercY carry them.
 const cam = { mercX: 0, mercY: 0, alt: 400, yaw: 0, pitch: -0.2, fly: 1 };
 const controls = new Controls(canvas, cam);
-window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => makeSome(ms), get queued() { return queue.length; } };   // for tests and the console
+window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => keeper.makeSome(ms), get queued() { return keeper.queue.length; } };   // for tests and the console
 
 // ================= frame =================
 const SKY = [0.73, 0.83, 0.91], SUN = norm([0.5, 0.75, 0.35]);
 function persp(f, a, n, fa) { const t = 1 / Math.tan(f / 2); return [t / a, 0, 0, 0, 0, t, 0, 0, 0, 0, (fa + n) / (n - fa), -1, 0, 0, 2 * fa * n / (n - fa), 0]; }
 function lookAt(e, c, u) { const z = norm(sub(e, c)), x = norm(cross(u, z)), y = cross(z, x); return [x[0], y[0], z[0], 0, x[1], y[1], z[1], 0, x[2], y[2], z[2], 0, -(x[0] * e[0] + x[1] * e[1] + x[2] * e[2]), -(y[0] * e[0] + y[1] * e[1] + y[2] * e[2]), -(z[0] * e[0] + z[1] * e[1] + z[2] * e[2]), 1]; }
 function mm(a, b) { const r = new Array(16); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + j] * b[i * 4 + k]; r[i * 4 + j] = s; } return r; }
-let last = performance.now(), ft = [], statT = 0, calls = 0, tris = 0, lastFarDrawn = 0;
+let last = performance.now(), ft = [], statT = 0, calls = 0, tris = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.1, (now - last) / 1000); last = now; ft.push(dt * 1000); if (ft.length > 90) ft.shift();
@@ -842,52 +554,33 @@ function frame(now) {
   const eye = [cam.mercX, cam.alt, -cam.mercY], cp = Math.cos(cam.pitch), fwd = [Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), -Math.cos(cam.yaw) * cp];
   const agl = cam.alt - groundAt(eye[0], eye[2]), vfov = 0.9, hfov = 2 * Math.atan(Math.tan(vfov / 2) * W / H), near = Math.max(0.1, Math.min(20, agl * 0.05)), far = Math.max(25000, area.S * 1.6, agl * 6);
   const vp = mm(persp(vfov, W / H, near, far), lookAt(eye, [eye[0] + fwd[0], eye[1] + fwd[1], eye[2] + fwd[2]], [0, 1, 0]));
-  want(eye); makeSome(5); rebuild(eye, cam.yaw, hfov, cam.pitch, now); buildFar(eye, now);
+  const show = { trees: settings.trees, vines: settings.vines, dots: settings.dots };
+  want(eye); keeper.makeSome(5);
+  forest.update({ eye, yaw: cam.yaw, pitch: cam.pitch, hfov, agl, now, keeper, V: settings, show, reach: reach() });
   const fog = Math.min(0.00012, 0.9 / Math.max(area.S * 2, agl * 2.5));
   gl.clearColor(...SKY, 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
-  gl.useProgram(TP); gl.bindVertexArray(tvao); gl.uniformMatrix4fv(UN.uVP.t, false, vp); gl.uniform3fv(UN.uEye.t, eye); gl.uniform1f(UN.uRange.t, settings.range); gl.uniform1f(UN.uFade0.t, settings.fade); gl.uniform3fv(UN.uSun.t, SUN); gl.uniform3fv(UN.uSky.t, SKY); gl.uniform1f(UN.uFog.t, fog);
-  gl.bindBuffer(gl.ARRAY_BUFFER, ibuf); calls = 0; tris = 0;
-  for (let k = 0; k < NB; k++) {
-    const n = lists.count[k]; if (!n) continue; const o = lists.start[k] * 20;
-    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 20, o); gl.vertexAttribPointer(3, 2, gl.UNSIGNED_SHORT, false, 20, o + 12); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 20, o + 16);
-    const first = k < NSH ? SHAPES[k].first : KINDS[k - NSH].farFirst, count = k < NSH ? SHAPES[k].count : KINDS[k - NSH].farCount;
-    if (!count) continue;
-    gl.uniform1f(UN.uShear.t, KINDS[k < NSH ? SHAPE_KIND[k] : k - NSH].row ? 1 : 0);
-    gl.drawElementsInstanced(gl.TRIANGLES, count, gl.UNSIGNED_INT, first * 4, n); calls++; tris += n * count / 3;
-  }
-  let farDrawn = 0;
-  if (lists.count[DOTS] || farTiles.length) {
-    const right = norm(cross(fwd, [0, 1, 0])), up = cross(right, fwd), [d0, d1] = dotBand();
-    gl.useProgram(DP); gl.bindVertexArray(dvao);
-    gl.uniformMatrix4fv(UD.uVP, false, vp); gl.uniform3fv(UD.uEye, eye); gl.uniform3fv(UD.uRight, right); gl.uniform3fv(UD.uUp, up);
-    gl.uniform1f(UD.uRange, settings.range); gl.uniform1f(UD.uFade0, settings.fade); gl.uniform1f(UD.uDot0, d0); gl.uniform1f(UD.uDot1, d1); gl.uniform1f(UD.uThin, settings.thinFrom);
-    gl.uniform3fv(UD.uSun, SUN); gl.uniform3fv(UD.uSky, SKY); gl.uniform1f(UD.uFog, fog);
-    const point = (buf, o) => { gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 20, o); gl.vertexAttribPointer(3, 2, gl.UNSIGNED_SHORT, false, 20, o + 12); gl.vertexAttribPointer(4, 4, gl.UNSIGNED_BYTE, true, 20, o + 16); };
-    if (lists.count[DOTS]) { point(ibuf, lists.start[DOTS] * 20); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, lists.count[DOTS]); calls++; tris += lists.count[DOTS] * 2; }
-    // the far list in one go, nearest tiles first (the card drops what is out of view cheaply: four corners a dot)
-    if (farCount) { point(fbuf, 0); gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, farCount); farDrawn = farCount; calls++; tris += farCount * 2; }
-  }
-  lastFarDrawn = farDrawn;
+  ({ calls, tris } = forest.draw({ vp, eye, fwd, V: settings, show, sun: SUN, sky: SKY, fog }));
   if (!gvao) return;
-  gl.useProgram(GP); gl.bindVertexArray(gvao); gl.uniformMatrix4fv(UN.uVP.g, false, vp); gl.uniform3fv(UN.uEye.g, eye); gl.uniform3fv(UN.uSun.g, SUN); gl.uniform3fv(UN.uSky.g, SKY); gl.uniform1f(UN.uFog.g, fog);
+  gl.useProgram(GP); gl.bindVertexArray(gvao); gl.uniformMatrix4fv(UG.uVP, false, vp); gl.uniform3fv(UG.uEye, eye); gl.uniform3fv(UG.uSun, SUN); gl.uniform3fv(UG.uSky, SKY); gl.uniform1f(UG.uFog, fog);
   const [c0, c1] = settings.dots ? dotBand() : [settings.fade * settings.range, settings.range];
-  gl.uniform1f(UN.uCan0.g, c0); gl.uniform1f(UN.uCan1.g, c1); gl.uniform1f(UN.uCanopy.g, settings.canopy && settings.trees ? 1 : 0);
+  gl.uniform1f(UG.uCan0, c0); gl.uniform1f(UG.uCan1, c1); gl.uniform1f(UG.uCanopy, settings.canopy && settings.trees ? 1 : 0);
   gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 1); gl.drawElements(gl.TRIANGLES, gCount, gl.UNSIGNED_INT, 0); gl.disable(gl.POLYGON_OFFSET_FILL);
   const spd = cam.fly ? controls.cruise : controls.walkCruise;
   $('hud').textContent = `${cam.fly ? 'Flying' : 'Walking'} · ${spd < 10 ? fmt(spd, 1) : fmt(spd)} m/s · ${fmt(agl)} m above ground · ${BUILD}`;
   if (now - statT > 300) { statT = now; showReading(eye, fwd); stats(); }
 }
 function stats() {
+  const { lists, DOTS, NSH, NB, farCount, rebuildMs, farMs } = forest.stats, made = keeper.made;
   let nN = 0, nF = 0, nLive = 0, nVines = 0;
   for (let k = 0; k < NB; k++) { if (k < NSH) nN += lists.count[k]; else nF += lists.count[k]; }
-  for (const [k, b] of live) { if (k[0] === 't') nLive += b.n; else nVines += b.n; }
+  for (const b of keeper.live.values()) { if (b.tree) nLive += b.n; else nVines += b.n; }
   const avg = ft.reduce((a, b) => a + b, 0) / ft.length;
   const rows = [
     ['Place loaded in', area.loadMs ? `${fmt(area.loadMs / 1000, 1)} s, ${fmt(downloaded / 1048576, 1)} MB` : '–'],
     ['Vineyards on the map', fmt(area.parcels.length)],
-    ['Trees made so far', `${fmt(planted.trees)} on ${fmt(planted.tiles)} tiles`],
-    ['Making one tile', planted.tiles ? `${fmt(planted.ms / planted.tiles, 1)} ms` : '–'],
-    ['Still to make', fmt(queue.length)],
+    ['Trees made so far', `${fmt(made.trees)} on ${fmt(made.tiles)} tiles`],
+    ['Making one tile', made.tiles ? `${fmt(made.ms / made.tiles, 1)} ms` : '–'],
+    ['Still to make', fmt(keeper.queue.length)],
     ['Held now', `${fmt(nLive)} trees, ${fmt(nVines)} vine pieces`],
     ['Drawn, detailed', fmt(nN)], ['Drawn, simple', fmt(nF)], ['Dots near (with the trees)', fmt(lists.count[DOTS])], ['Dots far', fmt(farCount)],
     ['Draw calls', fmt(calls + 1)], ['Triangles a frame', fmt(tris)],
