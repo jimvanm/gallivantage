@@ -140,7 +140,7 @@ KINDS.forEach((k, ki) => {
 const NSH = SHAPES.length, NK = KINDS.length, NB = NSH + NK, SHAPE_KIND = new Uint8Array(SHAPES.map((s) => s.kind));
 
 // ================= GL (the Tree Lab's, unchanged) =================
-const canvas = $('gl'), gl = canvas.getContext('webgl2', { antialias: true, powerPreference: 'high-performance' });
+const canvas = $('gl'), gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });   // solid: the dots' soft edges must not let the page show through
 function prog(vs, fs) {
   const p = gl.createProgram();
   for (const [t, s] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); gl.attachShader(p, sh); }
@@ -191,15 +191,18 @@ void main(){ float h=iSize.x*0.01,w=iSize.y*0.01; vec2 cell=floor(iPos.xz*4.0);
   float e1=uRange*(uFade0+(1.0-uFade0)*spot(cell)), e2=uDot0+(uDot1-uDot0)*spot(cell+17.0);
   float k=clamp((d-e1+uRange*0.04)/(uRange*0.04),0.0,1.0)*clamp((e2-d)/(uDot1*0.04),0.0,1.0);
   // Past uThin, fewer and bigger: only the trees whose facing number is below the share kept (the same ones the far
-  // tiles were made with), each enlarged so together they cover the same ground. Share: (uThin/d) cubed, at least 1/64.
+  // tiles were made with), each WIDER so together they cover the same ground. Share: (uThin/d) cubed, at least 1/64.
+  // Only the spread over the ground grows: seen from the side a dot keeps its tree's true height, or it would tower
+  // over the forest (at 1/64 kept, eight times too tall).
   float keep=d<=uThin?1.0:max(1.0/64.0,pow(uThin/d,3.0));
   if(floor(iMisc.x*255.0+0.5)>=keep*256.0) k=0.0;
-  k*=inversesqrt(keep);
+  float grow=inversesqrt(keep);
   vec3 c=iPos+vec3(0.0,h*0.55,0.0); vec3 dir=normalize(c-uEye);
-  // seen from the side a tall tree's dot is tall; seen from above it is round, like its crown
-  float rx=0.58*w, ry=mix(rx,0.4*h,1.0-abs(dir.y));
-  vec3 wp=c+(uRight*aCorner.x*rx+uUp*aCorner.y*max(rx,ry))*k;
-  vQ=vec2(aCorner.x,aCorner.y*max(rx,ry)/max(ry,0.01)); vRel=wp-uEye; vCol=uShapeCol[int(iMisc.w*255.0+0.5)]*(0.8+0.4*iMisc.y); vSeed=spot(cell+5.0)*6.28;
+  // across: the crown, widened; up the screen: from above that is ground too (widened, so the dot stays round),
+  // from the side it is the tree's own height
+  float rx=0.58*w*grow, ry=mix(rx,0.4*h,1.0-abs(dir.y));
+  vec3 wp=c+(uRight*aCorner.x*rx+uUp*aCorner.y*ry)*k;
+  vQ=aCorner; vRel=wp-uEye; vCol=uShapeCol[int(iMisc.w*255.0+0.5)]*(0.8+0.4*iMisc.y); vSeed=spot(cell+5.0)*6.28;
   gl_Position=uVP*vec4(wp,1.0); }`, `#version 300 es
 precision highp float; in vec2 vQ; in vec3 vRel; in vec3 vCol; in float vSeed; uniform vec3 uSun,uSky,uRight,uUp; uniform float uFog; out vec4 o;
 void main(){ float a=atan(vQ.y,vQ.x), r2=dot(vQ,vQ)*(1.0+0.13*sin(a*5.0+vSeed)+0.07*sin(a*9.0-vSeed));
