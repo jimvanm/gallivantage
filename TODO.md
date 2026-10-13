@@ -366,6 +366,20 @@ reasoning: the project's `ROADS-DRAFT.md`.
   2.7% after (today's draped roads 5.1%), no flags left.
 - **Save a spot (0.14.13):** F in the lab saves roads and ground for 600 m
   square to a file, so the rules can be rerun on exactly the same data.
+- **A road is a thin layer (Jim, 13 October; 0.14.29).** Its bottom is the
+  ground, exactly, across its whole width; its top is the driving surface, a
+  plane across (the road's own tilt, from the ground, at most 8%, smoothed
+  along the road over a length that grows with speed) with a height line
+  along it smooth for the road's speed. The layer is never negative (the top
+  never under the ground anywhere across) and no thicker than the roadbed at
+  its lowest point, or it is a bridge. The centreline keeps each road to
+  itself: tops blend only where roads join at a junction (Jim: roads that
+  merely touch or run alongside keep apart; they blend only where they are
+  converging into each other). A junction's surface is the blend of the
+  joining roads' tops, weighted by how near each centreline is. Jim's spot:
+  his junction within its rules on both roads, 2 to 7 cm above the ground.
+  The lab now shows the engineered roads alone; Show switches to today's
+  draped roads or side by side.
 - **Reading the road from the ground (0.14.24, `src/roadread.js`).** The
   survey is bare earth, so the road's real bed is in it. Every 4 m across
   each road: the widest flat, nearly level strip near the map's line, with a

@@ -1167,14 +1167,112 @@ function junctionSurface(J, L, groundAt) {
       const r = segDist(x, z, L.x[i], L.z[i], L.x[i + 1], L.z[i + 1]);
       if (r.d < best) { best = r.d; f = i + r.t; off = r.d; fx = r.x; fz = r.z; }
     }
-    const centre = lerpAt(L.prof, f);
-    if (off <= hw) return centre - CROWN * off;
+    const centre = lerpAt(L.prof, f), tilt = L.cross ? lerpAt(L.cross, f) : 0;
+    const i0 = Math.max(0, Math.min(L.n - 2, Math.floor(f)));
+    const side = Math.sign((L.x[i0 + 1] - L.x[i0]) * (z - L.z[i0]) - (L.z[i0 + 1] - L.z[i0]) * (x - L.x[i0])) * -1;   // +1 left
+    if (off <= hw) return centre + tilt * side * off;
     const ex = fx + (x - fx) * hw / off, ez = fz + (z - fz) * hw / off;      // the lead's edge, on the way out
-    const e = off - hw, edge = centre - CROWN * hw;
+    const e = off - hw, edge = centre + tilt * side * hw;
     const g1 = groundAt(x, z), g0 = groundAt(ex, ez);
     if (!Number.isFinite(g1) || !Number.isFinite(g0)) return edge;
     const most = JUNCTION.G / 100 * e;
     return edge + Math.max(-most, Math.min(most, g1 - g0));
+  };
+}
+
+// ---- the road's bottom: the ground across it ------------------------------------------
+//
+// A road is a thin layer with a bottom and a top (Jim, 13 October). The bottom
+// is the ground, exactly, across the road's whole width. The top is the
+// driving surface: a plane across the road (its own tilt), with a height line
+// along it that is smooth for the road's speed. Between them, the layer may be
+// a little thick (up to the kind's roadbed) and never negative: the top is
+// never under the ground anywhere across. The centreline keeps each road to
+// itself: tops blend only where roads join at a junction.
+
+const MAX_ACROSS = 0.08;            // steepest tilt across a road (banking included)
+
+// For each sample: the ground's tilt across (cross: metres up per metre to the
+// left, smoothed along the road over a length that grows with speed), and with
+// that tilt taken out, the ground's height at the middle (mid), its highest
+// (hi) and lowest (lo) across the width, and the ground at each edge (gL, gR).
+function readBottom(c, groundAt) {
+  const n = c.n, hw = c.width / 2, K = Math.max(2, Math.ceil(hw));
+  const rail = c.kind === 'rail' || c.kind === 'railMinor';
+  const lx = new Float64Array(n), lz = new Float64Array(n), slope = new Float64Array(n), ok = new Uint8Array(n);
+  const G = new Float64Array(n * (2 * K + 1));
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+    const dx = c.x[b] - c.x[a], dz = c.z[b] - c.z[a], L = Math.hypot(dx, dz) || 1;
+    lx[i] = dz / L; lz[i] = -dx / L;
+    let su = 0, sg = 0, suu = 0, sug = 0, m = 0, good = true;
+    for (let k = -K; k <= K; k++) {
+      const u = k * hw / K, g = groundAt(c.x[i] + lx[i] * u, c.z[i] + lz[i] * u);
+      G[i * (2 * K + 1) + k + K] = g;
+      if (!Number.isFinite(g)) { good = false; continue; }
+      su += u; sg += g; suu += u * u; sug += u * g; m++;
+    }
+    ok[i] = good && m > 2 ? 1 : 0;
+    slope[i] = ok[i] && !rail ? Math.max(-MAX_ACROSS, Math.min(MAX_ACROSS, (m * sug - su * sg) / (m * suu - su * su))) : 0;
+  }
+  const W = Math.max(1, Math.round(Math.max(6, c.K.V / 6) / c.ds));
+  const cross = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0, m = 0;
+    for (let j = Math.max(0, i - W); j <= Math.min(n - 1, i + W); j++) if (ok[j]) { s += slope[j]; m++; }
+    cross[i] = m ? s / m : 0;
+  }
+  const mid = new Float64Array(n), hi = new Float64Array(n), lo = new Float64Array(n), gL = new Float64Array(n), gR = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    if (!ok[i]) { mid[i] = hi[i] = lo[i] = gL[i] = gR[i] = c.raw[i]; continue; }
+    let s = 0, mx = -Infinity, mn = Infinity;
+    for (let k = -K; k <= K; k++) {
+      const r = G[i * (2 * K + 1) + k + K] - cross[i] * (k * hw / K);
+      s += r; if (r > mx) mx = r; if (r < mn) mn = r;
+    }
+    mid[i] = s / (2 * K + 1); hi[i] = mx; lo[i] = mn;
+    gL[i] = G[i * (2 * K + 1) + 2 * K]; gR[i] = G[i * (2 * K + 1)];
+  }
+  Object.assign(c, { cross, mid, hi, lo, gL, gR });
+}
+
+// The top of road c at (x, z), from its height line and tilt, near sample
+// window a..b. Returns { h, d } (d: distance from its centreline) or null.
+function topOf(c, x, z, a, b) {
+  let best = Infinity, f = a, u = 0;
+  for (let i = Math.max(0, a); i < Math.min(c.n - 1, b); i++) {
+    const r = segDist(x, z, c.x[i], c.z[i], c.x[i + 1], c.z[i + 1]);
+    if (r.d < best) {
+      best = r.d; f = i + r.t;
+      const dx = c.x[i + 1] - c.x[i], dz = c.z[i + 1] - c.z[i];
+      u = Math.sign(dx * (z - c.z[i]) - dz * (x - c.x[i])) * -r.d;      // + to the left of the way it runs
+    }
+  }
+  if (!Number.isFinite(best)) return null;
+  return { h: lerpAt(c.prof, f) + lerpAt(c.cross, f) * u, d: best };
+}
+
+// A junction's surface, once every road meeting there is fitted: the tops of
+// those roads, blended by how near each one's centreline is, so each eases
+// into the others. Only roads that join there take part.
+function junctionBlend(J, chains, fallback) {
+  const parts = [];
+  const seen = new Set();
+  for (const a of J.arms) {
+    if (seen.has(a.chain)) continue;
+    seen.add(a.chain);
+    const c = chains[a.chain], span = Math.ceil((J.R + 15) / c.ds);
+    parts.push({ c, a: a.i0 - span, b: a.i0 + span, reach: c.width / 2 + 2 });
+  }
+  return (x, z) => {
+    let sw = 0, sh = 0;
+    for (const p of parts) {
+      const t = topOf(p.c, x, z, p.a, p.b);
+      if (!t) continue;
+      const w = Math.max(0, 1 - t.d / p.reach) ** 2;
+      sw += w; sh += w * t.h;
+    }
+    return sw > 1e-6 ? sh / sw : fallback(x, z);
   };
 }
 
@@ -1251,7 +1349,7 @@ export function engineer(net, groundAt, rules, opt = {}) {
       armOf.get(a.chain).push({ J, arm: a });
     }
   }
-  for (const c of chains) c.lim = limitsFor(c);
+  for (const c of chains) { c.lim = limitsFor(c); readBottom(c, groundAt); }
   const nodeH = new Map();
   const byChain = new Map();
   for (const x of crossings) {
@@ -1294,23 +1392,25 @@ export function engineer(net, groundAt, rules, opt = {}) {
       if (dec.conflict) flags.push({ x: x.x, z: x.z, kind: 'clue', text: `${kB.label} crossing ${rules.kinds[A.kind].label.toLowerCase()}: the map says ${dec.tag}, the ground says ${dec.ground}. Went with the map.` });
       else if (dec.guessed) flags.push({ x: x.x, z: x.z, kind: 'guess', text: `${kB.label} crossing ${rules.kinds[A.kind].label.toLowerCase()}: no tag and flat ground. Guessed ${dec.rel}.` });
     }
-    const t = B.raw, w = B.w;
-    // The ground is a floor the road may not go under, except in a tunnel.
-    const floor = Float64Array.from(B.raw);
+    // The top follows the bottom across the whole width: aimed at the ground's
+    // middle (its tilt taken out), never under its highest point across (the
+    // layer is never negative), and no thicker than the roadbed at its
+    // lowest point, except where the map says it leaves the ground (a bridge,
+    // water, a creek, a road below). Tunnels have no floor.
+    const t = B.mid, w = B.w;
+    const floor = Float64Array.from(B.hi);
     for (let i = 0; i < B.n; i++) if (B.struct[i] === 2) floor[i] = -Infinity;
-    // Its roadbed limit, except where the map says it leaves the ground
-    // (a bridge, water, a creek, a road below).
     let ceil = null;
     if (kB.bed > 0) {
       ceil = new Float64Array(B.n);
-      for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : B.raw[i] + kB.bed;
+      for (let i = 0; i < B.n; i++) ceil[i] = B.known[i] ? Infinity : Math.max(B.lo[i] + kB.bed, B.hi[i] + 0.05);
     }
     // Meeting a junction's edge: the edge height may be a little under its
     // ground (the leading road's crown) or over its roadbed; the floor and the
     // roadbed limit give way by that much, easing out over the seam.
     for (const { J, arm } of joins) {
       if (!J.h || !fixed.has(arm.ib)) continue;
-      const h = fixed.get(arm.ib), below = Math.max(0, B.raw[arm.ib] - h), above = ceil ? Math.max(0, h - ceil[arm.ib]) : 0;
+      const h = fixed.get(arm.ib), below = Math.max(0, floor[arm.ib] - h), above = ceil ? Math.max(0, h - ceil[arm.ib]) : 0;
       if (!below && !above) continue;
       for (let i = arm.ib, d = 0; i >= 0 && i < B.n && d <= SEAM; i += arm.dir, d += B.ds) {
         const w = 1 - d / SEAM;
@@ -1335,6 +1435,17 @@ export function engineer(net, groundAt, rules, opt = {}) {
     }
     for (const [id, s] of B.at) if (!nodeH.has(id)) nodeH.set(id, lerpAt(B.prof, s / B.ds));
   }
+  // Every road is fitted: each junction's surface becomes the blend of the
+  // tops of the roads that join there, and on it every road inside it runs.
+  for (const J of junctions) {
+    if (!J.h) continue;
+    J.hLead = J.h;
+    J.h = junctionBlend(J, chains, J.hLead);
+    for (const a of J.arms) {
+      const c = chains[a.chain];
+      for (let i = a.ib - a.dir; i >= 0 && i < c.n && c.inJ[i] === J.id + 1; i -= a.dir) c.prof[i] = J.h(c.x[i], c.z[i]);
+    }
+  }
 
   // Well above the ground: a bridge. Untagged ones high up are worth a look:
   // the map may be missing a bridge, or the ground be wrong. The ground
@@ -1350,7 +1461,7 @@ export function engineer(net, groundAt, rules, opt = {}) {
       run = null;
     };
     for (let i = 0; i < c.n; i++) {
-      const lift = c.prof[i] - c.raw[i];
+      const lift = c.prof[i] - (c.mid ? c.mid[i] : c.raw[i]);
       let untold = false;
       if (!c.struct[i] && lift > rules.bridgeLift && !(c.inJ && c.inJ[i])) { c.struct[i] = 1; if (!c.why[i]) c.why[i] = 'above the ground: bridge'; untold = true; }
       if (untold && run) { run.i1 = i; run.max = Math.max(run.max, lift); run.known ||= c.known[i]; }

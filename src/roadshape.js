@@ -72,7 +72,10 @@ export function buildRoadShapes(net, mb, opt) {
     // Cross-section heights at the left edge, middle and right edge.
     // No banking near a junction: it is driven slowly, and must meet a level surface.
     const bank = (i) => (raw || rail || (c.jz && c.jz[i])) ? null : banking(kind.V, c.R[i]);
+    // The engineered top is a plane across: the road's own tilt (from the
+    // ground under it, roadrules.js readBottom). Today's road lies flat.
     const ownEdge = (i, side) => {
+      if (!raw && c.cross) return p[i] + side * c.cross[i] * hw;
       const e = bank(i);
       if (e === null) return p[i] - (raw || rail ? 0 : CROWN * hw);
       return p[i] - side * e * hw;
@@ -135,13 +138,16 @@ export function buildRoadShapes(net, mb, opt) {
       const a = i - 1;
       if (struct[a] || struct[i] || !c.under) continue;
       if (inJ && (inJ[a] || inJ[i])) continue;
-      if (p[a] - c.under[a] < 0.15 && p[i] - c.under[i] < 0.15) continue;
+      // The layer's edge, down to the ground at that edge (not under the middle).
       for (const sd of [1, -1]) {
+        const g = sd > 0 ? c.gL : c.gR;
+        const ga = g ? g[a] : c.under[a], gi = g ? g[i] : c.under[i];
         const P = [X[a] + sd * lx[a] * hw, edgeH(a, sd) + LIFT, Z[a] + sd * lz[a] * hw];
         const Q = [X[i] + sd * lx[i] * hw, edgeH(i, sd) + LIFT, Z[i] + sd * lz[i] * hw];
+        if (P[1] - ga < 0.12 && Q[1] - gi < 0.12) continue;
         const b = mb.verts;
         mb.vert(P[0], P[1], P[2], bed); mb.vert(Q[0], Q[1], Q[2], bed);
-        mb.vert(Q[0], c.under[i] - 0.05, Q[2], bed); mb.vert(P[0], c.under[a] - 0.05, P[2], bed);
+        mb.vert(Q[0], gi - 0.05, Q[2], bed); mb.vert(P[0], ga - 0.05, P[2], bed);
         mb.tri(b, b + 1, b + 2); mb.tri(b, b + 2, b + 3);
       }
     }
@@ -312,6 +318,7 @@ export function roadPoint(c, f, dir, which, rules) {
   const kind = (!raw && c.K) || rules.kinds[c.kind];
   const ii = Math.round(f);
   let e = raw || (c.jz && c.jz[ii]) ? null : banking(kind.V, c.R[ii] * dir);
+  if (!raw && c.cross) e = -c.cross[Math.max(0, Math.min(c.n - 1, ii))] * dir;     // the top's own tilt (+ = down to the left of the way you drive)
   const h = p[i] + (p[i + 1] - p[i]) * u;
   const bank = e === null ? (which === 'raw' ? 0 : (off < 0 ? -CROWN : 0)) : e;
   const y = h + LIFT + (e === null ? (which === 'raw' ? 0 : -CROWN * Math.abs(off)) : -e * off);

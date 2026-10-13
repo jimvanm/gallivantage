@@ -92,7 +92,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
   </div>
   <aside class="panel" id="panel">
     <div class="top">
-      <h1 title="Roads draped on the ground, as the app does today, beside roads built the way engineers build them: each kind of road keeps to its own limits, rides on the ground or a little above it, and is a bridge where it rides well above. The ground is never changed.">Road Lab</h1>
+      <h1 title="Roads as a thin layer on the ground: the bottom is the ground itself, the top is the driving surface, smooth for each road's speed, never under the ground and never far above it (or it is a bridge). Roads blend into each other only where they join.">Road Lab</h1>
       <button class="btn primary" id="saveSpot" title="Saves the roads and the ground for 600 m square round where you are, so Claude can rerun the rules on the same data. Attach the file in the chat.">Save this spot (F)</button>
     </div>
 
@@ -104,7 +104,7 @@ ul.finds li:hover{outline:1px solid var(--line)}
 
     <section>
       <div class="line"><label for="view">Show</label>
-        <select id="view"><option value="split" selected>Side by side</option><option value="raw">Today only</option><option value="eng">Engineered only</option></select>
+        <select id="view" title="The engineered roads (a layer on the ground: the top smooth for the road's speed, the bottom the ground itself), or today's roads draped on the ground, or both side by side"><option value="eng" selected>Engineered</option><option value="raw">Today (draped)</option><option value="split">Side by side</option></select>
         <label for="colour">Colour</label>
         <select id="colour" class="grow"><option value="plain">As in the app</option><option value="rules" selected>By its rules</option><option value="moved">By how far it moved</option><option value="where">Town, country, junctions</option><option value="ground">What the ground says</option></select></div>
       <div class="key" id="keyGround" hidden><span><i class="sw" style="background:#40a860"></i>on the ground's street</span><span><i class="sw" style="background:#4678dc"></i>hangs off its edge</span><span><i class="sw" style="background:#deaa28"></i>street narrower</span><span><i class="sw" style="background:#969696"></i>can't tell</span></div>
@@ -713,8 +713,12 @@ function standAt(x, z, feet) {
     const c = a[q], i = a[q + 1];
     const ax = c.x[i], az = c.z[i], dx = c.x[i + 1] - ax, dz = c.z[i + 1] - az, L2 = dx * dx + dz * dz || 1;
     const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
-    if (Math.hypot(x - ax - dx * t, z - az - dz * t) > c.width / 2) continue;
-    consider(c.prof[i] + (c.prof[i + 1] - c.prof[i]) * t + 0.08);
+    const d = Math.hypot(x - ax - dx * t, z - az - dz * t);
+    if (d > c.width / 2) continue;
+    // The top is a plane across the road: its height line plus its tilt.
+    const u = -Math.sign(dx * (z - az) - dz * (x - ax)) * d;          // + to the left of the way it runs
+    const tilt = c.cross ? c.cross[i] + (c.cross[i + 1] - c.cross[i]) * t : 0;
+    consider(c.prof[i] + (c.prof[i + 1] - c.prof[i]) * t + tilt * u + 0.08);
   }
   for (const J of surfaces.js) if (Math.hypot(x - J.x, z - J.z) < J.R + 2 && surfaces.inside(J.pts, x, z)) consider(J.h(x, z) + 0.08);
   return best;
