@@ -6,7 +6,8 @@ import { gunzipSync } from 'node:zlib';
 import { setZoneReader, loadZones } from '../src/zones.js';
 import { COVER, defaultRules } from '../src/biome.js';
 import { POLYGON, LINESTRING } from '../src/mvt.js';
-import { tileCover, atFraction, coverCode, fillRings } from '../src/forestcover.js';
+import { tileCover, atFraction, fillRings } from '../src/forestcover.js';
+import { landCode as coverCode, LAND } from '../src/landuse.js';
 import { shapeCatalog } from '../src/forest.js';
 import { plantTreeTile } from '../src/treetile.js';
 import { mercToTile, lonToMercX, latToMercY } from '../src/geo.js';
@@ -22,7 +23,8 @@ const LIB = { ...JSON.parse(readFileSync(new URL('../library/trees/models.json',
 assert.equal(coverCode('landcover', 'wood'), COVER.WOOD);
 assert.equal(coverCode('landcover', 'farmland', 'vineyard'), COVER.VINEYARD);
 assert.equal(coverCode('landcover', 'grass', 'park'), COVER.PARK);
-assert.equal(coverCode('landuse', 'residential'), COVER.BUILT);
+assert.equal(coverCode('landuse', 'residential'), COVER.YARD, 'houses and their yards');
+assert.equal(coverCode('landuse', 'commercial'), COVER.BUILT);
 assert.equal(coverCode('sport', 'pitch'), COVER.SPORT);
 assert.equal(coverCode('sport', 'residential'), null);
 {
@@ -48,8 +50,37 @@ assert.equal(at(T.plant, 1405 / E, 1200 / E), COVER.SPORT, 'its 10 m margin is k
 assert.equal(at(T.plant, 1600 / E, 1200 / E), COVER.WOOD, '... and no more');
 assert.equal(at(T.plant, 3050 / E, 3050 / E), COVER.STRUCT, 'no tree on a building');
 assert.equal(at(T.plant, 0.5, 3500 / E), COVER.STRUCT, 'or on a road');
-assert.equal(at(T.cover, 0.5, 3500 / E), COVER.BUILT, 'the cover itself is unchanged');
+assert.equal(at(T.cover, 0.5, 3500 / E), COVER.YARD, 'the cover itself is unchanged');
+// the primary road is 11 m wide: kept clear to 7 m from its middle, then a 4 m strip for its trees
+const mE = 2400 / E;
+assert.equal(at(T.plant, 0.5, (3500 + 9 / mE) / E), COVER.VERGE, 'a strip beside a town street for its trees');
+assert.equal(at(T.plant, 0.5, (3500 - 9 / mE) / E), COVER.VERGE, '... on both sides');
+assert.equal(at(T.plant, 0.5, (3500 + 16 / mE) / E), COVER.YARD, 'then yards');
 assert.ok(at(T.urban, 0.5, 0.95) > 0.9 && at(T.urban, 0.5, 0.02) < 0.5, 'town in the built half, much less in the wood');
+{
+  const A = tileCover({
+    landcover: { extent: E, features: [{ type: POLYGON, cls: 'grass', props: {}, parts: sq(0, 0, E, E) }] },
+    aeroway: { extent: E, features: [{ type: POLYGON, cls: 'aerodrome', parts: sq(0, 0, 2000, 2000) }, { type: LINESTRING, cls: 'runway', parts: [[2500, 0, 2500, E]] }] },
+  }, 2400, 512);
+  assert.equal(atFraction(A.plant, 512, 0.2, 0.2), COVER.AIRPORT, 'no trees inside an airport');
+  assert.equal(atFraction(A.plant, 512, (2500 + 100) / E, 0.5), COVER.AIRPORT, 'nor 60 m from a runway');
+  assert.equal(atFraction(A.plant, 512, (2500 + 160) / E, 0.5), COVER.GRASS, '... but 95 m away is fine');
+  assert.equal(atFraction(A.cover, 512, 0.2, 0.2), COVER.AIRPORT, 'the map\'s airport outline is airport land');
+}
+{
+  // a street outside the houses' land but next to it still gets its trees; one far from houses does not
+  const S = tileCover({
+    landuse: { extent: E, features: [{ type: POLYGON, cls: 'residential', parts: sq(0, 0, E, 2000) }] },
+    transportation: { extent: E, features: [{ type: LINESTRING, cls: 'minor', parts: [[0, 2010, E, 2010]] }, { type: LINESTRING, cls: 'minor', parts: [[0, 3800, E, 3800]] }] },
+  }, 2400, 512);
+  assert.equal(atFraction(S.plant, 512, 0.5, (2010 + 6 / mE) / E), COVER.VERGE, 'street at the edge of the houses: trees');
+  assert.equal(atFraction(S.plant, 512, 0.5, (3800 + 6 / mE) / E), COVER.NONE, 'country road: no row of trees');
+}
+// the table decides: unknown land use takes no trees, unknown land cover is nothing mapped
+assert.equal(coverCode('landuse', 'something_new'), COVER.BUILT, 'unknown land use: tended, no trees');
+assert.equal(coverCode('landcover', 'something_new'), null, 'unknown land cover: nothing mapped');
+assert.equal(coverCode('landuse', 'pitch'), null, 'sports fields are laid down in their own turn');
+for (const L of LAND) assert.ok(L.id && L.name, 'every kind of land has a name');
 console.log('trees_app: cover ok');
 
 // ---- the shape numbering ----
@@ -83,4 +114,18 @@ const q = plantTreeTile(x, y, 0.25, nodes, wood, cat.styles, R);
 assert.deepEqual(q.u8, a.u8.subarray(0, q.n * 20), 'a quarter share is the front of the full list');
 const none = plantTreeTile(x, y, 1, nodes, tileCover({ landuse: { extent: E, features: [{ type: POLYGON, cls: 'pitch', parts: sq(0, 0, E, E) }] } }, 1760, 512), cat.styles, R);
 assert.equal(none.n, 0, 'no trees on a sports field');
+// ---- town trees: streets broadleaf; no big conifers in yards, streets or parks ----
+{
+  const { readSpot, plantTile, KINDS } = await import('../src/biome.js');
+  const st = readSpot({ lat, lon, h: 100, slope: 0, sunny: 0, cover: COVER.VERGE }, R);
+  assert.ok(st.density > 0 && st.urban === 1, 'street trees, as town trees');
+  for (const k of ['spire', 'pine', 'column']) assert.equal(st.mix[KINDS.indexOf(k)], 0, 'no ' + k + ' on a street');
+  assert.ok(readSpot({ lat, lon, h: 100, slope: 0, sunny: 0, cover: COVER.PARK }, R).urban >= 0.8, 'a park counts as town');
+  for (const cover of [COVER.PARK, COVER.YARD]) {
+    const t = plantTile({ seed: 7, x0: 0, z0: 0, size: 600, latLon: () => [lat, lon], ground: () => 100, grad: () => [0, 0], cover: () => cover }, R);
+    let big = 0, n = 0;
+    for (let i = 0; i < t.length; i += 8) { n++; if (t[i + 2] <= 2 && t[i + 3] > 0.62) big++; }
+    assert.ok(n > 100 && big === 0, 'no old conifers (' + n + ' trees, cover ' + cover + ')');
+  }
+}
 console.log('trees_app: tile ok');

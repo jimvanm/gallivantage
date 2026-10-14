@@ -533,8 +533,25 @@ in `src/zones.js` (Koppen map, Rubel et al. 2017, about 3 km, 380 KB in
       canopy on the app's far ground; vineyards; then check far trees against
       the coarser far ground (they stand on zoom-14 heights out to 10 km). Places to check: Banff, Saba, the Okanagan, and Riverdale Park
       (top of the hill on Broadview, looking west).
-- [ ] **City trees**: in towns the map marks streets and yards as built-up, so
-      no trees grow there; Toronto's streets are full of trees.
+- [x] **City trees** (0.14.42): houses and yards take trees, and town
+      streets have a row each side (broadleaf). Parks and yards count as town:
+      grown maples of 7 to 14 m, about 1 in 20 bigger, conifers small.
+- [ ] **Land rules are one table** (0.14.42, `src/landuse.js`): each kind of
+      land says how many trees it takes, how tended they are, which kinds, and
+      what ground it keeps clear; the map's names point into it. Land use the
+      table does not know takes no trees. Keep it that way: a new case is a new
+      row, never code. Rows to look at next: commercial and industrial (some
+      trees, parking lots none), golf courses, cemeteries (old trees, not young),
+      ravines (Toronto's woods should be wild, not town).
+- [ ] **Better land use data** (Jim, 14 October; not started): look at what
+      sources exist beyond OpenFreeMap's map tiles and whether we use the best
+      we can get. Candidates to weigh: the full OpenStreetMap tags (landuse,
+      leisure, natural, surface: far more than the tiles carry), ESA WorldCover
+      and Dynamic World (10 m land cover from satellites, worldwide), tree
+      canopy maps (Meta/WRI 1 m canopy height; cities' own tree inventories,
+      Toronto's street tree data), national land cover (Canada, the US NLCD,
+      Europe's CORINE and Urban Atlas). Questions for each: licence, can a web
+      page read it a piece at a time, how big, how current.
 
 ---
 

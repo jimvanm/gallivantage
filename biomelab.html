@@ -97,6 +97,7 @@ import { decodeTerrarium, pxMetersFor, PX } from './src/heightgrid.js';
 import { cachedFetch } from './src/cache.js';
 import { loadZones, ZONE_NAMES } from './src/zones.js';
 import { defaultRules, readSpot, tileSeed, sunnyFrom, COVER, COVER_NAMES, KINDS as TREE_KINDS } from './src/biome.js';
+import { LAND, LAYER_ORDER, landCode } from './src/landuse.js';
 import { VIEW_DEFAULTS, shareToMake, dotBand as bandOf, reach as reachOf, makeTrees, makeVines, insideRings, farLook, ForestKeeper } from './src/forest.js';
 import { createForestDrawer } from './src/forestdraw.js';
 
@@ -247,7 +248,7 @@ function urbanAt(x, z) {
 }
 function makeUrban(a) {
   const N = a.N, r = Math.max(1, Math.round(500 / a.step)), sum = new Float64Array((N + 1) * (N + 1)), out = new Float32Array(N * N);
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) sum[(j + 1) * (N + 1) + i + 1] = (a.cover[j * N + i] === COVER.BUILT ? 1 : 0) + sum[j * (N + 1) + i + 1] + sum[(j + 1) * (N + 1) + i] - sum[j * (N + 1) + i];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) sum[(j + 1) * (N + 1) + i + 1] = (LAND[a.cover[j * N + i]] && LAND[a.cover[j * N + i]].town === 1 && !LAND[a.cover[j * N + i]].trees ? 1 : 0) + sum[j * (N + 1) + i + 1] + sum[(j + 1) * (N + 1) + i] - sum[j * (N + 1) + i];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const i0 = Math.max(0, i - r), i1 = Math.min(N, i + r + 1), j0 = Math.max(0, j - r), j1 = Math.min(N, j + r + 1);
     const share = (sum[j1 * (N + 1) + i1] - sum[j0 * (N + 1) + i1] - sum[j1 * (N + 1) + i0] + sum[j0 * (N + 1) + i0]) / ((i1 - i0) * (j1 - j0));
@@ -288,20 +289,7 @@ async function loadGround(a, id) {
   return { h, tiles: tiles.length };
 }
 
-// What covers the ground, from the map's land cover, land use and water.
-const BUILT_USE = new Set(['residential', 'commercial', 'industrial', 'retail', 'railway', 'garages', 'school', 'university', 'college',
-  'kindergarten', 'library', 'hospital', 'military', 'stadium', 'bus_station', 'dam']);
-const GREEN_USE = new Set(['cemetery', 'zoo', 'theme_park']);
-const SPORT_USE = new Set(['pitch', 'playground', 'track']);   // no trees on them, nor within 10 m of their edge
-function coverCode(layer, cls, sub) {
-  if (layer === 'water') return COVER.WATER;
-  if (layer === 'sport') return SPORT_USE.has(cls) ? COVER.SPORT : null;
-  if (layer === 'landuse') return BUILT_USE.has(cls) ? COVER.BUILT : GREEN_USE.has(cls) ? COVER.PARK : cls === 'quarry' ? COVER.ROCK : null;
-  if (cls === 'wood' || cls === 'forest') return COVER.WOOD;
-  if (cls === 'farmland') return sub === 'vineyard' ? COVER.VINEYARD : sub === 'orchard' ? COVER.ORCHARD : COVER.FARM;
-  if (cls === 'grass') return ['scrub', 'heath', 'fell'].includes(sub) ? COVER.SCRUB : ['park', 'garden', 'village_green', 'recreation_ground'].includes(sub) ? COVER.PARK : COVER.GRASS;
-  return { rock: COVER.ROCK, ice: COVER.ICE, sand: COVER.SAND, wetland: COVER.WETLAND }[cls] ?? null;
-}
+// What covers the ground: the kinds of land in src/landuse.js, from the map's areas.
 // Fill a shape (rings in grid units) into the cover grid, odd-even, row by row.
 function fillRings(cover, N, rings, code) {
   let y0 = Infinity, y1 = -Infinity;
@@ -325,18 +313,17 @@ async function loadMap(a) {
     const r = await fetch(tileUrl.replace('{z}', t.z).replace('{x}', t.x).replace('{y}', t.y), { mode: 'cors' });
     if (!r.ok) return null;
     const buf = new Uint8Array(await r.arrayBuffer());
-    return buf.length ? { t, L: decodeMVT(buf, ['landuse', 'landcover', 'water'], 'class', ['landcover']) } : null;
+    return buf.length ? { t, L: decodeMVT(buf, ['landuse', 'landcover', 'water', 'aeroway'], 'class', ['landcover']) } : null;
   }));
-  // Land use first, then land cover over it, then sports fields (from land use: the map lays park grass over them),
-  // then water over everything.
-  for (const layer of ['landuse', 'landcover', 'sport', 'water']) for (const d of decoded) {
+  // Each kind of land laid over the last, in landuse.js's order.
+  for (const layer of LAYER_ORDER) for (const d of decoded) {
     const src = layer === 'sport' ? 'landuse' : layer;
     if (!d || !d.L[src]) continue;
     const { t } = d, nw = tileToMerc(t.x, t.y, t.z), s = tileSizeMerc(t.z), E = d.L[src].extent;
     const local = (u, v) => [(nw.x + u / E * s - a.cmx) * a.k, (a.cmy - (nw.y - v / E * s)) * a.k];
     for (const f of d.L[src].features) {
       if (f.type !== POLYGON) continue;
-      const sub = f.props && f.props.subclass, code = coverCode(layer, f.cls, sub);
+      const sub = f.props && f.props.subclass, code = landCode(layer, f.cls, sub);
       if (code === null) continue;
       const rings = f.parts.map((ring) => { const o = new Float64Array(ring.length); for (let i = 0; i < ring.length; i += 2) { const [x, z] = local(ring[i], ring[i + 1]); o[i] = x; o[i + 1] = z; } return o; });
       fillRings(cover, N, rings.map((r) => r.map((v) => (v + a.S / 2) / a.step)), code);
@@ -348,16 +335,20 @@ async function loadMap(a) {
       }
     }
   }
-  // Trees keep 10 m back from sports fields: a margin round them that only the planting sees (the ground's colour
+  // Land that keeps ground clear round it (sports fields: 10 m): a margin only the planting sees (the ground's colour
   // keeps what the map says there).
-  const plant = cover.slice(), r = Math.max(1, Math.round(10 / a.step));
-  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-    if (cover[j * N + i] !== COVER.SPORT) continue;
-    for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
-      const ii = i + di, jj = j + dj;
-      if (ii >= 0 && jj >= 0 && ii < N && jj < N && di * di + dj * dj <= r * r && cover[jj * N + ii] !== COVER.WATER) plant[jj * N + ii] = COVER.SPORT;
+  const plant = cover.slice();
+  LAND.forEach((row, code) => {
+    if (!row.clear) return;
+    const r = Math.max(1, Math.round(row.clear / a.step));
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      if (cover[j * N + i] !== code) continue;
+      for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+        const ii = i + di, jj = j + dj;
+        if (ii >= 0 && jj >= 0 && ii < N && jj < N && di * di + dj * dj <= r * r && cover[jj * N + ii] !== COVER.WATER) plant[jj * N + ii] = code;
+      }
     }
-  }
+  });
   return { cover, plant, parcels };
 }
 
@@ -365,7 +356,8 @@ async function loadMap(a) {
 // and the mountain above the treeline: alpine, then rock, then snow.
 const COVER_RGB = { [COVER.WOOD]: [52, 82, 44], [COVER.GRASS]: [107, 140, 71], [COVER.SCRUB]: [112, 124, 72], [COVER.FARM]: [160, 154, 96],
   [COVER.VINEYARD]: [132, 118, 84], [COVER.ORCHARD]: [118, 140, 72], [COVER.ROCK]: [128, 122, 112], [COVER.ICE]: [236, 241, 246],
-  [COVER.SAND]: [204, 189, 140], [COVER.WETLAND]: [96, 122, 90], [COVER.BUILT]: [168, 160, 150], [COVER.WATER]: [66, 108, 148], [COVER.PARK]: [112, 150, 76], [COVER.SPORT]: [104, 156, 72] };
+  [COVER.SAND]: [204, 189, 140], [COVER.WETLAND]: [96, 122, 90], [COVER.BUILT]: [168, 160, 150], [COVER.WATER]: [66, 108, 148], [COVER.PARK]: [112, 150, 76], [COVER.SPORT]: [104, 156, 72],
+  [COVER.YARD]: [138, 146, 112], [COVER.AIRPORT]: [150, 150, 140] };
 function naturalRGB(zone) {
   const c = zone[0];
   if (c === 'A') return [78, 124, 54];

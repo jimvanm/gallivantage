@@ -233,7 +233,7 @@ export async function buildCityJob(spec) {
 // Trees (treetile.js): one zoom-16 tile's trees. spec: { trees: 1, x, y (zoom 16), keep, vurl and eurl (the zoom-14
 // tile holding it), styles (forest.js shapeCatalog's, from the main thread), sgen }.
 const covers = new Map();   // map tile url -> Promise<tileCover>
-const TREE_LAYERS = ['landuse', 'landcover', 'water', 'building', 'transportation'];
+const TREE_LAYERS = ['landuse', 'landcover', 'water', 'building', 'transportation', 'aeroway'];
 const RULES = defaultRules();
 function coverFor(url, x14, y14) {
   let p = covers.get(url);
