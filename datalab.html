@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data lab</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #11161d; color: #dbe3ec; font: 13px/1.5 ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace; }
+  header { padding: 10px 16px; border-bottom: 1px solid #2a3340; }
+  h1 { font-size: 15px; margin: 0 0 4px; color: #ffd479; }
+  header p { margin: 0; color: #93a1b2; max-width: 1100px; }
+  #bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 16px; border-bottom: 1px solid #2a3340; }
+  input[type=text] { font: inherit; color: #dbe3ec; background: #1d2530; border: 1px solid #3a4552; border-radius: 3px; padding: 3px 8px; width: 200px; }
+  button { font: inherit; color: #dbe3ec; background: #1d2530; border: 1px solid #3a4552; border-radius: 3px; padding: 3px 10px; cursor: pointer; }
+  button:hover { border-color: #6d7d90; }
+  button.on { border-color: #ffd479; color: #ffd479; }
+  #where { color: #93a1b2; padding: 6px 16px; border-bottom: 1px solid #2a3340; }
+  #where b { color: #ffd479; font-weight: 600; }
+  #summary { padding: 8px 16px; border-bottom: 1px solid #2a3340; overflow-x: auto; }
+  table { border-collapse: collapse; }
+  td, th { padding: 1px 10px 1px 0; text-align: left; vertical-align: top; }
+  th { color: #93a1b2; font-weight: normal; }
+  td.n { text-align: right; }
+  .good { color: #8fd18f; } .bad { color: #ff8a80; } .wait { color: #93a1b2; }
+  #panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; padding: 16px; }
+  .panel { background: #161c24; border: 1px solid #2a3340; border-radius: 4px; padding: 10px; min-width: 0; }
+  .panel h2 { font-size: 13px; margin: 0 0 2px; color: #ffd479; }
+  .panel .what { color: #93a1b2; margin: 0 0 6px; }
+  .panel canvas { display: block; width: 100%; aspect-ratio: 1; background: #222a33; border-radius: 2px; }
+  .panel .status { margin: 6px 0; }
+  .legend { max-height: 260px; overflow-y: auto; }
+  .sw { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 1px solid #0006; vertical-align: -1px; }
+  details { margin-top: 6px; color: #93a1b2; }
+  details pre { white-space: pre-wrap; margin: 4px 0; max-height: 240px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Data lab</h1>
+  <p>The same square of ground (one zoom-14 map tile, about 1.5 to 2.4 km across) from each source,
+     side by side. It also checks whether this browser can read each source at all.
+     Licences are in DATA-SOURCES.csv. The cross marks the spot you chose.</p>
+</header>
+<div id="bar"></div>
+<div id="where"></div>
+<div id="summary"></div>
+<div id="panels"></div>
+
+<script type="module">
+import { tileAt, tileEdges, worldcoverUrls, WORLDCOVER, canopyUrl, overtureTheme, s2016Url, kindColour, kindOf } from './src/sources.js';
+import { PMTiles } from './src/pmtiles.js';
+import { decodeMVT, POINT, LINESTRING, POLYGON } from './src/mvt.js';
+import { OVERTURE_RELEASE } from './src/overture.js';
+import { VECTOR_TILEJSON } from './src/config.js';
+
+const Z = 14, SIZE = 768;
+const PLACES = [
+  ['Campbellford', 44.3077, -77.7990], ['Healey Falls', 44.3720, -77.7770],
+  ['Toronto, Union', 43.6453, -79.3806], ['Niagara Falls', 43.0828, -79.0742],
+  ['Rothenburg', 49.3772, 10.1787], ['Swakopmund', -22.6784, 14.5266],
+  ['Hội An', 15.8770, 108.3260], ['Chianti vineyards', 43.5840, 11.3140],
+  ['Champagne, Hautvillers', 49.0800, 3.9450],
+];
+
+// ---- counting what is read, per site ------------------------------------------
+const bytesFrom = new Map();
+const realFetch = window.fetch.bind(window);
+window.fetch = async (input, init) => {
+  const r = await realFetch(input, init);
+  try {
+    const host = new URL(typeof input === 'string' ? input : input.url, location.href).host;
+    const n = +(r.headers.get('content-length') || 0);
+    bytesFrom.set(host, (bytesFrom.get(host) || 0) + n);
+  } catch { /* counting only */ }
+  return r;
+};
+const kb = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.round(n / 1024) + ' KB';
+
+// Plain words for why something could not be read.
+function why(e) {
+  const m = String((e && e.message) || e);
+  if (/HTTP 40[34]/.test(m)) return 'not found there (' + m.match(/HTTP \d+/)[0] + '): the address may be wrong';
+  if (/Failed to fetch|NetworkError|Load failed|Request failed/i.test(m))
+    return 'could not read it: offline, or the server does not let web pages read it (CORS)';
+  return m;
+}
+
+// ---- the page ----------------------------------------------------------------------
+const bar = document.getElementById('bar');
+let spot = { lat: PLACES[0][1], lon: PLACES[0][2] };
+const fromHash = () => {
+  const m = location.hash.slice(1).split(',').map(Number);
+  if (m.length >= 2 && m.every(Number.isFinite)) spot = { lat: m[0], lon: m[1] };
+};
+fromHash();
+
+for (const [name, lat, lon] of PLACES) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.onclick = () => go(lat, lon);
+  bar.append(b);
+}
+const box = document.createElement('input');
+box.type = 'text'; box.placeholder = 'paste lat, lon';
+box.onkeydown = (e) => {
+  if (e.key !== 'Enter') return;
+  const m = box.value.split(/[ ,]+/).map(Number);
+  if (m.length >= 2 && m.every(Number.isFinite)) go(m[0], m[1]);
+};
+bar.append(box);
+for (const [label, dx, dy] of [['←', -1, 0], ['↑', 0, -1], ['↓', 0, 1], ['→', 1, 0]]) {
+  const b = document.createElement('button');
+  b.textContent = label; b.title = 'move one square';
+  b.onclick = () => {
+    const t = tileAt(spot.lat, spot.lon, Z), e = tileEdges(Z, t.x + dx, t.y + dy);
+    go((e.north + e.south) / 2, (e.west + e.east) / 2);
+  };
+  bar.append(b);
+}
+const copyBtn = document.createElement('button');
+copyBtn.textContent = 'Copy report';
+copyBtn.onclick = async () => {
+  try { await navigator.clipboard.writeText(report()); copyBtn.textContent = 'Copied'; }
+  catch { copyBtn.textContent = 'Copy failed'; }
+  setTimeout(() => { copyBtn.textContent = 'Copy report'; }, 1500);
+};
+bar.append(copyBtn);
+
+function go(lat, lon) {
+  spot = { lat, lon };
+  history.replaceState(null, '', '#' + lat.toFixed(5) + ',' + lon.toFixed(5));
+  run();
+}
+window.addEventListener('hashchange', () => { fromHash(); run(); });
+
+// ---- panels ------------------------------------------------------------------------
+const SOURCES = [
+  { id: 'photo', title: 'From space, 2016 (Sentinel-2 cloudless, EOX)', what: 'A photo to judge the others against. 10 m.', run: photoPanel },
+  { id: 'today', title: "Today's map (OpenFreeMap)", what: 'What the app reads now: OpenStreetMap, trimmed for flat maps.', run: todayPanel },
+  { id: 'overture', title: 'Overture base', what: `Land use, land cover, water, structures. Release ${OVERTURE_RELEASE}.`, run: overturePanel },
+  { id: 'worldcover', title: 'ESA WorldCover', what: 'Land cover from satellites, every 10 m.', run: worldcoverPanel },
+  { id: 'canopy', title: 'Tree heights (Meta and WRI)', what: 'Tree height every 1 m, from satellites. Dark = under 2 m.', run: canopyPanel },
+];
+const results = {};
+let runNo = 0;
+
+function makePanels() {
+  const host = document.getElementById('panels');
+  host.innerHTML = '';
+  for (const s of SOURCES) {
+    const d = document.createElement('div');
+    d.className = 'panel';
+    d.innerHTML = `<h2>${s.title}</h2><p class="what">${s.what}</p><canvas width="${SIZE}" height="${SIZE}"></canvas>
+      <div class="status wait">reading…</div><div class="legend"></div><div class="more"></div>`;
+    host.append(d);
+    s.el = d;
+  }
+}
+
+async function run() {
+  const me = ++runNo;
+  bytesFrom.clear();
+  const t = tileAt(spot.lat, spot.lon, Z), e = tileEdges(Z, t.x, t.y);
+  const w = ((e.mEast - e.mWest) * Math.cos(spot.lat * Math.PI / 180) / 1000).toFixed(1);
+  document.getElementById('where').innerHTML =
+    `Spot <b>${spot.lat.toFixed(5)}, ${spot.lon.toFixed(5)}</b> · square ${Z}/${t.x}/${t.y}, about <b>${w} km</b> across`;
+  makePanels();
+  for (const k of Object.keys(results)) delete results[k];
+  summary();
+  await Promise.all(SOURCES.map(async (s) => {
+    const t0 = performance.now();
+    const ctx = s.el.querySelector('canvas').getContext('2d');
+    const status = s.el.querySelector('.status');
+    try {
+      const r = await s.run(ctx, t, e, s.el);
+      if (me !== runNo) return;
+      results[s.id] = { ok: true, ms: performance.now() - t0, note: r || '' };
+      status.className = 'status good';
+      status.textContent = `read in ${(results[s.id].ms / 1000).toFixed(1)} s` + (r ? ' · ' + r : '');
+    } catch (err) {
+      if (me !== runNo) return;
+      console.error(s.id, err);
+      results[s.id] = { ok: false, ms: performance.now() - t0, note: why(err) };
+      status.className = 'status bad';
+      status.textContent = why(err);
+    }
+    cross(ctx, e);
+    summary();
+  }));
+}
+
+function summary() {
+  const rows = SOURCES.map((s) => {
+    const r = results[s.id];
+    const st = !r ? '<span class="wait">reading…</span>' : r.ok ? '<span class="good">read</span>' : '<span class="bad">failed</span>';
+    return `<tr><td>${s.title}</td><td>${st}</td><td class="n">${r ? (r.ms / 1000).toFixed(1) + ' s' : ''}</td><td>${r && !r.ok ? r.note : ''}</td></tr>`;
+  }).join('');
+  const sites = [...bytesFrom].map(([h, n]) => `${h} ${kb(n)}`).join(' · ');
+  document.getElementById('summary').innerHTML =
+    `<table><tr><th>source</th><th></th><th>time</th><th></th></tr>${rows}</table>` +
+    `<div style="color:#93a1b2;margin-top:4px">read from: ${sites || '…'}</div>`;
+}
+
+function report() {
+  const t = tileAt(spot.lat, spot.lon, Z);
+  const out = [`Data lab ${spot.lat.toFixed(5)}, ${spot.lon.toFixed(5)}  square ${Z}/${t.x}/${t.y}`];
+  for (const s of SOURCES) {
+    const r = results[s.id];
+    out.push(`${s.id}: ${!r ? 'not finished' : (r.ok ? 'read' : 'FAILED') + ` ${(r.ms / 1000).toFixed(1)} s ${r.note}`}`);
+    const leg = s.el && s.el.dataset.report;
+    if (leg) out.push(leg);
+  }
+  out.push('read from: ' + [...bytesFrom].map(([h, n]) => `${h} ${kb(n)}`).join(', '));
+  return out.join('\n');
+}
+
+// Where a point of the square lands on the canvas.
+const toCanvas = (e, mx, my) => [(mx - e.mWest) / (e.mEast - e.mWest) * SIZE, (e.mNorth - my) / (e.mNorth - e.mSouth) * SIZE];
+
+function cross(ctx, e) {
+  const R = 6378137, mx = spot.lon * Math.PI / 180 * R;
+  const my = R * Math.log(Math.tan(Math.PI / 4 + spot.lat * Math.PI / 360));
+  const [x, y] = toCanvas(e, mx, my);
+  ctx.save();
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.moveTo(x - 12, y); ctx.lineTo(x + 12, y); ctx.moveTo(x, y - 12); ctx.lineTo(x, y + 12); ctx.stroke();
+  ctx.strokeStyle = '#ffd479'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+}
+
+// ---- the photo ---------------------------------------------------------------------
+function loadImg(url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = () => rej(new Error('Failed to fetch ' + url));
+    im.src = url;
+  });
+}
+async function photoPanel(ctx, t) {
+  // Zoom 15 (four pictures) for detail; zoom 14 if those are missing.
+  try {
+    const ims = await Promise.all([0, 1, 2, 3].map((i) => loadImg(s2016Url(15, t.x * 2 + (i & 1), t.y * 2 + (i >> 1)))));
+    ims.forEach((im, i) => ctx.drawImage(im, (i & 1) * SIZE / 2, (i >> 1) * SIZE / 2, SIZE / 2, SIZE / 2));
+    return 'zoom 15';
+  } catch {
+    ctx.drawImage(await loadImg(s2016Url(14, t.x, t.y)), 0, 0, SIZE, SIZE);
+    return 'zoom 14';
+  }
+}
+
+// ---- map tiles (today's map and Overture) -------------------------------------------
+// Draws one map tile (z/x/y, any zoom at or above the square's) onto the canvas,
+// and lists what it holds. `order` names layers to draw first, in that order.
+function drawTile(ctx, el, L, z, x, y, e, order = [], faint = []) {
+  const s = 2 * 20037508.342789244 / 2 ** z, west = -20037508.342789244 + x * s, north = 20037508.342789244 - y * s;
+  const names = Object.keys(L).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  const tally = new Map(), keys = new Map();
+  for (const pass of [POLYGON, LINESTRING, POINT]) {
+    for (const name of names) {
+      const { extent, features } = L[name];
+      const k = s / extent;
+      for (const f of features) {
+        if (f.type !== pass) continue;
+        const kind = kindOf(f.props), id = name + '\t' + kind;
+        if (!tally.has(id)) tally.set(id, [0, 0, 0]);
+        tally.get(id)[pass === POLYGON ? 0 : pass === LINESTRING ? 1 : 2]++;
+        if (!keys.has(name)) keys.set(name, new Map());
+        const km = keys.get(name);
+        for (const key of Object.keys(f.props || {})) km.set(key, (km.get(key) || 0) + 1);
+        const col = kindColour(kind);
+        ctx.beginPath();
+        for (const part of f.parts) {
+          for (let i = 0; i + 1 < part.length; i += 2) {
+            const [cx, cy] = toCanvas(e, west + part[i] * k, north - part[i + 1] * k);
+            if (pass === POINT) { ctx.moveTo(cx + 3.5, cy); ctx.arc(cx, cy, 3.5, 0, 2 * Math.PI); }
+            else if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+          }
+        }
+        if (pass === POLYGON) {
+          ctx.globalAlpha = faint.includes(name) ? 0.25 : 0.8;
+          ctx.fillStyle = col; ctx.fill('evenodd');
+          ctx.globalAlpha = 1;
+        } else if (pass === LINESTRING) {
+          ctx.strokeStyle = col; ctx.lineWidth = /water/.test(name) ? 2.5 : 1.2; ctx.stroke();
+        } else {
+          ctx.fillStyle = col; ctx.fill(); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.stroke();
+        }
+      }
+    }
+  }
+  // The list: layer, kind, how many areas / lines / points.
+  const rows = [...tally].sort((a, b) => a[0].localeCompare(b[0]));
+  el.querySelector('.legend').innerHTML = '<table><tr><th>layer</th><th>kind</th><th>areas</th><th>lines</th><th>points</th></tr>' +
+    rows.map(([id, c]) => {
+      const [layer, kind] = id.split('\t');
+      return `<tr><td>${layer}</td><td><span class="sw" style="background:${kindColour(kind)}"></span>${kind}</td>` +
+        c.map((v) => `<td class="n">${v || ''}</td>`).join('') + '</tr>';
+    }).join('') + '</table>';
+  const keyText = [...keys].map(([n, m]) => n + ': ' + [...m].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(', ')).join('\n');
+  el.querySelector('.more').innerHTML = `<details><summary>every property seen, and how often</summary><pre></pre></details>`;
+  el.querySelector('.more pre').textContent = keyText;
+  el.dataset.report = '  ' + rows.map(([id, c]) => id.replace('\t', '/') + ' ' + c.join('/')).join('\n  ');
+  const n = rows.reduce((a, [, c]) => a + c[0] + c[1] + c[2], 0);
+  return `${n} things in ${names.length} layers`;
+}
+
+async function todayPanel(ctx, t, e, el) {
+  const j = await (await fetch(VECTOR_TILEJSON, { mode: 'cors' })).json();
+  const url = j.tiles[0].replace('{z}', t.z).replace('{x}', t.x).replace('{y}', t.y);
+  const r = await fetch(url, { mode: 'cors' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const L = decodeMVT(new Uint8Array(await r.arrayBuffer()), { includes: () => true }, 'class', { includes: () => true });
+  delete L.boundary;
+  return drawTile(ctx, el, L, t.z, t.x, t.y, e, ['landcover', 'landuse', 'park', 'water', 'aeroway', 'building', 'waterway', 'transportation']);
+}
+
+async function overturePanel(ctx, t, e, el) {
+  const pm = new PMTiles(overtureTheme(OVERTURE_RELEASE, 'base'));
+  const h = await pm.header();
+  // The finest zoom the file has, up to the square's own.
+  const z = Math.min(Z, h.maxZoom), d = Z - z;
+  const bytes = await pm.tile(z, t.x >> d, t.y >> d);
+  if (!bytes) return `no tile here (file has zooms ${h.minZoom} to ${h.maxZoom})`;
+  const L = decodeMVT(bytes, { includes: () => true }, 'class', { includes: () => true });
+  const note = drawTile(ctx, el, L, z, t.x >> d, t.y >> d, e,
+    ['bathymetry', 'land', 'land_cover', 'land_use', 'water', 'infrastructure'], ['bathymetry', 'land']);
+  return note + ` · zoom ${z} (file has ${h.minZoom} to ${h.maxZoom})`;
+}
+
+// ---- pictures from GeoTIFF files ------------------------------------------------------
+let geotiff = null;
+const lib = () => (geotiff || (geotiff = import('./vendor/geotiff-2.1.3.js')));
+
+// The square's edges in the file's own units (degrees, or Web Mercator metres).
+function bboxFor(img, e) {
+  const k = img.geoKeys || {};
+  const merc = [3857, 3785, 900913, 102100].includes(k.ProjectedCSTypeGeoKey) ||
+    Math.abs(img.getBoundingBox()[0]) > 360;
+  return { merc, bbox: merc ? [e.mWest, e.mSouth, e.mEast, e.mNorth] : [e.west, e.south, e.east, e.north] };
+}
+
+async function readSquare(url, e) {
+  // Ask for one byte first: the reader's own failures do not say why.
+  const probe = await fetch(url, { headers: { Range: 'bytes=0-0' }, mode: 'cors' });
+  if (!probe.ok) throw new Error('HTTP ' + probe.status);
+  await probe.arrayBuffer();
+  const G = await lib();
+  const tiff = await G.fromUrl(url, { allowFullFile: false });
+  const img = await tiff.getImage(0);
+  const { merc, bbox } = bboxFor(img, e);
+  // Refuse rather than download a fortune: a file in strips must be read the
+  // whole width of the file for every row the square covers.
+  const ib = img.getBoundingBox(), W = img.getWidth(), H = img.getHeight();
+  const rows = Math.ceil((bbox[3] - bbox[1]) / (ib[3] - ib[1]) * H) + 1;
+  const cols = Math.ceil((bbox[2] - bbox[0]) / (ib[2] - ib[0]) * W) + 1;
+  const bps = (img.getBitsPerSample() || 8) / 8;
+  const raw = img.isTiled
+    ? (Math.ceil(cols / img.getTileWidth()) + 1) * (Math.ceil(rows / img.getTileHeight()) + 1) * img.getTileWidth() * img.getTileHeight() * bps
+    : rows * W * bps;
+  if ((await tiff.getImageCount()) === 1 && raw > 200 * 1048576)
+    throw new Error(`stopped: this square would need about ${kb(raw)} of the file (${img.isTiled ? 'blocks' : 'strips'}, no smaller levels)`);
+  const ras = await tiff.readRasters({ bbox, width: SIZE, height: SIZE, resampleMethod: 'nearest', interleave: false });
+  const res = img.getResolution();
+  const tiled = img.isTiled ? `in blocks of ${img.getTileWidth()} x ${img.getTileHeight()}` : 'in strips (not blocks)';
+  const cell = merc ? Math.abs(res[0]) : Math.abs(res[0]) * 111320;
+  return { band: ras[0], nodata: img.getGDALNoData(), info: `${img.getWidth()} x ${img.getHeight()} pixels, about ${cell.toFixed(1)} m each, ${tiled}, ${await tiff.getImageCount()} levels` };
+}
+
+function paint(ctx, band, colourOf) {
+  const im = ctx.createImageData(SIZE, SIZE);
+  for (let i = 0; i < band.length; i++) {
+    const c = colourOf(band[i]);
+    im.data[i * 4] = c[0]; im.data[i * 4 + 1] = c[1]; im.data[i * 4 + 2] = c[2]; im.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+}
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+
+async function worldcoverPanel(ctx, t, e, el) {
+  let got = null, firstErr = null, used = '';
+  for (const url of worldcoverUrls(spot.lat, spot.lon)) {
+    try { got = await readSquare(url, e); used = url.includes('2021') ? '2021' : '2020'; break; }
+    catch (err) { firstErr = firstErr || err; }
+  }
+  if (!got) throw firstErr;
+  const cols = Object.fromEntries(Object.entries(WORLDCOVER).map(([k, [, c]]) => [k, rgb(c)]));
+  const count = new Map();
+  paint(ctx, got.band, (v) => { count.set(v, (count.get(v) || 0) + 1); return cols[v] || [34, 42, 51]; });
+  const rows = [...count].sort((a, b) => b[1] - a[1]);
+  el.querySelector('.legend').innerHTML = '<table>' + rows.map(([v, n]) => {
+    const [name, c] = WORLDCOVER[v] || ['no data (' + v + ')', '#222a33'];
+    return `<tr><td><span class="sw" style="background:${c}"></span>${name}</td><td class="n">${(100 * n / got.band.length).toFixed(1)}%</td></tr>`;
+  }).join('') + '</table>';
+  el.querySelector('.more').innerHTML = `<details><summary>the file</summary><pre></pre></details>`;
+  el.querySelector('.more pre').textContent = got.info;
+  el.dataset.report = '  ' + rows.map(([v, n]) => `${(WORLDCOVER[v] || [v])[0]} ${(100 * n / got.band.length).toFixed(1)}%`).join(', ');
+  return used;
+}
+
+async function canopyPanel(ctx, t, e, el) {
+  const got = await readSquare(canopyUrl(spot.lat, spot.lon), e);
+  let trees = 0, tall = 0, sum = 0, top = 0;
+  paint(ctx, got.band, (v) => {
+    if (!(v >= 2) || v === got.nodata || v > 150) return [34, 42, 51];
+    trees++; sum += v; if (v >= 10) tall++; if (v > top) top = v;
+    const k = Math.min(1, v / 35);
+    return [Math.round(190 - 160 * k), Math.round(235 - 120 * k), Math.round(120 - 90 * k)];
+  });
+  const n = got.band.length;
+  el.querySelector('.legend').innerHTML = `<table>
+    <tr><td>trees 2 m or taller</td><td class="n">${(100 * trees / n).toFixed(1)}% of the square</td></tr>
+    <tr><td>trees 10 m or taller</td><td class="n">${(100 * tall / n).toFixed(1)}%</td></tr>
+    <tr><td>average tree height</td><td class="n">${trees ? (sum / trees).toFixed(1) + ' m' : '-'}</td></tr>
+    <tr><td>tallest</td><td class="n">${top ? top.toFixed(0) + ' m' : '-'}</td></tr>
+    <tr><td><span class="sw" style="background:rgb(190,235,120)"></span>2 m</td><td><span class="sw" style="background:rgb(30,115,30)"></span>35 m and up</td></tr></table>`;
+  el.querySelector('.more').innerHTML = `<details><summary>the file</summary><pre></pre></details>`;
+  el.querySelector('.more pre').textContent = got.info + '\n' + canopyUrl(spot.lat, spot.lon);
+  el.dataset.report = `  trees ${(100 * trees / n).toFixed(1)}%, 10 m+ ${(100 * tall / n).toFixed(1)}%, average ${trees ? (sum / trees).toFixed(1) : '-'} m, tallest ${top.toFixed(0)} m`;
+  return '';
+}
+
+run();
+</script>
+</body>
+</html>

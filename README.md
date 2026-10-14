@@ -57,6 +57,13 @@ right: each road kept to its kind's limits, riding on the ground (never
 changed) or bridging over it. Colour by rules shows where each breaks its
 limits; Enter drives the nearest road.
 
+To compare data sources for land use and land cover, open
+<http://localhost:8080/datalab.html>. It shows one square of ground (about
+2 km) from each source side by side: a satellite photo, today's map,
+Overture, ESA WorldCover and tree heights, with what each holds. It also says
+whether the browser can read each source at all. Licences are in
+`DATA-SOURCES.csv`.
+
 To publish, push the repo and turn on GitHub Pages from the root; the app is
 then at `.../gallivantage/`. Places of interest are the exception: their
 tiles are built on your own computer and are not in the repo (see
