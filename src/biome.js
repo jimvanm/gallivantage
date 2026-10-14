@@ -19,6 +19,12 @@
 //    top). Palms only in warm zones, and only low down.
 // 4. Slopes: none on very steep ground. In dry places trees crowd the shady
 //    slopes; pines take the sunny ones.
+// 5. Towns: where most of the land around is built up (urban, 0..1, from the
+//    map), trees are a town's: mostly broadleaf, some cedars, few spruce, no
+//    pines; younger and smaller, with only about 1 in 20 grown to full size
+//    (never a pine). Toronto has some big old beauties, but over 20 m is rare.
+// 6. Sports fields, tracks and playgrounds: no trees on them, nor within 10 m
+//    of their edge (the caller marks that margin as SPORT too).
 
 import { ZONES, landZone } from './zones.js';
 
@@ -27,9 +33,9 @@ const [SPIRE, PINE, COLUMN, ROUND, OVAL, SPREAD, FEATHER, FAN] = KINDS.map((_, i
 
 // What the map says covers the ground, as one number per spot.
 export const COVER = { NONE: 0, WOOD: 1, GRASS: 2, SCRUB: 3, FARM: 4, VINEYARD: 5, ORCHARD: 6, ROCK: 7, ICE: 8,
-  SAND: 9, WETLAND: 10, BUILT: 11, WATER: 12, PARK: 13 };
+  SAND: 9, WETLAND: 10, BUILT: 11, WATER: 12, PARK: 13, SPORT: 14 };
 export const COVER_NAMES = ['nothing mapped', 'wood or forest', 'grass or meadow', 'scrub or heath', 'farmland',
-  'vineyard', 'orchard', 'rock', 'ice', 'sand', 'wetland', 'built-up', 'water', 'park or green'];
+  'vineyard', 'orchard', 'rock', 'ice', 'sand', 'wetland', 'built-up', 'water', 'park or green', 'sports field, track or playground'];
 
 // The settings Jim can move in the lab. Change defaults only after a look.
 export function defaultRules() {
@@ -95,6 +101,8 @@ const LOOK = {
   EF: { mix: M({}), open: 0, size: 0 },
 };
 const SUBALPINE = M({ spire: 0.75, pine: 0.15, column: 0.1 });
+// Trees in town (cold and temperate climates): street and park trees.
+const TOWN = M({ round: 0.5, oval: 0.2, spread: 0.15, column: 0.1, spire: 0.05 });
 
 // How much each kind of ground takes trees, before the climate has its say.
 function coverShare(cover, open, R) {
@@ -113,7 +121,8 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
 const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
 
 // Everything the rules say about one spot.
-// s: { lat, lon, h (m above sea), slope (rise over run), sunny (-1 shaded .. 1 facing the sun), cover }
+// s: { lat, lon, h (m above sea), slope (rise over run), sunny (-1 shaded .. 1 facing the sun), cover,
+//      urban (0..1, optional: how built up the land around is) }
 export function readSpot(s, R) {
   const { zone: zn, how } = landZone(s.lat, s.lon);
   const code = ZONES[zn] || 'Dfb', look = LOOK[code] || LOOK.Dfb;
@@ -124,7 +133,8 @@ export function readSpot(s, R) {
   const sunny = Math.max(-1, Math.min(1, s.sunny * R.sunny));
   const treeline = curve(s.lat) * (1 - 0.3 * ocean) * R.treeline + (cold ? 150 * sunny : 0);
   const snowline = Math.max(treeline, 0) + R.snow;
-  const out = { zone: code, how, treeline, snowline, density: 0, mix: null, size: 0 };
+  const urban = clamp01(s.urban || 0);
+  const out = { zone: code, how, treeline, snowline, density: 0, mix: null, size: 0, urban };
   if (s.h >= treeline || !look.open) return out;
 
   let d = coverShare(s.cover, look.open, R);
@@ -143,9 +153,13 @@ export function readSpot(s, R) {
   mix[ROUND] += (mix[FEATHER] + mix[FAN]) * (1 - palmK);
   mix[FEATHER] *= palmK; mix[FAN] *= palmK;
   mix[PINE] *= 1 + 0.8 * Math.max(0, sunny);                             // pines take the sunny side
+  if (urban > 0 && code[0] !== 'A') {                                    // town trees (the tropics keep their own)
+    const s0 = mix.reduce((a, b) => a + b, 0) || 1;
+    for (let i = 0; i < mix.length; i++) mix[i] = mix[i] / s0 * (1 - urban) + TOWN[i] * urban;
+  }
   const sum = mix.reduce((a, b) => a + b, 0) || 1;
   out.mix = mix.map((v) => v / sum);
-  out.size = look.size * Math.max(0.35, Math.min(1, 0.35 + (treeline - s.h) / (R.edge * 2)));
+  out.size = look.size * Math.max(0.35, Math.min(1, 0.35 + (treeline - s.h) / (R.edge * 2))) * (1 - 0.15 * urban);
   return out;
 }
 
@@ -172,7 +186,8 @@ const STRIDE = 8;   // per tree: x, z, kind, age (0..1), size (times the style's
 export { STRIDE as TREE_STRIDE };
 
 // The trees of one tile. ctx: { seed, x0, z0, size (metres, square, x east and z south from x0, z0),
-// latLon(x, z) -> [lat, lon], ground(x, z), grad(x, z) -> [gx, gz], cover(x, z), keep (optional, 0..1) }.
+// latLon(x, z) -> [lat, lon], ground(x, z), grad(x, z) -> [gx, gz], cover(x, z), keep (optional, 0..1),
+// urban(x, z) (optional, 0..1: how built up the land around is) }.
 // keep: only the trees whose facing number is below it (a fixed, even share of them), for far away, where
 // fewer trees are drawn, each bigger. The rest are not worked out at all, so a far tile is quick to make.
 // Returns a Float32Array, STRIDE numbers a tree.
@@ -189,16 +204,23 @@ export function plantTile(ctx, R) {
     const x = ctx.x0 + (i + jx) * cell, z = ctx.z0 + (j + jz) * cell;
     const cover = ctx.cover(x, z);
     if (cover === COVER.FARM || cover === COVER.VINEYARD || cover === COVER.ORCHARD || cover === COVER.BUILT ||
-        cover === COVER.WATER || cover === COVER.ROCK || cover === COVER.ICE || cover === COVER.SAND) continue;
+        cover === COVER.WATER || cover === COVER.ROCK || cover === COVER.ICE || cover === COVER.SAND || cover === COVER.SPORT) continue;
     const [lat, lon] = ctx.latLon(x, z), h = ctx.ground(x, z), [gx, gz] = ctx.grad(x, z);
     const spot = readSpot({ lat: lat + (bz - 0.5) * 2 * blendDeg, lon: lon + (bx - 0.5) * 2 * blendDeg / Math.max(0.1, Math.cos(lat * Math.PI / 180)),
-      h, slope: Math.hypot(gx, gz), sunny: sunnyFrom(gx, gz, lat), cover }, R);
+      h, slope: Math.hypot(gx, gz), sunny: sunnyFrom(gx, gz, lat), cover, urban: ctx.urban ? ctx.urban(x, z) : 0 }, R);
     // density 1 means about one tree per 100 square metres
     if (!spot.mix || pick >= spot.density * cell * cell / 100) continue;
     let k = 0, acc = spot.mix[0];
     while (k < 7 && kindPick > acc) acc += spot.mix[++k];
     const conifer = k <= COLUMN;
-    const age = (conifer ? 0.4 + 0.6 * ageR : 0.15 + 0.85 * ageR) * Math.min(1, 0.4 + spot.size * 0.6);
+    let age = (conifer ? 0.4 + 0.6 * ageR : 0.15 + 0.85 * ageR) * Math.min(1, 0.4 + spot.size * 0.6);
+    if (spot.urban > 0) {
+      // In town: young and middle-aged, only about 1 in 20 grown to full size, and never an old pine. (Which ones are
+      // big comes from the shade number, so no extra random number is drawn and no other tree moves.)
+      const big = (shade * 7.31) % 1 < 0.05 && k !== PINE;
+      const townAge = big ? age : 0.12 + 0.5 * ageR * ageR;
+      age = age * (1 - spot.urban) + Math.min(age, townAge) * spot.urban;
+    }
     out.push(x, z, k, age, spot.size * (0.9 + 0.2 * sizeR), 0.9 + 0.2 * widthR, yaw, shade);
   }
   return new Float32Array(out);

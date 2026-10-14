@@ -114,3 +114,31 @@ console.log('biome: ok');
   assert.ok(share > 0.18 && share < 0.32, 'about a quarter: ' + share);
   console.log('biome: keep ok');
 }
+
+// Towns: broadleaf, few conifers, no pines; young, with big trees rare and never an old pine.
+{
+  const town = readSpot({ lat: 43.67, lon: -79.35, h: 100, slope: 0.05, sunny: 0, cover: COVER.WOOD, urban: 1 }, R);
+  const country = readSpot({ lat: 43.67, lon: -79.35, h: 100, slope: 0.05, sunny: 0, cover: COVER.WOOD, urban: 0 }, R);
+  const share = (s, ...k) => k.reduce((a, n) => a + s.mix[KINDS.indexOf(n)], 0);
+  assert.equal(share(town, 'pine'), 0, 'no pines in town');
+  assert.ok(share(town, 'spire', 'pine', 'column') <= 0.16, 'few conifers in town: ' + share(town, 'spire', 'pine', 'column'));
+  assert.ok(share(town, 'round', 'oval', 'spread') >= 0.8, 'mostly broadleaf in town');
+  assert.ok(town.size < country.size, 'town trees smaller');
+  const T = plantTile({ ...ctx(tileSeed(16, 9000, 12000)), latLon: (x, z) => [43.67 - z / 111000, -79.35 + x / 80000], urban: () => 1 }, R);
+  let n = 0, big = 0, oldPine = 0;
+  for (let i = 0; i < T.length; i += TREE_STRIDE) { n++; if (T[i + 3] > 0.75) big++; if (T[i + 2] === KINDS.indexOf('pine') && T[i + 3] > 0.5) oldPine++; }
+  assert.ok(n > 100, 'trees still grow in town parks and ravines: ' + n);
+  assert.ok(big / n < 0.08, 'few full-grown trees in town: ' + big + ' of ' + n);
+  assert.equal(oldPine, 0, 'no old pines in town');
+  const C = plantTile({ ...ctx(tileSeed(16, 9000, 12000)), latLon: (x, z) => [43.67 - z / 111000, -79.35 + x / 80000] }, R);
+  const C0 = plantTile({ ...ctx(tileSeed(16, 9000, 12000)), latLon: (x, z) => [43.67 - z / 111000, -79.35 + x / 80000], urban: () => 0 }, R);
+  assert.deepEqual(C, C0, 'out of town, nothing changes');
+  console.log('biome: towns ok');
+}
+
+// Sports fields, tracks and playgrounds: no trees.
+{
+  assert.equal(plantTile({ ...ctx(1, COVER.SPORT) }, R).length, 0, 'no trees on sports fields');
+  assert.equal(readSpot({ lat: 43.67, lon: -79.35, h: 100, slope: 0, sunny: 0, cover: COVER.SPORT }, R).density, 0, 'and no canopy over them');
+  console.log('biome: sports fields ok');
+}
