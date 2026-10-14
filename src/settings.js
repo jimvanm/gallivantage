@@ -14,6 +14,7 @@ export const settings = {
   buildings: 2,      // building style, key 5: an index into BUILDING_STYLES (Overture by default)
   flatWater: true,   // key 0: water close by as a flat surface (watersurface.js), or painted on the ground
   survey: true,      // key J: Canada's laser survey as the close-up ground where it exists (surveytile.js)
+  trees: 2,          // key Y: an index into TREE_STYLES (full by default)
 };
 
 // Building styles (key 5). The near field is rebuilt when this changes.
@@ -24,6 +25,15 @@ export const BUILDING_STYLES = [
   { id: 'today', label: 'TODAY' },
   { id: 'new', label: 'NEW LOOK' },
   { id: 'overture', label: 'OVERTURE' },
+];
+// Trees (key Y, treelayer.js).
+//   today     none, as the app was
+//   near      trees out to 2.5 km, melting away there
+//   full      the same, then the dots out to 10 km
+export const TREE_STYLES = [
+  { id: 'today', label: 'TODAY' },
+  { id: 'near', label: 'NEAR' },
+  { id: 'full', label: 'FULL' },
 ];
 export const buildingStyle = () => BUILDING_STYLES[settings.buildings].id;
 

@@ -132,6 +132,14 @@ globalThis.Worker = class {
   postMessage(m) {
     // Near field and skyline jobs carry an elevation URL; answer those with a
     // small road and building mesh, the way nearworker.js would.
+    // Tree jobs (treetile.js): three trees in the middle of the tile.
+    if (m.trees) {
+      const u8 = new Uint8Array(60), f = new Float32Array(u8.buffer), u16 = new Uint16Array(u8.buffer);
+      for (let i = 0; i < 3; i++) { f[i * 5] = i * 10; f[i * 5 + 1] = 900; u16[i * 10 + 6] = 1500; u16[i * 10 + 7] = 600; u8[i * 20 + 16] = i * 80; }
+      setTimeout(() => this.onmessage && this.onmessage({ data: { id: m.id, ok: true, trees: true, n: 3, u8, keep: m.keep, rad: 300,
+        lat: geo.mercYToLat(geo.tileCentreMerc(m.x, m.y, 16).y), lon: geo.mercXToLon(geo.tileCentreMerc(m.x, m.y, 16).x), sgen: m.sgen || 0 } }), 0);
+      return;
+    }
     if (m.eurl) {
       const v = new ArrayBuffer(4 * 16);
       const tri = () => new Uint32Array([0, 1, 2, 0, 2, 3]);
@@ -231,8 +239,9 @@ ok(log.textures > 0, `uploaded ${log.texUploads} textures across ${log.textures}
 ok(log.texSizes.has('256x256'), `mask textures are 256x256 (${[...log.texSizes].join(', ')})`);
 ok(keysFired === 2 * KEYS.filter((x) => x.act).length, `pressed every action key twice (${keysFired}) without throwing`);
 ok(padFired >= 8, `fired ${padFired} pad handlers without throwing`);
-ok(workerCount === 9, `spawned ${workerCount} workers (3 terrain, 4 near, 2 skyline)`);
-ok(log.uniforms.size === 32, `resolved ${log.uniforms.size} distinct uniform names (expect 32: terrain 16, mesh adds 15, pole caps 1)`);
+ok(workerCount === 11, `spawned ${workerCount} workers (3 terrain, 4 near, 2 skyline, 2 trees)`);
+ok(log.uniforms.size === 49, `resolved ${log.uniforms.size} distinct uniform names (expect 49: terrain 16, mesh adds 15, pole caps 1, trees 17)`);
+ok(log.calls.drawElementsInstanced > 0, `drew trees (${log.calls.drawElementsInstanced || 0} instanced draws)`);
 ok(log.badUniform.length === 0, `no null uniform locations (${log.badUniform.length})`);
 ok(log.nan.length === 0, `no NaN/Inf uniform values (${log.nan.length}${log.nan.length ? ': ' + log.nan.slice(0, 3) : ''})`);
 const rep = globalThis.twReport;   // left behind by the K key

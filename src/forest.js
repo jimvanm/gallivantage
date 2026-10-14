@@ -12,10 +12,38 @@
 // A tree record (20 bytes): x, y, z (float32, metres); height, width (uint16, centimetres); facing (0..255, also
 // the far-share number); shade; warmth (or, for vine pieces, the slope along the piece); shape number.
 
-import { plantTile, TREE_STRIDE, rng, tileSeed } from './biome.js';
+import { plantTile, TREE_STRIDE, rng, tileSeed, KINDS as TREE_KINDS } from './biome.js';
 import { parcelRows, rowPieces } from './vines.js';
 
 export const TREE_BYTES = 20;
+
+// The shapes, numbered: the eight tree styles' growth stages, then the vine's row pieces and row ends, in the order
+// the drawing packs them (forestdraw.js), so a tree record's shape number means the same thing wherever the tree was
+// made (the lab, or the app's helpers). H, W: each shape's height and width in metres. lib: the library's shapes,
+// trees and farm together. Returns { kinds: [{ key, stages: [ids], far, row, shapes: [{ id, H, W, n, kind }] }],
+// K (key -> kind number), styles (for makeTrees), pieceShape and capShape (for makeVines) }.
+export function shapeCatalog(lib) {
+  const kinds = TREE_KINDS.map((k) => { const stages = []; for (let i = 1; lib[`${k}-${i}`]; i++) stages.push(`${k}-${i}`); return { key: k, stages, far: `${k}-far` }; });
+  if (lib['vine-10-00']) {
+    for (const len of [10, 3, 1]) kinds.push({ key: `vine${len}`, stages: [0, 1, 2].flatMap((i) => [0, 1, 2].map((j) => `vine-${len}-${i}${j}`)), far: `vine-${len}-far`, row: true });
+    kinds.push({ key: 'vinecap', stages: [1, 2, 3].map((n) => `vine-cap-${n}`), far: null, row: true });
+  }
+  const K = Object.fromEntries(kinds.map((k, i) => [k.key, i]));
+  let n = 0;
+  kinds.forEach((k, ki) => {
+    k.shapes = k.stages.map((id) => {
+      const m = lib[id]; let H = 0, W = 0;
+      for (let i = 0; i < m.pos.length; i += 3) { H = Math.max(H, m.pos[i + 1]); W = Math.max(W, Math.abs(m.pos[i]), Math.abs(m.pos[i + 2])); }
+      return { id, H, W: W * 2, n: n++, kind: ki };
+    });
+  });
+  return {
+    kinds, K,
+    styles: TREE_KINDS.map((_, i) => kinds[i].shapes),
+    pieceShape: (len, from, to) => kinds[K[`vine${len}`]].shapes[from * 3 + to],
+    capShape: (outline) => kinds[K.vinecap].shapes[outline],
+  };
+}
 
 // The distances, near to far. Metres, or shares of a distance where said. Jim's starting settings.
 export const VIEW_DEFAULTS = {

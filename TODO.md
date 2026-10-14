@@ -524,12 +524,14 @@ in `src/zones.js` (Koppen map, Rubel et al. 2017, about 3 km, 380 KB in
 - [ ] **Into the app** (agreed 13 October). Step 1 done (0.14.34): the lab's
       planting is `src/forest.js` and its drawing `src/forestdraw.js`, and the lab
       runs on them (pixel for pixel the same). Starting settings: 250 trees a
-      hectare, the lab's distances. Next, each its own change file with a key to
-      turn it off: trees near you (planted off the main thread, on the ground the
-      app draws, off roads, water and buildings); dots and the dissolve; the
-      canopy on the app's far ground; vineyards; a TREES setting stepping TODAY /
-      NEAR / FULL like the building style (FULL to start); the climate map's
-      credit. Places to check: Banff, Saba, the Okanagan, and Riverdale Park
+      hectare, the lab's distances. Step 2 done (0.14.41): trees in the app, key
+      Y and a TREES button stepping TODAY / NEAR / FULL (FULL to start: the dots
+      out to 10 km), planted per zoom-16 tile by two helpers (`src/treetile.js`)
+      from the map's cover (`src/forestcover.js`: off roads, water, buildings and
+      10 m from sports fields) on the buildings' own ground, held in one frame
+      near the camera (`src/treelayer.js`); the climate map's credit. Next: the
+      canopy on the app's far ground; vineyards; then check far trees against
+      the coarser far ground (they stand on zoom-14 heights out to 10 km). Places to check: Banff, Saba, the Okanagan, and Riverdale Park
       (top of the hill on Broadview, looking west).
 - [ ] **City trees**: in towns the map marks streets and yards as built-up, so
       no trees grow there; Toronto's streets are full of trees.

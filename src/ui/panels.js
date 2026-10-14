@@ -5,7 +5,7 @@
 // build once with initPanels(); call the returned sync() every frame to light
 // the buttons that are on.
 
-import { LAYERS, settings, BUILDING_STYLES } from '../settings.js';
+import { LAYERS, settings, BUILDING_STYLES, TREE_STYLES } from '../settings.js';
 import { LOOK, SETS } from '../look.js';
 import { KEYS } from './keys.js';
 import { LEVELS } from '../config.js';
@@ -19,6 +19,8 @@ const keyFor = (act) => {
 const COLOUR_BTNS = [
   { act: 'buildStyle', label: () => 'STYLE: ' + BUILDING_STYLES[settings.buildings].label, on: () => settings.buildings > 0,
     wide: true, title: "building style: today's boxes, the new look, or the new look on Overture's buildings" },
+  { act: 'treeStyle', label: () => 'TREES: ' + TREE_STYLES[settings.trees].label, on: () => settings.trees > 0,
+    wide: true, title: 'trees: none, out to 2.5 km, or out to 10 km as dots' },
   { act: 'lookSet', label: () => 'SET: ' + SETS[LOOK.set].name.toUpperCase(), on: () => false,
     wide: true, title: 'next colour set' },
   { act: 'lookReal', label: () => 'REAL', on: () => LOOK.real,

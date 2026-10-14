@@ -54,6 +54,7 @@ export const KEYS = [
   { group: 'Show / hide', label: 'J', help: "close-up ground: Canada's survey / usual", code: 'KeyJ', act: 'toggleSurvey', mode: 'nav' },
 
   { group: 'Colours', label: '5', help: 'building style: today / new look / Overture', code: 'Digit5', act: 'buildStyle', mode: 'nav' },
+  { group: 'Colours', label: 'Y', help: 'trees: none / near / full', code: 'KeyY', act: 'treeStyle', mode: 'nav' },
   { group: 'Colours', label: '6', help: 'real', code: 'Digit6', act: 'lookReal', mode: 'nav' },
   { group: 'Colours', label: '7', help: 'by type', code: 'Digit7', act: 'lookType', mode: 'nav' },
   { group: 'Colours', label: '8', help: 'colour set', code: 'Digit8', act: 'lookSet', mode: 'nav' },

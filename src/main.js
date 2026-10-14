@@ -16,6 +16,7 @@ import { Perf, probe } from './perf.js';
 import { startCache, cacheUsage } from './cache.js';
 import { initFavourites } from './favourites.js';
 import { NearLayer } from './near.js';
+import { TreeLayer } from './treelayer.js';
 import { SkylineLayer } from './skyline.js';
 import { Handover } from './handover.js';
 import { MeshProgram } from './meshprogram.js';
@@ -30,7 +31,7 @@ import { searchMountains, traceMountain } from './mountains.js';
 import { cachedFetch } from './cache.js';
 import { plainElevationUrl, bumpSurveyGeneration } from './placetiles.js';
 import { LOOK, SETS } from './look.js';
-import { settings, LAYERS, layerOn, toggleLayer, BUILDING_STYLES } from './settings.js';
+import { settings, LAYERS, layerOn, toggleLayer, BUILDING_STYLES, TREE_STYLES } from './settings.js';
 import { helpHtml, bindKeys, MODES, modeName } from './ui/keys.js';
 import { initPanels } from './ui/panels.js';
 import { initCompass } from './ui/compass.js';
@@ -95,6 +96,12 @@ const nearField = new NearLayer(gl, mesh, vectorTemplate);
 const farField = new SkylineLayer(gl, mesh, vectorTemplate);
 const handover = new Handover(nearField, farField);
 const landmarks = new Landmarks(gl, mesh);
+// Trees (treelayer.js), once their shapes have loaded. Without them the app simply has no trees.
+let trees = null;
+fetch(new URL('../library/trees/models.json', import.meta.url))
+  .then((r) => { if (!r.ok) throw new Error('trees: HTTP ' + r.status); return r.json(); })
+  .then((lib) => { trees = new TreeLayer(gl, lib, vectorTemplate); })
+  .catch((e) => console.warn('No trees this session:', e));
 const dropper = new Dropper(landmarks);
 // The usual elevation tile as heights, for picking up a piece of ground.
 async function fetchHeights(z, x, y) {
@@ -172,7 +179,8 @@ function setCredit() {
   const el = document.getElementById('attrib');
   if (!el) return;
   el.innerHTML = CREDIT_BASE + (settings.survey
-    ? ' &middot; Close-up ground in Canada: contains information licensed under the Open Government Licence &ndash; Canada (NRCan HRDEM)' : '');
+    ? ' &middot; Close-up ground in Canada: contains information licensed under the Open Government Licence &ndash; Canada (NRCan HRDEM)' : '') +
+    (settings.trees ? ' &middot; Climate zones: Rubel et al. 2017' : '');
 }
 setCredit();
 
@@ -198,6 +206,7 @@ const actions = {
   },
   toggleFlatWater: () => { settings.flatWater = !settings.flatWater; },
   buildStyle: () => { settings.buildings = (settings.buildings + 1) % BUILDING_STYLES.length; nearField.restyle(); },
+  treeStyle: () => { settings.trees = (settings.trees + 1) % TREE_STYLES.length; setCredit(); },
   grab: () => controls.grab(),
   faster: () => controls.bump(1.5),
   slower: () => controls.bump(1 / 1.5),
@@ -369,6 +378,7 @@ function frame(now) {
     terrain.update(v);
     poles.update(now, (x, y) => terrain.heightAt(x, y));
     handover.update(v);
+    if (trees) trees.update(v, 2 * Math.atan(Math.tan(FOV * Math.PI / 360) * canvas.width / canvas.height), now);
   }
   // In Tools mode you aim with the pointer; otherwise with the crosshair.
   const pt = settings.mode === 'tools' && controls.pointer;
@@ -408,7 +418,8 @@ function frame(now) {
     mesh.use(pass);
     handover.draw(pass, roadsOn, bldOn);
     if (flatWater) nearField.drawWater(pass);
-    landmarks.draw(pass);   // last: it changes uScale and uCamAlt. Moved ground is always drawn; the rest follows the buttons (setLayers)
+    landmarks.draw(pass);   // it changes uScale and uCamAlt. Moved ground is always drawn; the rest follows the buttons (setLayers)
+    if (trees) trees.draw(pass, sky, shading.fogDensity);   // after the mesh program's users: it has programs of its own
   };
 
   gl.viewport(0, 0, canvas.width, canvas.height);
@@ -452,7 +463,7 @@ function frame(now) {
 
   // ---- page ----
   hud.update(dt, now, {
-    view: v, controls, terrain, loader, near: nearField, sky: farField, landmarks, settings, cacheMb,
+    view: v, controls, terrain, loader, near: nearField, sky: farField, landmarks, settings, cacheMb, trees,
   });
   setHeading(((cam.yaw * 180 / Math.PI) % 360 + 360) % 360);
   syncPanels();

@@ -71,6 +71,7 @@ export class Hud {
       [`water ${terrain.waterCount}/${terrain.visible.length}`, terrain.waterCount === terrain.visible.length],
       [`near ${near.status}`, near.complete],
       [`sky ${sky.status}`, sky.complete],
+      ...(s.trees ? [[`trees ${s.trees.status}`, s.trees.active && !s.trees.want.length]] : []),
       // Landmarks within sight: how many are ready to draw.
       [`land ${landmarks.resolved}/${landmarks.inRange}`, landmarks.resolved === landmarks.inRange],
       [`view ${(view.viewDist / 1000).toFixed(0)} km`],

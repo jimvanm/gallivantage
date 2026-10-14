@@ -33,9 +33,9 @@ const [SPIRE, PINE, COLUMN, ROUND, OVAL, SPREAD, FEATHER, FAN] = KINDS.map((_, i
 
 // What the map says covers the ground, as one number per spot.
 export const COVER = { NONE: 0, WOOD: 1, GRASS: 2, SCRUB: 3, FARM: 4, VINEYARD: 5, ORCHARD: 6, ROCK: 7, ICE: 8,
-  SAND: 9, WETLAND: 10, BUILT: 11, WATER: 12, PARK: 13, SPORT: 14 };
+  SAND: 9, WETLAND: 10, BUILT: 11, WATER: 12, PARK: 13, SPORT: 14, STRUCT: 15 };
 export const COVER_NAMES = ['nothing mapped', 'wood or forest', 'grass or meadow', 'scrub or heath', 'farmland',
-  'vineyard', 'orchard', 'rock', 'ice', 'sand', 'wetland', 'built-up', 'water', 'park or green', 'sports field, track or playground'];
+  'vineyard', 'orchard', 'rock', 'ice', 'sand', 'wetland', 'built-up', 'water', 'park or green', 'sports field, track or playground', 'road or building'];
 
 // The settings Jim can move in the lab. Change defaults only after a look.
 export function defaultRules() {
@@ -204,7 +204,7 @@ export function plantTile(ctx, R) {
     const x = ctx.x0 + (i + jx) * cell, z = ctx.z0 + (j + jz) * cell;
     const cover = ctx.cover(x, z);
     if (cover === COVER.FARM || cover === COVER.VINEYARD || cover === COVER.ORCHARD || cover === COVER.BUILT ||
-        cover === COVER.WATER || cover === COVER.ROCK || cover === COVER.ICE || cover === COVER.SAND || cover === COVER.SPORT) continue;
+        cover === COVER.WATER || cover === COVER.ROCK || cover === COVER.ICE || cover === COVER.SAND || cover === COVER.SPORT || cover === COVER.STRUCT) continue;
     const [lat, lon] = ctx.latLon(x, z), h = ctx.ground(x, z), [gx, gz] = ctx.grad(x, z);
     const spot = readSpot({ lat: lat + (bz - 0.5) * 2 * blendDeg, lon: lon + (bx - 0.5) * 2 * blendDeg / Math.max(0.1, Math.cos(lat * Math.PI / 180)),
       h, slope: Math.hypot(gx, gz), sunny: sunnyFrom(gx, gz, lat), cover, urban: ctx.urban ? ctx.urban(x, z) : 0 }, R);

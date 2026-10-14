@@ -7,7 +7,7 @@
 // finer raw data, which would float or bury it on slopes.
 
 import { decodeMVT } from './mvt.js';
-import { tileSizeMerc, tileToMerc, tileCentreMerc, mercYToLat } from './geo.js';
+import { tileSizeMerc, tileToMerc, tileCentreMerc, mercYToLat, mercXToLon } from './geo.js';
 import { decodeTerrarium, meshNodes, pxMetersFor, PX } from './heightgrid.js';
 import { buildRoads } from './roads.js';
 import { buildBuildings } from './buildings.js';
@@ -24,6 +24,10 @@ import { tileFrame, buildCityTile, samplePaint } from './citykit.js';
 import { rasterOverlays, MASK } from './overlayraster.js';
 import { PMTiles } from './pmtiles.js';
 import { overtureBuildings, overtureCounts } from './overture.js';
+import { loadZones } from './zones.js';
+import { defaultRules } from './biome.js';
+import { tileCover } from './forestcover.js';
+import { plantTreeTile, TREE_Z, COVER_Z } from './treetile.js';
 
 // Overture's building file, one reader per release (each keeps its directory).
 const archives = new Map();
@@ -74,7 +78,7 @@ function elevationNodes(url, ez, y) {
     })();
     cache.set(url, p);
     p.catch(() => cache.delete(url));
-    if (cache.size > 12) cache.delete(cache.keys().next().value);
+    if (cache.size > 32) cache.delete(cache.keys().next().value);
   }
   return p;
 }
@@ -226,10 +230,44 @@ export async function buildCityJob(spec) {
   return { ...built, paint };
 }
 
+// Trees (treetile.js): one zoom-16 tile's trees. spec: { trees: 1, x, y (zoom 16), keep, vurl and eurl (the zoom-14
+// tile holding it), styles (forest.js shapeCatalog's, from the main thread), sgen }.
+const covers = new Map();   // map tile url -> Promise<tileCover>
+const TREE_LAYERS = ['landuse', 'landcover', 'water', 'building', 'transportation'];
+const RULES = defaultRules();
+function coverFor(url, x14, y14) {
+  let p = covers.get(url);
+  if (!p) {
+    p = vectorLayers(url, TREE_LAYERS).then((L) => {
+      const lat = mercYToLat(tileCentreMerc(x14, y14, COVER_Z).y);
+      return tileCover(L, tileSizeMerc(COVER_Z) * Math.cos(lat * Math.PI / 180));
+    });
+    covers.set(url, p);
+    p.catch(() => covers.delete(url));
+    if (covers.size > 24) covers.delete(covers.keys().next().value);
+  }
+  return p;
+}
+export async function buildTreeJob(spec) {
+  const { x, y, keep, vurl, eurl, styles } = spec, d = TREE_Z - COVER_Z;
+  const nw = tileToMerc(x, y, TREE_Z), se = tileToMerc(x + 1, y + 1, TREE_Z);
+  const [area, nodes] = await Promise.all([
+    coverFor(vurl, x >> d, y >> d),
+    elevationNodes(eurl, COVER_Z, y >> d),
+    loadZones(mercYToLat(se.y), mercXToLon(nw.x), mercYToLat(nw.y), mercXToLon(se.x)),
+  ]);
+  return plantTreeTile(x, y, keep, nodes, area, styles, RULES);
+}
+
 if (typeof self !== 'undefined' && typeof self.postMessage === 'function') {
   self.onmessage = async (ev) => {
     const { id } = ev.data;
     try {
+      if (ev.data.trees) {
+        const t0 = performance.now(), b = await buildTreeJob(ev.data);
+        self.postMessage({ id, ok: true, trees: true, ms: performance.now() - t0, n: b.n, u8: b.u8, keep: b.keep, rad: b.rad, lat: b.lat, lon: b.lon, sgen: ev.data.sgen || 0 }, [b.u8.buffer]);
+        return;
+      }
       if (ev.data.city) {
         const r = await buildCityJob(ev.data);
         const out = { id, ok: true, city: true, stats: r.stats, paint: r.paint,
