@@ -535,7 +535,7 @@ function showReading(eye, fwd) {
 // x is east and z south, in true metres from the area's middle; the camera's mercX/mercY carry them.
 const cam = { mercX: 0, mercY: 0, alt: 400, yaw: 0, pitch: -0.2, fly: 1 };
 const controls = new Controls(canvas, cam);
-window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => keeper.makeSome(ms), get queued() { return keeper.queue.length; }, get forest() { return forest.stats; } };   // for tests and the console
+window.biomelab = { cam, groundAt, readSpot, get area() { return area; }, rules: () => rules, fill: (ms) => keeper.makeSome(ms), get queued() { return keeper.queue.length; }, get forest() { return forest.stats; }, debug: forest.debug };   // for tests and the console
 
 // ================= frame =================
 const SKY = [0.73, 0.83, 0.91], SUN = norm([0.5, 0.75, 0.35]);

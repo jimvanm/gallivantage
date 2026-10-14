@@ -158,15 +158,17 @@ export function createForestDrawer(gl, lib) {
   const lists = { count: new Uint32Array(NB + 1), start: new Uint32Array(NB + 1) };
   let inst = new Uint8Array(0), inst32 = new Uint32Array(0), lastBuild = null, lastBuildT = 0;
   const stats = { rebuildMs: 0, farMs: 0, farCount: 0, lists, DOTS, NSH, NB, gaps: 0, gapFrames: 0, short: 0, shortFrames: 0 };
-  let nearSet = new Set(), farSet = new Set();
+  let nearSet = new Set(), farSet = new Set(), lastEye = null, speed = 0;
   // eye: [x, height, z]; agl: metres above the ground; keeper: a ForestKeeper; V: the distances; show: { trees, vines, dots }.
-  function rebuild(eye, yaw, hfov, pitch, agl, now, keeper, V, show) {
+  // spare: how far you may travel before the next remake (by height, and by speed over a quarter second, since a
+  // remake can wait up to 0.15 s). Everything that may need drawing within that much travel goes in the lists.
+  function rebuild(eye, yaw, hfov, pitch, spare, now, keeper, V, show) {
     const key = `${V.range}|${V.near}|${show.trees}|${show.vines}|${show.dots}|${V.dotRange}|${V.fade}|${V.thinFrom}`;
-    const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > Math.max(20, 0.15 * agl) || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
+    const moved = !lastBuild || lastBuild.k !== key || Math.hypot(eye[0] - lastBuild.x, eye[1] - lastBuild.y, eye[2] - lastBuild.z) > spare * 0.8 || Math.abs(yaw - lastBuild.yaw) > 0.12 || Math.abs(pitch - lastBuild.pitch) > 0.12;
     if (!moved && !(keeper.dirty && now - lastBuildT > 150)) return;
     if (lastBuild && lastBuild.k !== key) keeper.farDirty = true;
-    const t0 = performance.now(), R = V.range, R2 = R * R, NR2 = V.near * V.near, vx = Math.sin(yaw), vz = -Math.cos(yaw), cull = pitch > -0.85, half = hfov / 2 + 0.15;
-    const dots = show.dots && show.trees, F2 = (V.fade * R - R * 0.05) ** 2;
+    const t0 = performance.now(), R = V.range, RS = R + spare, R2 = RS * RS, NR2 = V.near * V.near, vx = Math.sin(yaw), vz = -Math.cos(yaw), cull = pitch > -0.85, half = hfov / 2 + 0.15;
+    const dots = show.dots && show.trees, F2 = Math.max(0, V.fade * R - R * 0.05 - spare) ** 2;
     const chosen = [];
     for (const b of keeper.live.values()) {
       if (b.tree ? !show.trees : !show.vines) continue;
@@ -176,7 +178,7 @@ export function createForestDrawer(gl, lib) {
       if (b.far !== far) { b.far = far; keeper.farDirty = true; }
       // Past the range a tile's dots come from the far list, but only once the far list holds it: until then it stays
       // here, so its square of forest never blinks to bare ground for the moment in between.
-      if (d - b.rad > R && (!b.tree || farSet.has(b))) continue;
+      if (d - b.rad > RS && (!b.tree || farSet.has(b))) continue;
       if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
       chosen.push([b, d, b.tree]);
     }
@@ -186,7 +188,7 @@ export function createForestDrawer(gl, lib) {
     const bin = (u8, i, d2) => { const s = u8[i * 20 + 19]; return d2 < NR2 ? s : NSH + SHAPE_KIND[s]; };
     // A tree past where trees start turning into dots may show as either, so it goes to both lists; the card decides.
     // Past thinFrom only the share of trees kept as dots goes in.
-    const isDot = (u8, i, d2) => d2 > F2 && u8[i * 20 + 16] < thinAt(Math.sqrt(d2), V) * 256;
+    const isDot = (u8, i, d2) => d2 > F2 && u8[i * 20 + 16] < thinAt(Math.max(1, Math.sqrt(d2) - spare), V) * 256;
     for (const [b, , tree] of chosen) {
       const f = new Float32Array(b.u8.buffer, b.u8.byteOffset, b.n * 5);
       for (let i = 0; i < b.n; i++) { const dx = f[i * 5] - eye[0], dy = f[i * 5 + 1] - eye[1], dz = f[i * 5 + 2] - eye[2], d2 = dx * dx + dz * dz; if (d2 <= R2) cnt[bin(b.u8, i, d2 + dy * dy)]++; if (tree && dots && isDot(b.u8, i, d2)) cnt[DOTS]++; }
@@ -242,7 +244,13 @@ export function createForestDrawer(gl, lib) {
       const mx = b.cx - u.eye[0], mz = b.cz - u.eye[2], d = Math.hypot(mx, mz);
       // short: the tile holds fewer trees than its nearest dots need now (its square shows sparser than its neighbours)
       if (d - b.rad <= u.reach && b.keep < thinAt(Math.max(1, d - b.rad), u.V) * 0.999 && d - b.rad > u.V.fade * R) sh++;
-      if (d - b.rad <= R || d - b.rad > u.reach) continue;
+      // inside the range: it must be in the near list (it may hold trees still to be drawn)
+      if (d - b.rad <= R) {
+        const inView = !cull || d < b.rad * 1.5 || Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) <= half + Math.asin(Math.min(1, b.rad / d));
+        if (inView && !nearSet.has(b)) g++;
+        continue;
+      }
+      if (d - b.rad > u.reach) continue;
       if (cull && d > b.rad * 1.5 && Math.acos(Math.max(-1, Math.min(1, (mx * vx + mz * vz) / d))) > half + Math.asin(Math.min(1, b.rad / d))) continue;
       if (!nearSet.has(b) && !farSet.has(b) && prefixBelow(b, thinAt(Math.max(1, d - b.rad - 300), u.V)) > 0) g++;
     }
@@ -286,7 +294,18 @@ export function createForestDrawer(gl, lib) {
     pieceShape: (len, from, to) => KINDS[K[`vine${len}`]].shapes[from * 3 + to],      // for forest.js makeVines
     capShape: (outline) => KINDS[K.vinecap].shapes[outline],
     // Remake the lists if needed. u: { eye, yaw, pitch, hfov, agl, now, keeper, V, show, reach }.
-    update(u) { rebuild(u.eye, u.yaw, u.hfov, u.pitch, u.agl, u.now, u.keeper, u.V, u.show); buildFar(u.eye, u.now, u.keeper, u.V, u.show, u.reach); countGaps(u); },
+    // debug.freeze: keep the lists as they are (to see what shows just before a remake); debug.fresh: remake every frame.
+    debug: { freeze: false, fresh: false },
+    update(u) {
+      if (this.debug.fresh) { lastBuild = null; farAt = null; }
+      // speed, smoothed over about half a second
+      if (lastEye) { const dt = Math.max(1e-3, (u.now - lastEye[3]) / 1000), v = Math.hypot(u.eye[0] - lastEye[0], u.eye[1] - lastEye[1], u.eye[2] - lastEye[2]) / dt; speed += (Math.min(v, 1e5) - speed) * Math.min(1, dt * 2); }
+      lastEye = [u.eye[0], u.eye[1], u.eye[2], u.now];
+      const spare = Math.max(20, 0.15 * u.agl, speed * 0.25) + 10;
+      stats.spare = spare;
+      if (!this.debug.freeze) { rebuild(u.eye, u.yaw, u.hfov, u.pitch, spare, u.now, u.keeper, u.V, u.show); buildFar(u.eye, u.now, u.keeper, u.V, u.show, u.reach); }
+      countGaps(u);
+    },
     draw,
   };
 }
